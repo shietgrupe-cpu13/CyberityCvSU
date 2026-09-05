@@ -66,7 +66,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigator() {
-    var currentScreen by remember { mutableStateOf("home") }
+    var currentScreen by remember { mutableStateOf("login") }
 
     when (currentScreen) {
         "home" -> Greeting(
@@ -74,14 +74,14 @@ fun AppNavigator() {
             onLoginClick = { currentScreen = "login" }
         )
         "login" -> LoginScreen(
-            onBackClick = { currentScreen = "home" },
             onRegisterClick = { currentScreen = "register" },
             onLoginSuccess = { currentScreen = "loggedIn" }
         )
         "register" -> RegisterScreen(
             onBackClick = { currentScreen = "login" },
-            onRegisterSuccess = { currentScreen = "login" }
-        )"checkEmail" -> CheckEmailScreen(
+            onRegisterSuccess = { currentScreen = "checkEmail" }
+        )
+        "checkEmail" -> CheckEmailScreen(
         onBackToLogin = { currentScreen = "login" }
     )
         "loggedIn" -> LoggedInScreen()
@@ -90,12 +90,8 @@ fun AppNavigator() {
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
-    var isLoading by remember { mutableStateOf(true) }
 
-    LaunchedEffect(Unit) {
-        delay(2000)
-        isLoading = false
-    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -111,10 +107,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier, onLoginClick: () -> Un
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            if (isLoading) {
-                CircularProgressIndicator(color = AppPurple)
-            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -159,7 +151,6 @@ fun AuthTextField(
 
 @Composable
 fun LoginScreen(
-    onBackClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onLoginSuccess: () -> Unit
 ) {
@@ -250,13 +241,6 @@ fun LoginScreen(
                     Text("Don't have an account? Create one", color = AppPurple)
                 }
 
-                Button(
-                    onClick = onBackClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    elevation = ButtonDefaults.buttonElevation(0.dp)
-                ) {
-                    Text("Back", color = Color.Gray)
-                }
             }
         }
     }
