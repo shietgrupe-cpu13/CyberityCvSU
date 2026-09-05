@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "86708012515",
+    "project_id": "cyberitycvsu",
+    "storage_bucket": "cyberitycvsu.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:86708012515:android:7e561503fdf6065536ccd6",
+        "android_client_info": {
+          "package_name": "com.example.myfirsttry"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6dAAgV9BTQFuo7xax4LUAJY_xaQ8r02s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

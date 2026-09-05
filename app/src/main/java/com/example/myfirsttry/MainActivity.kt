@@ -12,11 +12,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,10 +37,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myfirsttry.ui.theme.MyFirstTryTheme
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
+import kotlin.coroutines.coroutineContext
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
+// Shared colors so every screen stays consistent
+val AppPurple = Color(0xFF9C27B0)
+val AppWhite = Color(0xFFFFFFFF)
+val AppBackground = Color.Black
+val AppCard = Color(0xFF1A1A1A)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,189 +64,362 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Controls which screen is currently shown
 @Composable
 fun AppNavigator() {
     var currentScreen by remember { mutableStateOf("home") }
 
     when (currentScreen) {
         "home" -> Greeting(
-            name = "CYBERITY",
+            name = "-CYBERITY-",
             onLoginClick = { currentScreen = "login" }
         )
         "login" -> LoginScreen(
             onBackClick = { currentScreen = "home" },
-            onRegisterClick = { currentScreen = "register" }
+            onRegisterClick = { currentScreen = "register" },
+            onLoginSuccess = { currentScreen = "loggedIn" }
         )
         "register" -> RegisterScreen(
-            onBackClick = { currentScreen = "login" }
-        )
+            onBackClick = { currentScreen = "login" },
+            onRegisterSuccess = { currentScreen = "login" }
+        )"checkEmail" -> CheckEmailScreen(
+        onBackToLogin = { currentScreen = "login" }
+    )
+        "loggedIn" -> LoggedInScreen()
     }
 }
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        delay(2000)
+        isLoading = false
+    }
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(AppBackground),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "--$name--",
-                color = Color(0xFF9C27B0),
+                text = name,
+                color = AppPurple,
                 fontSize = 64.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            CircularProgressIndicator(
-                color = Color(0xFF9C27B0)
-            )
+            if (isLoading) {
+                CircularProgressIndicator(color = AppPurple)
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(onClick = onLoginClick) {
+            Button(
+                onClick = onLoginClick,
+                colors = ButtonDefaults.buttonColors(containerColor = AppPurple)
+            ) {
                 Text("Go to Login")
             }
         }
     }
 }
 
-// Template for your future login page — fill in real logic later
+// Reusable styled text field used by both Login and Register
 @Composable
-fun LoginScreen(onBackClick: () -> Unit, onRegisterClick: () -> Unit) {
-    var username by remember { mutableStateOf("") }
+fun AuthTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isPassword: Boolean = false
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = { Icon(imageVector = icon, contentDescription = null, tint = AppPurple) },
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = AppPurple,
+            unfocusedBorderColor = Color.Gray,
+            focusedLabelColor = AppPurple,
+            cursorColor = AppPurple,
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White
+        ),
+        modifier = Modifier.fillMaxWidth()
+    )
+}
+
+@Composable
+fun LoginScreen(
+    onBackClick: () -> Unit,
+    onRegisterClick: () -> Unit,
+    onLoginSuccess: () -> Unit
+) {
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val auth = remember { FirebaseAuth.getInstance() }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(AppBackground)
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = AppCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "Login",
-                color = Color.White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Welcome!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("Log in to continue", color = Color.Gray, fontSize = 14.sp)
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                AuthTextField(email, { email = it }, "CvSU Email", Icons.Filled.Email)
+                Spacer(modifier = Modifier.height(14.dp))
+                AuthTextField(password, { password = it }, "Password", Icons.Filled.Lock, isPassword = true)
 
-            Spacer(modifier = Modifier.height(12.dp))
+                if (errorMessage.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(errorMessage, color = Color.Red, fontSize = 13.sp)
+                }
 
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                Spacer(modifier = Modifier.height(28.dp))
 
-            Spacer(modifier = Modifier.height(24.dp))
+                if (isLoading) {
+                    CircularProgressIndicator(color = AppPurple)
+                } else {
+                    Button(
+                        onClick = {
+                            if (!email.endsWith("@cvsu.edu.ph")) {
+                                errorMessage = "Please use your @cvsu.edu.ph email"
+                            } else if (password.isBlank()) {
+                                errorMessage = "Please enter your password"
+                            } else {
+                                isLoading = true
+                                errorMessage = ""
+                                auth.signInWithEmailAndPassword(email, password)
+                                    .addOnSuccessListener {
+                                        val user = auth.currentUser
+                                        if (user != null && !user.isEmailVerified) {
+                                            isLoading = false
+                                            errorMessage = "Please verify your email before logging in"
+                                            auth.signOut() // don't stay signed in if unverified
+                                        } else {
+                                            isLoading = false
+                                            onLoginSuccess()
+                                        }
+                                    }
+                                    .addOnFailureListener { exception ->
+                                        isLoading = false
+                                        errorMessage = exception.localizedMessage ?: "Login failed"
+                                    }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AppPurple),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text("Log In", fontSize = 16.sp)
+                    }
+                }
 
-            Button(onClick = { /* TODO: handle login logic later */ }) {
-                Text("Log In")
-            }
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = onRegisterClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
+                ) {
+                    Text("Don't have an account? Create one", color = AppPurple)
+                }
 
-            Button(onClick = onRegisterClick) {
-                Text("Don't have an account? Register")
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(onClick = onBackClick) {
-                Text("Back")
+                Button(
+                    onClick = onBackClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
+                ) {
+                    Text("Back", color = Color.Gray)
+                }
             }
         }
     }
 }
+
 @Composable
-fun RegisterScreen(onBackClick: () -> Unit) {
+fun RegisterScreen(onBackClick: () -> Unit, onRegisterSuccess: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val auth = remember { FirebaseAuth.getInstance() }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(AppBackground)
+            .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            modifier = Modifier.padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+        Card(
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = AppCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Create Account", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("Use your CvSU email to register", color = Color.Gray, fontSize = 14.sp)
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                AuthTextField(username, { username = it }, "Username", Icons.Filled.Person)
+                Spacer(modifier = Modifier.height(14.dp))
+                AuthTextField(email, { email = it }, "Email (@cvsu.edu.ph)", Icons.Filled.Email)
+                Spacer(modifier = Modifier.height(14.dp))
+                AuthTextField(password, { password = it }, "Password", Icons.Filled.Lock, isPassword = true)
+                Spacer(modifier = Modifier.height(14.dp))
+                AuthTextField(confirmPassword, { confirmPassword = it }, "Confirm Password", Icons.Filled.Lock, isPassword = true)
+
+                if (errorMessage.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(errorMessage, color = Color.Red, fontSize = 13.sp)
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                if (isLoading) {
+                    CircularProgressIndicator(color = AppPurple)
+                } else {
+                    Button(
+                        onClick = {
+                            errorMessage = when {
+                                !email.endsWith("@cvsu.edu.ph") -> "Please use your @cvsu.edu.ph email"
+                                password != confirmPassword -> "Passwords do not match"
+                                password.length < 6 -> "Password must be at least 6 characters"
+                                username.isBlank() -> "Please enter a username"
+                                else -> ""
+                            }
+
+                            if (errorMessage.isEmpty()) {
+                                isLoading = true
+                                auth.createUserWithEmailAndPassword(email, password)
+                                    .addOnSuccessListener {
+                                        // Send verification email right after account creation
+                                        auth.currentUser?.sendEmailVerification()
+                                            ?.addOnCompleteListener {
+                                                isLoading = false
+                                                onRegisterSuccess() // navigates to "check your email" screen
+                                            }
+                                    }
+                                    .addOnFailureListener { exception ->
+                                        isLoading = false
+                                        errorMessage = exception.localizedMessage ?: "Registration failed"
+                                    }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = AppPurple),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text("Create Account", fontSize = 16.sp)
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Button(
+                    onClick = onBackClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                    elevation = ButtonDefaults.buttonElevation(0.dp)
+                ) {
+                    Text("Back to Login", color = Color.Gray)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CheckEmailScreen(onBackToLogin: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppBackground)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Filled.Email,
+                contentDescription = null,
+                tint = AppPurple,
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Register",
+                text = "Verify your email",
                 color = Color.White,
-                fontSize = 32.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
-
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "We sent a verification link to your CvSU email. Please check your inbox and click the link before logging in.",
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
             Spacer(modifier = Modifier.height(24.dp))
-
-            OutlinedTextField(
-                value = username,
-                onValueChange = { username = it },
-                label = { Text("Username") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Password") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
-                label = { Text("Confirm Password") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(onClick = { /* TODO: handle register logic later */ }) {
-                Text("Create Account")
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Button(onClick = onBackClick) {
+            Button(
+                onClick = onBackToLogin,
+                colors = ButtonDefaults.buttonColors(containerColor = AppPurple)
+            ) {
                 Text("Back to Login")
             }
         }
+    }
+}
+
+@Composable
+fun LoggedInScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppBackground),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "You're logged in!\n\n\n\n",
+            color = AppPurple,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "The content is coming soon.",
+            color = AppWhite,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
