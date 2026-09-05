@@ -42,16 +42,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myfirsttry.ui.theme.MyFirstTryTheme
 import com.google.firebase.auth.FirebaseAuth
+import androidx.activity.compose.BackHandler
 import kotlinx.coroutines.delay
 import kotlin.coroutines.coroutineContext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 
 // Shared colors so every screen stays consistent
-val AppPurple = Color(0xFF9C27B0)
-val AppWhite = Color(0xFFFFFFFF)
-val AppBackground = Color.Black
-val AppCard = Color(0xFF1A1A1A)
+val AppBlue = Color(0xFF005CEB)
+val AppNavy = Color(0xFF010E45)
+val AppCard = Color(0xFF021A50)
+val AppCyan = Color(0xFF6CB8EC)
+val AppWhite = Color(0xFFF5F8FC)
+val AppGray = Color(0xFF9AA9C2)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,8 +86,8 @@ fun AppNavigator() {
             onRegisterSuccess = { currentScreen = "checkEmail" }
         )
         "checkEmail" -> CheckEmailScreen(
-        onBackToLogin = { currentScreen = "login" }
-    )
+            onBackToLogin = { currentScreen = "login" }
+        )
         "loggedIn" -> LoggedInScreen()
     }
 }
@@ -91,17 +95,16 @@ fun AppNavigator() {
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier, onLoginClick: () -> Unit) {
 
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(AppBackground),
+            .background(AppNavy),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = name,
-                color = AppPurple,
+                color = AppBlue,
                 fontSize = 64.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -112,7 +115,7 @@ fun Greeting(name: String, modifier: Modifier = Modifier, onLoginClick: () -> Un
 
             Button(
                 onClick = onLoginClick,
-                colors = ButtonDefaults.buttonColors(containerColor = AppPurple)
+                colors = ButtonDefaults.buttonColors(containerColor = AppBlue)
             ) {
                 Text("Go to Login")
             }
@@ -133,17 +136,26 @@ fun AuthTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        leadingIcon = { Icon(imageVector = icon, contentDescription = null, tint = AppPurple) },
-        visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = AppCyan
+            )
+        },
+        visualTransformation = if (isPassword)
+            PasswordVisualTransformation()
+        else
+            androidx.compose.ui.text.input.VisualTransformation.None,
         singleLine = true,
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = AppPurple,
-            unfocusedBorderColor = Color.Gray,
-            focusedLabelColor = AppPurple,
-            cursorColor = AppPurple,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White
+            focusedBorderColor = AppBlue,
+            unfocusedBorderColor = AppGray,
+            focusedLabelColor = AppCyan,
+            cursorColor = AppCyan,
+            focusedTextColor = AppWhite,
+            unfocusedTextColor = AppWhite
         ),
         modifier = Modifier.fillMaxWidth()
     )
@@ -163,7 +175,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppBackground)
+            .background(AppNavy)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -177,14 +189,37 @@ fun LoginScreen(
                 modifier = Modifier.padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Welcome!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text("Log in to continue", color = Color.Gray, fontSize = 14.sp)
+                Text(
+                    "Welcome!",
+                    color = AppWhite,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "Log in to continue",
+                    color = AppGray,
+                    fontSize = 14.sp
+                )
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                AuthTextField(email, { email = it }, "CvSU Email", Icons.Filled.Email)
+                AuthTextField(
+                    email,
+                    { email = it },
+                    "CvSU Email",
+                    Icons.Filled.Email
+                )
+
                 Spacer(modifier = Modifier.height(14.dp))
-                AuthTextField(password, { password = it }, "Password", Icons.Filled.Lock, isPassword = true)
+
+                AuthTextField(
+                    password,
+                    { password = it },
+                    "Password",
+                    Icons.Filled.Lock,
+                    isPassword = true
+                )
 
                 if (errorMessage.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(10.dp))
@@ -194,7 +229,7 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(28.dp))
 
                 if (isLoading) {
-                    CircularProgressIndicator(color = AppPurple)
+                    CircularProgressIndicator(color = AppCyan)
                 } else {
                     Button(
                         onClick = {
@@ -210,8 +245,9 @@ fun LoginScreen(
                                         val user = auth.currentUser
                                         if (user != null && !user.isEmailVerified) {
                                             isLoading = false
-                                            errorMessage = "Please verify your email before logging in"
-                                            auth.signOut() // don't stay signed in if unverified
+                                            errorMessage =
+                                                "Please verify your email before logging in"
+                                            auth.signOut()
                                         } else {
                                             isLoading = false
                                             onLoginSuccess()
@@ -219,13 +255,16 @@ fun LoginScreen(
                                     }
                                     .addOnFailureListener { exception ->
                                         isLoading = false
-                                        errorMessage = exception.localizedMessage ?: "Login failed"
+                                        errorMessage =
+                                            exception.localizedMessage ?: "Login failed"
                                     }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = AppPurple),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
                     ) {
                         Text("Log In", fontSize = 16.sp)
                     }
@@ -238,16 +277,23 @@ fun LoginScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     elevation = ButtonDefaults.buttonElevation(0.dp)
                 ) {
-                    Text("Don't have an account? Create one", color = AppPurple)
+                    Text(
+                        "Don't have an account? Create one",
+                        color = AppCyan
+                    )
                 }
-
             }
         }
     }
 }
 
 @Composable
-fun RegisterScreen(onBackClick: () -> Unit, onRegisterSuccess: () -> Unit) {
+fun RegisterScreen(
+    onBackClick: () -> Unit,
+    onRegisterSuccess: () -> Unit
+) {  BackHandler {
+    onBackClick()
+}
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -259,7 +305,7 @@ fun RegisterScreen(onBackClick: () -> Unit, onRegisterSuccess: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppBackground)
+            .background(AppNavy)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -273,18 +319,56 @@ fun RegisterScreen(onBackClick: () -> Unit, onRegisterSuccess: () -> Unit) {
                 modifier = Modifier.padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Create Account", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text("Use your CvSU email to register", color = Color.Gray, fontSize = 14.sp)
+                Text(
+                    "Create Account",
+                    color = AppWhite,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "Use your CvSU email to register",
+                    color = AppGray,
+                    fontSize = 14.sp
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                AuthTextField(username, { username = it }, "Username", Icons.Filled.Person)
+                AuthTextField(
+                    username,
+                    { username = it },
+                    "Username",
+                    Icons.Filled.Person
+                )
+
                 Spacer(modifier = Modifier.height(14.dp))
-                AuthTextField(email, { email = it }, "Email (@cvsu.edu.ph)", Icons.Filled.Email)
+
+                AuthTextField(
+                    email,
+                    { email = it },
+                    "Email (@cvsu.edu.ph)",
+                    Icons.Filled.Email
+                )
+
                 Spacer(modifier = Modifier.height(14.dp))
-                AuthTextField(password, { password = it }, "Password", Icons.Filled.Lock, isPassword = true)
+
+                AuthTextField(
+                    password,
+                    { password = it },
+                    "Password",
+                    Icons.Filled.Lock,
+                    isPassword = true
+                )
+
                 Spacer(modifier = Modifier.height(14.dp))
-                AuthTextField(confirmPassword, { confirmPassword = it }, "Confirm Password", Icons.Filled.Lock, isPassword = true)
+
+                AuthTextField(
+                    confirmPassword,
+                    { confirmPassword = it },
+                    "Confirm Password",
+                    Icons.Filled.Lock,
+                    isPassword = true
+                )
 
                 if (errorMessage.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(10.dp))
@@ -294,15 +378,23 @@ fun RegisterScreen(onBackClick: () -> Unit, onRegisterSuccess: () -> Unit) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 if (isLoading) {
-                    CircularProgressIndicator(color = AppPurple)
+                    CircularProgressIndicator(color = AppCyan)
                 } else {
                     Button(
                         onClick = {
                             errorMessage = when {
-                                !email.endsWith("@cvsu.edu.ph") -> "Please use your @cvsu.edu.ph email"
-                                password != confirmPassword -> "Passwords do not match"
-                                password.length < 6 -> "Password must be at least 6 characters"
-                                username.isBlank() -> "Please enter a username"
+                                !email.endsWith("@cvsu.edu.ph") ->
+                                    "Please use your @cvsu.edu.ph email"
+
+                                password != confirmPassword ->
+                                    "Passwords do not match"
+
+                                password.length < 6 ->
+                                    "Password must be at least 6 characters"
+
+                                username.isBlank() ->
+                                    "Please enter a username"
+
                                 else -> ""
                             }
 
@@ -310,22 +402,24 @@ fun RegisterScreen(onBackClick: () -> Unit, onRegisterSuccess: () -> Unit) {
                                 isLoading = true
                                 auth.createUserWithEmailAndPassword(email, password)
                                     .addOnSuccessListener {
-                                        // Send verification email right after account creation
                                         auth.currentUser?.sendEmailVerification()
                                             ?.addOnCompleteListener {
                                                 isLoading = false
-                                                onRegisterSuccess() // navigates to "check your email" screen
+                                                onRegisterSuccess()
                                             }
                                     }
                                     .addOnFailureListener { exception ->
                                         isLoading = false
-                                        errorMessage = exception.localizedMessage ?: "Registration failed"
+                                        errorMessage =
+                                            exception.localizedMessage ?: "Registration failed"
                                     }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = AppPurple),
+                        colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
                         shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
                     ) {
                         Text("Create Account", fontSize = 16.sp)
                     }
@@ -338,7 +432,7 @@ fun RegisterScreen(onBackClick: () -> Unit, onRegisterSuccess: () -> Unit) {
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     elevation = ButtonDefaults.buttonElevation(0.dp)
                 ) {
-                    Text("Back to Login", color = Color.Gray)
+                    Text("Back to Login", color = AppGray)
                 }
             }
         }
@@ -350,7 +444,7 @@ fun CheckEmailScreen(onBackToLogin: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppBackground)
+            .background(AppNavy)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -358,26 +452,32 @@ fun CheckEmailScreen(onBackToLogin: () -> Unit) {
             Icon(
                 imageVector = Icons.Filled.Email,
                 contentDescription = null,
-                tint = AppPurple,
+                tint = AppCyan,
                 modifier = Modifier.size(64.dp)
             )
+
             Spacer(modifier = Modifier.height(16.dp))
+
             Text(
                 text = "Verify your email",
-                color = Color.White,
+                color = AppWhite,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(
                 text = "We sent a verification link to your CvSU email. Please check your inbox and click the link before logging in.",
-                color = Color.Gray,
+                color = AppGray,
                 fontSize = 14.sp
             )
+
             Spacer(modifier = Modifier.height(24.dp))
+
             Button(
                 onClick = onBackToLogin,
-                colors = ButtonDefaults.buttonColors(containerColor = AppPurple)
+                colors = ButtonDefaults.buttonColors(containerColor = AppBlue)
             ) {
                 Text("Back to Login")
             }
@@ -390,15 +490,16 @@ fun LoggedInScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppBackground),
+            .background(AppNavy),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = "You're logged in!\n\n\n\n",
-            color = AppPurple,
+            color = AppBlue,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
         )
+
         Text(
             text = "The content is coming soon.",
             color = AppWhite,
@@ -407,3 +508,4 @@ fun LoggedInScreen() {
         )
     }
 }
+
