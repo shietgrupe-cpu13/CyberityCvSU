@@ -1,4 +1,4 @@
-package com.example.myfirsttry
+package com.cyberity.cvsu
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -40,7 +40,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myfirsttry.ui.theme.MyFirstTryTheme
+import com.cyberity.cvsu.ui.theme.MyFirstTryTheme
 import com.google.firebase.auth.FirebaseAuth
 import androidx.activity.compose.BackHandler
 import kotlinx.coroutines.delay

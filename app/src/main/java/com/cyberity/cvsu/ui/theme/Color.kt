@@ -1,4 +1,4 @@
-package com.example.myfirsttry.ui.theme
+package com.cyberity.cvsu.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
