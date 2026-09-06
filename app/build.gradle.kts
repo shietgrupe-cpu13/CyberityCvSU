@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myfirsttry"
+    namespace = "com.cyberity.cvsu"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.myfirsttry"
+        applicationId = "com.cyberity.cvsu"
         minSdk = 24
         targetSdk = 37
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.example.myfirsttry
+package com.cyberity.cvsu
 
 import org.junit.Test
 

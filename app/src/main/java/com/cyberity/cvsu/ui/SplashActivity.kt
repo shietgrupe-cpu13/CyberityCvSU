@@ -1,4 +1,4 @@
-package com.example.myfirsttry
+package com.cyberity.cvsu
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import com.example.myfirsttry.ui.theme.MyFirstTryTheme
+import com.cyberity.cvsu.ui.theme.MyFirstTryTheme
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.LaunchedEffect
 
