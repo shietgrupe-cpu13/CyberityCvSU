@@ -47,6 +47,12 @@ import kotlinx.coroutines.delay
 import kotlin.coroutines.coroutineContext
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.graphics.vector.ImageVector
 
 // Shared colors so every screen stays consistent
 val AppBlue = Color(0xFF005CEB)
@@ -70,7 +76,16 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppNavigator() {
-    var currentScreen by remember { mutableStateOf("login") }
+    val auth = remember { FirebaseAuth.getInstance() }
+
+    var currentScreen by remember {
+        mutableStateOf(
+            if (auth.currentUser != null)
+                "loggedIn"
+            else
+                "login"
+        )
+    }
 
     when (currentScreen) {
         "home" -> Greeting(
@@ -88,7 +103,11 @@ fun AppNavigator() {
         "checkEmail" -> CheckEmailScreen(
             onBackToLogin = { currentScreen = "login" }
         )
-        "loggedIn" -> LoggedInScreen()
+        "loggedIn" -> HomeScreen(
+            onLogout = {
+                currentScreen = "login"
+            }
+        )
     }
 }
 
@@ -129,13 +148,19 @@ fun AuthTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     isPassword: Boolean = false
 ) {
+
+    var passwordVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
+
         leadingIcon = {
             Icon(
                 imageVector = icon,
@@ -143,20 +168,55 @@ fun AuthTextField(
                 tint = AppCyan
             )
         },
-        visualTransformation = if (isPassword)
-            PasswordVisualTransformation()
-        else
-            androidx.compose.ui.text.input.VisualTransformation.None,
+
+        trailingIcon = {
+
+            if (isPassword) {
+
+                val image =
+                    if (passwordVisible)
+                        Icons.Filled.Visibility
+                    else
+                        Icons.Filled.VisibilityOff
+
+                IconButton(
+                    onClick = {
+                        passwordVisible = !passwordVisible
+                    }
+                ) {
+
+                    Icon(
+                        imageVector = image,
+                        contentDescription = null,
+                        tint = AppGray
+                    )
+                }
+            }
+        },
+
+        visualTransformation =
+            if (isPassword && !passwordVisible)
+                PasswordVisualTransformation()
+            else
+                VisualTransformation.None,
+
         singleLine = true,
+
         shape = RoundedCornerShape(12.dp),
+
         colors = OutlinedTextFieldDefaults.colors(
+
             focusedBorderColor = AppBlue,
             unfocusedBorderColor = AppGray,
+
             focusedLabelColor = AppCyan,
+
             cursorColor = AppCyan,
+
             focusedTextColor = AppWhite,
             unfocusedTextColor = AppWhite
         ),
+
         modifier = Modifier.fillMaxWidth()
     )
 }
