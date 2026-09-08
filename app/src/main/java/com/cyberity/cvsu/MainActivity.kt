@@ -28,7 +28,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,10 +42,6 @@ import androidx.compose.ui.unit.sp
 import com.cyberity.cvsu.ui.theme.MyFirstTryTheme
 import com.google.firebase.auth.FirebaseAuth
 import androidx.activity.compose.BackHandler
-import kotlinx.coroutines.delay
-import kotlin.coroutines.coroutineContext
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.IconButton
@@ -171,7 +166,7 @@ fun AuthTextField(
 
         trailingIcon = {
 
-            if (isPassword) {
+            if (isPassword && value.isNotEmpty()) {
 
                 val image =
                     if (passwordVisible)
@@ -184,10 +179,12 @@ fun AuthTextField(
                         passwordVisible = !passwordVisible
                     }
                 ) {
-
                     Icon(
                         imageVector = image,
-                        contentDescription = null,
+                        contentDescription = if (passwordVisible)
+                            "Hide password"
+                        else
+                            "Show password",
                         tint = AppGray
                     )
                 }
@@ -542,30 +539,6 @@ fun CheckEmailScreen(onBackToLogin: () -> Unit) {
                 Text("Back to Login")
             }
         }
-    }
-}
-
-@Composable
-fun LoggedInScreen() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppNavy),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "You're logged in!\n\n\n\n",
-            color = AppBlue,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            text = "The content is coming soon.",
-            color = AppWhite,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
