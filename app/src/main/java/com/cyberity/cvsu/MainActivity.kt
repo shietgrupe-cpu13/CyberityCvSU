@@ -27,8 +27,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,10 +43,6 @@ import androidx.compose.ui.unit.sp
 import com.cyberity.cvsu.ui.theme.MyFirstTryTheme
 import com.google.firebase.auth.FirebaseAuth
 import androidx.activity.compose.BackHandler
-import kotlinx.coroutines.delay
-import kotlin.coroutines.coroutineContext
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.IconButton
@@ -171,7 +167,7 @@ fun AuthTextField(
 
         trailingIcon = {
 
-            if (isPassword) {
+            if (isPassword && value.isNotEmpty()) {
 
                 val image =
                     if (passwordVisible)
@@ -184,10 +180,12 @@ fun AuthTextField(
                         passwordVisible = !passwordVisible
                     }
                 ) {
-
                     Icon(
                         imageVector = image,
-                        contentDescription = null,
+                        contentDescription = if (passwordVisible)
+                            "Hide password"
+                        else
+                            "Show password",
                         tint = AppGray
                     )
                 }
@@ -229,7 +227,9 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    var resetMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
+    var isResetLoading by remember { mutableStateOf(false) }
     val auth = remember { FirebaseAuth.getInstance() }
 
     Box(
@@ -281,6 +281,51 @@ fun LoginScreen(
                     isPassword = true
                 )
 
+                TextButton(
+                    onClick = {
+                        val resetEmail = email.trim()
+                        val normalizedEmail = resetEmail.lowercase()
+                        errorMessage = ""
+                        resetMessage = ""
+
+                        when {
+                            resetEmail.isBlank() -> {
+                                errorMessage = "Please enter your CvSU email first"
+                            }
+
+                            !android.util.Patterns.EMAIL_ADDRESS.matcher(resetEmail).matches() ||
+                                    !normalizedEmail.endsWith("@cvsu.edu.ph") -> {
+                                errorMessage = "Please use your @cvsu.edu.ph email"
+                            }
+
+                            else -> {
+                                isResetLoading = true
+                                auth.sendPasswordResetEmail(normalizedEmail)
+                                    .addOnSuccessListener {
+                                        isResetLoading = false
+                                        resetMessage =
+                                            "If this email is registered, password reset instructions will be sent shortly."
+                                    }
+                                    .addOnFailureListener { exception ->
+                                        isResetLoading = false
+                                        errorMessage = exception.localizedMessage
+                                            ?: "Could not send password reset email"
+                                    }
+                            }
+                        }
+                    },
+                    enabled = !isLoading && !isResetLoading
+                ) {
+                    Text(
+                        text = if (isResetLoading) "Sending reset email..." else "Forgot password?",
+                        color = AppCyan
+                    )
+                }
+
+                if (resetMessage.isNotEmpty()) {
+                    Text(resetMessage, color = AppCyan, fontSize = 13.sp)
+                }
+
                 if (errorMessage.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(errorMessage, color = Color.Red, fontSize = 13.sp)
@@ -293,20 +338,24 @@ fun LoginScreen(
                 } else {
                     Button(
                         onClick = {
-                            if (!email.endsWith("@cvsu.edu.ph")) {
+                            val loginEmail = email.trim().lowercase()
+
+                            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(loginEmail).matches() ||
+                                !loginEmail.endsWith("@cvsu.edu.ph")
+                            ) {
                                 errorMessage = "Please use your @cvsu.edu.ph email"
                             } else if (password.isBlank()) {
                                 errorMessage = "Please enter your password"
                             } else {
                                 isLoading = true
                                 errorMessage = ""
-                                auth.signInWithEmailAndPassword(email, password)
+                                auth.signInWithEmailAndPassword(loginEmail, password)
                                     .addOnSuccessListener {
                                         val user = auth.currentUser
                                         if (user != null && !user.isEmailVerified) {
                                             isLoading = false
                                             errorMessage =
-                                                "Please verify your email before logging in"
+                                                "Please verify your email before logging in. Check your inbox."
                                             auth.signOut()
                                         } else {
                                             isLoading = false
@@ -542,30 +591,6 @@ fun CheckEmailScreen(onBackToLogin: () -> Unit) {
                 Text("Back to Login")
             }
         }
-    }
-}
-
-@Composable
-fun LoggedInScreen() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppNavy),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "You're logged in!\n\n\n\n",
-            color = AppBlue,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            text = "The content is coming soon.",
-            color = AppWhite,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
