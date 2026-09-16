@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Log archive</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated SOC console · no real hosts, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='console.html'">&#8592; Queue</button>
+    <span class="topbar-title">Raw log archive</span>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <input id="q" type="text" autocomplete="off" spellcheck="false"
+             placeholder="query: address, host or account">
+      <button onclick="runLogQuery()">RUN</button>
+    </div>
+  </div>
+
+  <div class="result-count" id="result-count">Showing 0 of 20 entries</div>
+
+  <div class="log-out" id="log-out"><span class="empty">Enter an indicator to query the archive — an address, a host, or an account name.</span></div>
+
+  <div class="foot">The archive returns only rows matching your query.</div>
+
+  <script src="script.js"></script>
+  <script>
+    document.getElementById('result-count').textContent =
+      'Showing 0 of ' + LOG_ARCHIVE.length + ' entries';
+
+    document.getElementById('q').addEventListener('keyup', function (e) {
+      if (e.key === 'Enter') runLogQuery();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Alert detail</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated SOC console · no real hosts, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='console.html'">&#8592; Queue</button>
+    <span class="topbar-title" id="alert-code"></span>
+  </div>
+
+  <div class="detail" id="detail"></div>
+
+  <div class="foot">
+    Pivot on anything you find here in the
+    <a href="logs.html" style="color:var(--cyan)">log archive</a>.
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    renderAlert('detail');
+    window.addEventListener('hashchange', function () { renderAlert('detail'); });
+  </script>
+</body>
+</html>

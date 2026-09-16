@@ -77,6 +77,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.PI
 import kotlin.math.sin
+import androidx.compose.runtime.LaunchedEffect
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.ui.platform.LocalContext
+
 
 // ===========================================================================
 // 1. DATA MODELS
@@ -124,7 +128,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         description = "Start here — the language and mindset of security",
         levels = listOf(
             LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.CURRENT, durationMinutes = 12),
-            LearningLevel(102, "Cybersecurity Threats", "Meet the main categories of threat you'll defend against.", 20, LevelType.LESSON, LevelStatus.LOCKED),
+            LearningLevel(102, "Cybersecurity Threats", "Security lab: triage a night's worth of SOC alerts, classify the real threat, and pivot on the indicator.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 10),
             LearningLevel(103, "CIA Triad", "Confidentiality, Integrity, Availability — the core model.", 20, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(150, "Bonus XP Cache", "A quick reward for clearing the first three levels.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 1),
             LearningLevel(104, "Security Principles", "Least privilege, defence in depth, and fail-safe defaults.", 25, LevelType.LESSON, LevelStatus.LOCKED),
@@ -222,6 +226,33 @@ fun List<LearningUnit>.withLevelCompleted(levelId: Int): List<LearningUnit> {
     }
 }
 
+/**
+ * Rebuilds status (COMPLETED / CURRENT / LOCKED) for every level from just a
+ * set of completed ids — the only thing that's persisted. Replaying
+ * withLevelCompleted() in curriculum order, rather than storage order,
+ * guarantees the correct level ends up CURRENT no matter what order the ids
+ * come back from Firestore in.
+ */
+fun List<LearningUnit>.withLevelsCompleted(completedIds: Set<Int>): List<LearningUnit> {
+    var result = this
+    val flatIds = flatMap { it.levels }.map { it.id }
+    flatIds.forEach { id ->
+        if (id in completedIds) {
+            result = result.withLevelCompleted(id)
+        }
+    }
+    return result
+}
+
+
+/** Ids currently marked COMPLETED — what actually gets cached and persisted. */
+private fun completedIdsOf(units: List<LearningUnit>): Set<Int> =
+    units.flatMap { it.levels }
+        .filter { it.status == LevelStatus.COMPLETED }
+        .map { it.id }
+        .toSet()
+
+
 // ===========================================================================
 // 3. FLATTENED ROW MODEL
 // ===========================================================================
@@ -300,7 +331,7 @@ private fun horizontalFactor(globalIndex: Int): Float {
 /** Swing as a fraction of row width — shared by drawing AND layout so they can't drift. */
 private const val AMPLITUDE_RATIO = 0.24f
 
-private val RowHeight: Dp = 132.dp
+private val RowHeight: Dp = 146.dp
 private val NodeSizeNormal: Dp = 64.dp
 private val NodeSizeCurrent: Dp = 78.dp
 private val NodeSizeReward: Dp = 58.dp
@@ -342,8 +373,28 @@ fun LearnScreen(
     onStartLevel: (LearningLevel) -> Unit = {},
     onLevelRunningChanged: (Boolean) -> Unit = {}
 ) {
-    var units by remember { mutableStateOf(sampleLearningUnits()) }
+    val context = LocalContext.current
+    val uid = FirebaseAuth.getInstance().currentUser?.uid
+
+    // Seeded from the on-device cache, synchronously, so the first frame already
+    // shows real progress instead of the all-locked default while Firestore answers.
+    var units by remember(uid) {
+        val cached = uid?.let { ProgressCache.load(context, it) } ?: emptySet()
+        mutableStateOf(sampleLearningUnits().withLevelsCompleted(cached))
+    }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
+
+    // Reconciles against Firestore in the background. Normally a no-op visually,
+    // since it usually matches what the cache already showed.
+    LaunchedEffect(uid) {
+        if (uid == null) return@LaunchedEffect
+        ProgressRepository.loadCompletedLevels(uid) { remoteIds ->
+            ProgressCache.save(context, uid, remoteIds)
+            units = sampleLearningUnits().withLevelsCompleted(remoteIds)
+        }
+    }
+
+
     // When non-null, the simulation takes over the whole Learn area.
     var runningLevel by remember { mutableStateOf<LearningLevel?>(null) }
 
@@ -380,6 +431,10 @@ fun LearnScreen(
                 onExit = requestExit,
                 onComplete = { _, _, _ ->
                     units = units.withLevelCompleted(running.id)
+                    uid?.let {
+                        ProgressRepository.markLevelCompleted(it, running.id)
+                        ProgressCache.save(context, it, completedIdsOf(units))
+                    }
                     runningLevel = null
                 }
             )
@@ -391,6 +446,10 @@ fun LearnScreen(
                 onExit = requestExit,
                 onComplete = { _, _, _ ->
                     units = units.withLevelCompleted(running.id)
+                    uid?.let {
+                        ProgressRepository.markLevelCompleted(it, running.id)
+                        ProgressCache.save(context, it, completedIdsOf(units))
+                    }
                     runningLevel = null
                 }
             )
@@ -403,8 +462,13 @@ fun LearnScreen(
                 onExit = requestExit,
                 onComplete = { _, _, _ ->
                     units = units.withLevelCompleted(running.id)
+                    uid?.let {
+                        ProgressRepository.markLevelCompleted(it, running.id)
+                        ProgressCache.save(context, it, completedIdsOf(units))
+                    }
                     runningLevel = null
                 }
+
             )
 
             null -> ComingSoonLevel(
@@ -722,6 +786,9 @@ private fun LevelRow(
                         LevelStatus.LOCKED -> AppGray
                     },
                     fontSize = 12.sp,
+                    // Without this the label inherits bodyLarge's 24.sp line height,
+                    // so a two-line title is 48dp tall and overflows the row.
+                    lineHeight = 15.sp,
                     fontWeight = if (level.status == LevelStatus.CURRENT) FontWeight.Bold else FontWeight.Medium,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
@@ -1107,6 +1174,7 @@ sealed interface LevelContent {
 
 fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     101 -> LevelContent.Lab(inboxTriageLab(), inboxClueLabels)
+    102 -> LevelContent.Lab(threatConsoleLab(), threatClueLabels)
     105 -> LevelContent.Scenarios(spotTheThreatQuiz())
     else -> null
 }
