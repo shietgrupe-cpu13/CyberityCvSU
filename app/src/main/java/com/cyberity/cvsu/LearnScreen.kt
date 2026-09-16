@@ -52,6 +52,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.BackHandler
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -119,7 +123,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Cybersecurity Fundamentals",
         description = "Start here — the language and mindset of security",
         levels = listOf(
-            LearningLevel(101, "Inbox Triage", "Interactive simulation: inspect a live inbox, gather evidence, and decide what to report.", 30, LevelType.SIMULATION, LevelStatus.CURRENT, durationMinutes = 8),
+            LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.CURRENT, durationMinutes = 12),
             LearningLevel(102, "Cybersecurity Threats", "Meet the main categories of threat you'll defend against.", 20, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(103, "CIA Triad", "Confidentiality, Integrity, Availability — the core model.", 20, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(150, "Bonus XP Cache", "A quick reward for clearing the first three levels.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 1),
@@ -335,12 +339,19 @@ private fun typeLabel(type: LevelType): String = when (type) {
 @Composable
 fun LearnScreen(
     modifier: Modifier = Modifier,
-    onStartLevel: (LearningLevel) -> Unit = {}
+    onStartLevel: (LearningLevel) -> Unit = {},
+    onLevelRunningChanged: (Boolean) -> Unit = {}
 ) {
     var units by remember { mutableStateOf(sampleLearningUnits()) }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
     // When non-null, the simulation takes over the whole Learn area.
     var runningLevel by remember { mutableStateOf<LearningLevel?>(null) }
+
+    var showExitConfirm by remember { mutableStateOf(false) }
+
+    LaunchedEffect(runningLevel) {
+        onLevelRunningChanged(runningLevel != null)
+    }
 
     val totalXp = remember(units) {
         units.flatMap { it.levels }
@@ -352,13 +363,21 @@ fun LearnScreen(
 
     val running = runningLevel
     if (running != null) {
+        val requestExit = { showExitConfirm = true }
+
+        // Hardware/gesture back always asks for confirmation too. LabScreen has its
+        // own BackHandler for stepping back inside its WebView first — that one takes
+        // priority while active; this one is the fallback for every other level type
+        // and for LabScreen whenever its own handler is disabled.
+        BackHandler(enabled = true) { requestExit() }
+
         // A running level takes over the whole Learn area.
         when (val content = contentFor(running.id)) {
             is LevelContent.Inbox -> InboxSimulationScreen(
                 simulation = content.simulation,
                 xpReward = running.xpReward,
                 modifier = modifier,
-                onExit = { runningLevel = null },
+                onExit = requestExit,
                 onComplete = { _, _, _ ->
                     units = units.withLevelCompleted(running.id)
                     runningLevel = null
@@ -369,7 +388,19 @@ fun LearnScreen(
                 quiz = content.quiz,
                 xpReward = running.xpReward,
                 modifier = modifier,
-                onExit = { runningLevel = null },
+                onExit = requestExit,
+                onComplete = { _, _, _ ->
+                    units = units.withLevelCompleted(running.id)
+                    runningLevel = null
+                }
+            )
+
+            is LevelContent.Lab -> LabScreen(
+                lab = content.lab,
+                xpReward = running.xpReward,
+                modifier = modifier,
+                clueLabels = content.clueLabels,
+                onExit = requestExit,
                 onComplete = { _, _, _ ->
                     units = units.withLevelCompleted(running.id)
                     runningLevel = null
@@ -380,6 +411,16 @@ fun LearnScreen(
                 level = running,
                 modifier = modifier,
                 onBack = { runningLevel = null }
+            )
+        }
+
+        if (showExitConfirm) {
+            ExitLevelDialog(
+                onDismiss = { showExitConfirm = false },
+                onConfirm = {
+                    showExitConfirm = false
+                    runningLevel = null
+                }
             )
         }
     } else {
@@ -408,6 +449,36 @@ fun LearnScreen(
             )
         }
     }
+}
+
+/** Guards against losing progress to an accidental back-press or tap. */
+@Composable
+private fun ExitLevelDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = AppCard,
+        title = { Text("Exit this level?", color = AppWhite, fontWeight = FontWeight.Bold) },
+        text = {
+            Text(
+                "Your progress on this level won't be saved.",
+                color = AppGray,
+                fontSize = 14.sp
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("EXIT", color = AccentReward, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("STAY", color = AppGray)
+            }
+        }
+    )
 }
 
 /** Title of the level that must be finished before [level] unlocks. */
@@ -626,42 +697,12 @@ private fun LevelRow(
     row: PathRow.Level,
     onClick: () -> Unit
 ) {
-    val density = LocalDensity.current
     val level = row.level
-
-    val nodeSizePx = with(density) { nodeSizeFor(level).toPx() }
-    val trailWidthPx = with(density) { TrailWidth.toPx() }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(RowHeight)
-            .drawBehind {
-                val amplitude = size.width * AMPLITUDE_RATIO
-                val centerX = size.width / 2f
-                val myX = centerX + amplitude * horizontalFactor(row.globalIndex)
-                val nodeCenterY = nodeSizePx / 2f
-
-                if (row.prevLevel != null) {
-                    val prevX = centerX + amplitude * horizontalFactor(row.prevIndex)
-                    drawPathConnector(
-                        start = Offset((prevX + myX) / 2f, 0f),
-                        end = Offset(myX, nodeCenterY),
-                        strokeWidth = trailWidthPx,
-                        lit = row.prevLevel.status == LevelStatus.COMPLETED
-                    )
-                }
-
-                if (row.hasNext) {
-                    val nextX = centerX + amplitude * horizontalFactor(row.nextIndex)
-                    drawPathConnector(
-                        start = Offset(myX, nodeCenterY),
-                        end = Offset((myX + nextX) / 2f, size.height),
-                        strokeWidth = trailWidthPx,
-                        lit = level.status == LevelStatus.COMPLETED
-                    )
-                }
-            }
     ) {
         NodeOffsetHost(globalIndex = row.globalIndex) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1055,10 +1096,17 @@ sealed interface LevelContent {
 
     /** A scenario-based decision quiz — pick an option, see the consequence. */
     data class Scenarios(val quiz: ScenarioQuiz) : LevelContent
+
+    /** An interactive WebView lab: investigate, submit answers, submit flags. */
+    data class Lab(
+        val lab: LabDefinition,
+        val clueLabels: Map<String, String> = emptyMap()
+    ) : LevelContent
 }
 
+
 fun contentFor(levelId: Int): LevelContent? = when (levelId) {
-    101 -> LevelContent.Inbox(inboxTriageSimulation())
+    101 -> LevelContent.Lab(inboxTriageLab(), inboxClueLabels)
     105 -> LevelContent.Scenarios(spotTheThreatQuiz())
     else -> null
 }

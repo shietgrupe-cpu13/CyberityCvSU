@@ -115,38 +115,41 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var levelRunning by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = AppNavy,
         bottomBar = {
-            NavigationBar(containerColor = AppCard) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Filled.Home, contentDescription = "Learn") },
-                    label = { Text("Learn") },
-                    colors = navItemColors()
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Filled.Star, contentDescription = "Leaderboard") },
-                    label = { Text("Leaderboard") },
-                    colors = navItemColors()
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
-                    label = { Text("Profile") },
-                    colors = navItemColors()
-                )
+            if (!levelRunning) {
+                NavigationBar(containerColor = AppCard) {
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Filled.Home, contentDescription = "Learn") },
+                        label = { Text("Learn") },
+                        colors = navItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Filled.Star, contentDescription = "Leaderboard") },
+                        label = { Text("Leaderboard") },
+                        colors = navItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
+                        label = { Text("Profile") },
+                        colors = navItemColors()
+                    )
+                }
             }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedTab) {
-                0 -> LearnScreen()
+                0 -> LearnScreen(onLevelRunningChanged = { levelRunning = it })
                 1 -> LeaderboardTab()
                 2 -> ProfileTab(
                     onLogout = onLogout

