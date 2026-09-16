@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Message</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated mailbox · nothing here reaches the internet</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='inbox.html'">&#8592; Inbox</button>
+    <span class="topbar-title" id="msg-title"></span>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script src="script.js"></script>
+  <script>
+    renderMessage('message');
+    // Opening a different message from the same page keeps the view in sync.
+    window.addEventListener('hashchange', function () { renderMessage('message'); });
+  </script>
+</body>
+</html>

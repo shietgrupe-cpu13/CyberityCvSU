@@ -115,38 +115,41 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var levelRunning by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = AppNavy,
         bottomBar = {
-            NavigationBar(containerColor = AppCard) {
-                NavigationBarItem(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    icon = { Icon(Icons.Filled.Home, contentDescription = "Learn") },
-                    label = { Text("Learn") },
-                    colors = navItemColors()
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    icon = { Icon(Icons.Filled.Star, contentDescription = "Leaderboard") },
-                    label = { Text("Leaderboard") },
-                    colors = navItemColors()
-                )
-                NavigationBarItem(
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
-                    label = { Text("Profile") },
-                    colors = navItemColors()
-                )
+            if (!levelRunning) {
+                NavigationBar(containerColor = AppCard) {
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Filled.Home, contentDescription = "Learn") },
+                        label = { Text("Learn") },
+                        colors = navItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Filled.Star, contentDescription = "Leaderboard") },
+                        label = { Text("Leaderboard") },
+                        colors = navItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
+                        label = { Text("Profile") },
+                        colors = navItemColors()
+                    )
+                }
             }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
             when (selectedTab) {
-                0 -> LearnTab()
+                0 -> LearnScreen(onLevelRunningChanged = { levelRunning = it })
                 1 -> LeaderboardTab()
                 2 -> ProfileTab(
                     onLogout = onLogout
@@ -164,150 +167,6 @@ private fun navItemColors() = NavigationBarItemDefaults.colors(
     unselectedTextColor = AppGray,
     indicatorColor = AppBlue.copy(alpha = 0.25f)
 )
-
-// ---------------------------------------------------------------------------
-// Learn tab: topic header + stats + progress + expandable module list
-// ---------------------------------------------------------------------------
-
-@Composable
-fun LearnTab() {
-    val topics = remember {
-        listOf(
-            "Intro to Cybersecurity",
-            "Network Security",
-            "Web Application Security",
-            "Cryptography Basics"
-        )
-    }
-    var currentTopic by remember { mutableStateOf(topics.first()) }
-    var topicMenuExpanded by remember { mutableStateOf(false) }
-
-    val modules = remember { sampleModules() }
-    // Tracks which module ids are expanded. "network" starts open to mirror the sample data.
-    val expandedState = remember { mutableStateMapOf("network" to true) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppNavy)
-    ) {
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(AppCard)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { topicMenuExpanded = true }
-                ) {
-                    Text(
-                        text = currentTopic,
-                        color = AppWhite,
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = null,
-                        tint = AppGray,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
-                }
-                DropdownMenu(
-                    expanded = topicMenuExpanded,
-                    onDismissRequest = { topicMenuExpanded = false }
-                ) {
-                    topics.forEach { topic ->
-                        DropdownMenuItem(
-                            text = { Text(topic) },
-                            onClick = {
-                                currentTopic = topic
-                                topicMenuExpanded = false
-                                // TODO: reload modules for the newly selected topic
-                            }
-                        )
-                    }
-                }
-            }
-
-            IconButton(onClick = { /* TODO: open notifications */ }) {
-                Icon(Icons.Filled.Notifications, contentDescription = "Notifications", tint = AppWhite)
-            }
-            IconButton(onClick = { /* TODO: open overflow menu */ }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = "More options", tint = AppWhite)
-            }
-        }
-
-        // Stats row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            StatChip(icon = Icons.Filled.Favorite, value = "5", tint = Color(0xFFFF4D6D))
-            Spacer(modifier = Modifier.width(8.dp))
-            StatChip(icon = Icons.Filled.Star, value = "0", tint = AppCyan)
-            Spacer(modifier = Modifier.width(8.dp))
-            StatChip(icon = Icons.Filled.CheckCircle, value = "45", tint = AppBlue)
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Button(
-                onClick = { /* TODO: navigate to your paywall / upgrade screen */ },
-                colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Text("TRY PRO", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        // Topic progress bar
-        LinearProgressIndicator(
-            progress = { 0.35f },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .height(6.dp),
-            color = AppBlue,
-            trackColor = AppCard,
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Module + lesson list
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp)
-        ) {
-            items(modules) { module ->
-                ModuleHeaderRow(
-                    module = module,
-                    expanded = expandedState[module.id] == true,
-                    onToggle = {
-                        expandedState[module.id] = expandedState[module.id] != true
-                    }
-                )
-                if (expandedState[module.id] == true) {
-                    module.items.forEach { lesson ->
-                        LessonCard(
-                            lesson = lesson,
-                            onLearnClick = {
-                                // TODO: navigate to the actual lesson/CTF challenge screen
-                            }
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-            }
-        }
-    }
-}
 
 @Composable
 private fun StatChip(
