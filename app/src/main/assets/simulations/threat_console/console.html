@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Alert queue</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated SOC console · no real hosts, no network access</div>
+
+  <div class="console-head">
+    <h1>Alert queue</h1>
+    <p>Campus SOC · overnight shift · 5 open</p>
+  </div>
+
+  <div class="queue-bar">
+    <span><b>2</b> high</span>
+    <span><b>2</b> medium</span>
+    <span><b>1</b> low</span>
+    <span>· none triaged</span>
+  </div>
+
+  <div id="queue" class="alerts"></div>
+
+  <div class="foot">
+    Open an alert to read the evidence attached to it.
+    The raw archive is at <a href="logs.html" style="color:var(--cyan)">log archive</a>.
+  </div>
+
+  <script src="script.js"></script>
+  <script>renderConsole('queue');</script>
+</body>
+</html>
