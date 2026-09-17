@@ -120,19 +120,3 @@ object LabValidator {
                 choiceIndex != null && choiceIndex == answer.correctIndex
         }
 }
-
-// ===========================================================================
-// XP SCORING
-// ===========================================================================
-
-/**
- * Each task carries an equal share of the level's XP. Every hint opened on a
- * task costs a quarter of that task's share, so hints stay useful without
- * being free. Never negative.
- */
-fun scoreLabXp(xpReward: Int, totalTasks: Int, solvedTasks: Int, hintsUsed: Int): Int {
-    if (totalTasks == 0) return 0
-    val share = xpReward.toDouble() / totalTasks
-    val earned = share * solvedTasks - share * 0.25 * hintsUsed
-    return earned.coerceAtLeast(0.0).toInt()
-}

@@ -80,6 +80,7 @@ import kotlin.math.sin
 import androidx.compose.runtime.LaunchedEffect
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import kotlinx.coroutines.delay
 
@@ -390,6 +391,12 @@ fun LearnScreen(
         mutableStateOf(uid?.let { ProgressCache.loadHearts(context, it) } ?: HeartState.FULL)
     }
     var clockSynced by remember(uid) { mutableStateOf(false) }
+    var levelXp by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadLevelXp(context, it) } ?: emptyMap())
+    }
+    var xpSpent by remember(uid) {
+        mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
+    }
 
     // Reconciles against Firestore in the background. Normally a no-op visually,
     // since it usually matches what the cache already showed.
@@ -400,6 +407,14 @@ fun LearnScreen(
             units = sampleLearningUnits().withLevelsCompleted(remoteIds)
         }
         ServerClock.sync(uid) { clockSynced = true }
+        ProgressRepository.loadLevelXp(uid) { remote ->
+            ProgressCache.saveLevelXp(context, uid, remote)
+            levelXp = remote
+        }
+        ProgressRepository.loadXpSpent(uid) { remote ->
+            ProgressCache.saveXpSpent(context, uid, remote)
+            xpSpent = remote
+        }
         ProgressRepository.loadHearts(uid) { remote ->
             if (remote != null) {
                 ProgressCache.saveHearts(context, uid, remote)
@@ -446,10 +461,19 @@ fun LearnScreen(
     }
 
 
-    val totalXp = remember(units) {
-        units.flatMap { it.levels }
-            .filter { it.status == LevelStatus.COMPLETED }
-            .sumOf { it.xpReward }
+    // What the student actually holds: everything levels paid out, less what
+    // hints have cost. This is the figure hints are bought with.
+    val totalXp = xpBalance(earned = levelXp.values.sum(), spent = xpSpent)
+
+    // Charging is immediate and final — a hint stays bought even if the level
+    // is abandoned straight afterwards.
+    fun spendXp(amount: Int) {
+        if (amount <= 0) return
+        xpSpent += amount
+        uid?.let { id ->
+            ProgressCache.saveXpSpent(context, id, xpSpent)
+            ProgressRepository.addXpSpent(id, amount)
+        }
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -475,7 +499,7 @@ fun LearnScreen(
         } else when (val content = contentFor(running.id)) {
             is LevelContent.Inbox -> InboxSimulationScreen(
                 simulation = content.simulation,
-                xpReward = running.xpReward,
+                xpReward = MAX_LEVEL_XP,
                 modifier = modifier,
                 onExit = requestExit,
                 onComplete = { _, _, _ ->
@@ -490,16 +514,24 @@ fun LearnScreen(
 
             is LevelContent.Scenarios -> ScenarioQuizScreen(
                 quiz = content.quiz,
-                xpReward = running.xpReward,
+                xpReward = MAX_LEVEL_XP,
                 modifier = modifier,
                 onExit = requestExit,
                 onMistake = { spendHeart() },
                 hearts = hearts,
-                onComplete = { _, _, _ ->
+                xpBalance = totalXp,
+                onComplete = { earned, _, _ ->
+                    val firstClear = running.status != LevelStatus.COMPLETED
                     units = units.withLevelCompleted(running.id)
                     uid?.let {
                         ProgressRepository.markLevelCompleted(it, running.id)
                         ProgressCache.save(context, it, completedIdsOf(units))
+                        if (firstClear) {
+                            val updated = levelXp + (running.id to earned)
+                            levelXp = updated
+                            ProgressCache.saveLevelXp(context, it, updated)
+                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                        }
                     }
                     runningLevel = null
                 }
@@ -507,17 +539,26 @@ fun LearnScreen(
 
             is LevelContent.Lab -> LabScreen(
                 lab = content.lab,
-                xpReward = running.xpReward,
+                xpReward = MAX_LEVEL_XP,
                 modifier = modifier,
                 clueLabels = content.clueLabels,
                 onExit = requestExit,
                 onMistake = { spendHeart() },
                 hearts = hearts,
-                onComplete = { _, _, _ ->
+                xpBalance = totalXp,
+                onSpendXp = { spendXp(it) },
+                onComplete = { earned, _, _ ->
+                    val firstClear = running.status != LevelStatus.COMPLETED
                     units = units.withLevelCompleted(running.id)
                     uid?.let {
                         ProgressRepository.markLevelCompleted(it, running.id)
                         ProgressCache.save(context, it, completedIdsOf(units))
+                        if (firstClear) {
+                            val updated = levelXp + (running.id to earned)
+                            levelXp = updated
+                            ProgressCache.saveLevelXp(context, it, updated)
+                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                        }
                     }
                     runningLevel = null
                 }
@@ -629,7 +670,8 @@ fun LearnHeader(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         StatPill(Icons.Filled.DateRange, streak.toString(), AppCyan, "Day streak")
-        StatPill(Icons.Filled.Star, xp.toString(), AppWhite, "Total XP")
+        XpIndicator(xp = xp)
+
         Row(verticalAlignment = Alignment.CenterVertically) {
             StatPill(Icons.Filled.Favorite, hearts.toString(), AccentReward, "Hearts")
             if (heartRefillIn != null) {
@@ -1141,7 +1183,7 @@ fun LevelPreviewBottomSheet(
                 Row {
                     MetaChip("${level.durationMinutes} min")
                     Spacer(Modifier.width(10.dp))
-                    MetaChip("+${level.xpReward} XP")
+                    MetaChip("up to +$MAX_LEVEL_XP XP")
                 }
             }
 

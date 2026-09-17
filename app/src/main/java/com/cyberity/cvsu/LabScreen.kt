@@ -136,6 +136,8 @@ fun LabScreen(
     onComplete: (xpEarned: Int, tasksSolved: Int, totalTasks: Int) -> Unit,
     onMistake: () -> Unit,
     hearts: Int,
+    xpBalance: Int,
+    onSpendXp: (Int) -> Unit,
     modifier: Modifier = Modifier,
     clueLabels: Map<String, String> = emptyMap()
 ) {
@@ -151,6 +153,8 @@ fun LabScreen(
     val clues = remember { mutableStateListOf<String>() }
     // Hints opened, per task id.
     val hintsOpened = remember { mutableStateMapOf<String, Int>() }
+    // Mistakes made this attempt — decides the no-heart-lost bonus.
+    var heartsLost by remember { mutableIntStateOf(0) }
 
     var webView by remember { mutableStateOf<WebView?>(null) }
 
@@ -162,6 +166,7 @@ fun LabScreen(
             when {
                 clueId in lab.dangerousClues -> if (clueId !in penalised) {
                     penalised.add(clueId)
+                    heartsLost++
                     onMistake()
                 }
                 clueId !in clues -> clues.add(clueId)
@@ -173,6 +178,24 @@ fun LabScreen(
     val total = tasks.size
     val task = tasks[taskIndex.coerceIn(0, total - 1)]
     val hintsUsedTotal = hintsOpened.values.sum()
+
+    // Evidence worth finding: every labelled clue that isn't a dangerous action.
+    val discoverableClues = clueLabels.keys - lab.dangerousClues.toSet()
+    val allCluesFound = discoverableClues.isEmpty() || clues.containsAll(discoverableClues)
+
+    // What finishing right now would pay out. Hints aren't deducted here — they
+    // were charged to the balance when opened — but they do forfeit the bonus.
+    val liveXp = scoreLevelXp(
+        completed = true,
+        heartsLost = heartsLost,
+        hintsUsed = hintsUsedTotal,
+        allCluesFound = allCluesFound
+    )
+
+    // Price of this task's next hint, and whether the student can afford it.
+    val hintCost = nextHintCost(hintsOpened[task.id] ?: 0)
+    val canAffordHint = xpBalance >= hintCost
+
 
     // Load the page a task starts on. Keyed on the task, so it fires once per task.
     LaunchedEffect(taskIndex, webView) {
@@ -188,7 +211,10 @@ fun LabScreen(
     fun submit() {
         val correct = LabValidator.isCorrect(task.answer, answerText, choiceIndex)
         verdict = if (correct) Verdict.CORRECT else Verdict.INCORRECT
-        if (correct) solved++ else onMistake()
+        if (correct) solved++ else {
+            heartsLost++
+            onMistake()
+        }
         panelExpanded = true
     }
 
@@ -217,6 +243,8 @@ fun LabScreen(
                     total = total,
                     solved = solved,
                     hearts = hearts,
+                    liveXp = liveXp,
+                    xpBalance = xpBalance,
                     onExit = onExit
                 )
 
@@ -227,7 +255,14 @@ fun LabScreen(
                     clues = clues,
                     clueLabels = clueLabels,
                     hintsOpened = hintsOpened[task.id] ?: 0,
-                    onOpenHint = { hintsOpened[task.id] = (hintsOpened[task.id] ?: 0) + 1 },
+                    hintCost = hintCost,
+                    canAffordHint = canAffordHint,
+                    onOpenHint = {
+                        if (canAffordHint) {
+                            hintsOpened[task.id] = (hintsOpened[task.id] ?: 0) + 1
+                            onSpendXp(hintCost)
+                        }
+                    },
                     verdict = verdict,
                     answerText = answerText,
                     onAnswerChange = { answerText = it },
@@ -249,21 +284,23 @@ fun LabScreen(
                 )
             }
 
-            LabStage.RESULT -> LabResult(
-                lab = lab,
-                solved = solved,
-                total = total,
-                cluesFound = clues.size,
-                hintsUsed = hintsUsedTotal,
-                xpEarned = scoreLabXp(xpReward, total, solved, hintsUsedTotal),
-                onFinish = {
-                    onComplete(
-                        scoreLabXp(xpReward, total, solved, hintsUsedTotal),
-                        solved,
-                        total
-                    )
-                }
-            )
+            LabStage.RESULT -> {
+                val earned = scoreLevelXp(
+                    completed = solved == total,
+                    heartsLost = heartsLost,
+                    hintsUsed = hintsUsedTotal,
+                    allCluesFound = allCluesFound
+                )
+                LabResult(
+                    lab = lab,
+                    solved = solved,
+                    total = total,
+                    cluesFound = clues.size,
+                    hintsUsed = hintsUsedTotal,
+                    xpEarned = earned,
+                    onFinish = { onComplete(earned, solved, total) }
+                )
+            }
         }
     }
 }
@@ -403,6 +440,8 @@ private fun LabTopBar(
     total: Int,
     solved: Int,
     hearts: Int,
+    liveXp: Int,
+    xpBalance: Int,
     onExit: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(AppCard)) {
@@ -417,14 +456,29 @@ private fun LabTopBar(
                 Text(lab.title, color = AppWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text(lab.subtitle, color = AppGray, fontSize = 11.sp)
             }
-            HeartsRow(hearts = hearts)
-            Spacer(Modifier.width(12.dp))
             Text(
                 "$solved/$total", color = AppCyan, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.width(12.dp))
         }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HeartsRow(hearts = hearts)
+            Spacer(Modifier.weight(1f))
+            // Balance first — it moves when a hint is bought — then what this
+            // level would add to it.
+            XpIndicator(xp = xpBalance, iconSize = 16.dp, fontSize = 14.sp)
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "+$liveXp", color = AppCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(6.dp))
 
         LinearProgressIndicator(
             progress = { if (total == 0) 0f else solved.toFloat() / total },
@@ -447,6 +501,8 @@ private fun TaskPanel(
     clues: List<String>,
     clueLabels: Map<String, String>,
     hintsOpened: Int,
+    hintCost: Int,
+    canAffordHint: Boolean,
     onOpenHint: () -> Unit,
     verdict: Verdict?,
     answerText: String,
@@ -551,6 +607,8 @@ private fun TaskPanel(
                         HintSection(
                             hints = task.hints,
                             opened = hintsOpened,
+                            cost = hintCost,
+                            affordable = canAffordHint,
                             onOpenHint = onOpenHint
                         )
 
@@ -612,7 +670,13 @@ private fun LockedNotice(message: String) {
 }
 
 @Composable
-private fun HintSection(hints: List<String>, opened: Int, onOpenHint: () -> Unit) {
+private fun HintSection(
+    hints: List<String>,
+    opened: Int,
+    cost: Int,
+    affordable: Boolean,
+    onOpenHint: () -> Unit
+) {
     if (hints.isEmpty()) return
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -636,10 +700,20 @@ private fun HintSection(hints: List<String>, opened: Int, onOpenHint: () -> Unit
         }
 
         if (opened < hints.size) {
-            TextButton(onClick = onOpenHint, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+            TextButton(
+                onClick = onOpenHint,
+                enabled = affordable,
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+            ) {
                 Text(
-                    if (opened == 0) "Need a hint? (costs XP)" else "Another hint (costs XP)",
-                    color = AppCyan, fontSize = 12.sp, fontWeight = FontWeight.Medium
+                    text = if (affordable) {
+                        if (opened == 0) "Need a hint? (-$cost XP)" else "Another hint (-$cost XP)"
+                    } else {
+                        "Hint locked - needs $cost XP"
+                    },
+                    color = if (affordable) AppCyan else AppGray,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
