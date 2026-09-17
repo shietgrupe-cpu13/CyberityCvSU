@@ -263,12 +263,15 @@ private val SimDanger = Color(0xFFFF5C7A)
  */
 @Composable
 fun ScenarioQuizScreen(
-    quiz: ScenarioQuiz,
-    xpReward: Int,
-    onExit: () -> Unit,
-    onComplete: (xpEarned: Int, correct: Int, total: Int) -> Unit,
-    modifier: Modifier = Modifier
+quiz: ScenarioQuiz,
+xpReward: Int,
+onExit: () -> Unit,
+onComplete: (xpEarned: Int, correct: Int, total: Int) -> Unit,
+onMistake: () -> Unit,
+hearts: Int,
+modifier: Modifier = Modifier
 ) {
+
     var stage by remember { mutableStateOf(SimStage.BRIEFING) }
     var stepIndex by remember { mutableIntStateOf(0) }
     var chosenIndex by remember { mutableStateOf<Int?>(null) }
@@ -289,12 +292,15 @@ fun ScenarioQuizScreen(
                 scenario = quiz.scenarios[stepIndex],
                 stepIndex = stepIndex,
                 total = total,
+                hearts = hearts,
                 chosenIndex = chosenIndex,
                 onChoose = { index ->
                     if (chosenIndex == null) {
                         chosenIndex = index
                         if (quiz.scenarios[stepIndex].choices[index].isSafe) {
                             correctCount++
+                        } else {
+                            onMistake()
                         }
                     }
                 },
@@ -393,6 +399,7 @@ private fun ScenarioStage(
     scenario: SimScenario,
     stepIndex: Int,
     total: Int,
+    hearts: Int,
     chosenIndex: Int?,
     onChoose: (Int) -> Unit,
     onContinue: () -> Unit,
@@ -421,6 +428,8 @@ private fun ScenarioStage(
                 color = AppCyan,
                 trackColor = AppCard
             )
+            Spacer(Modifier.width(12.dp))
+            HeartsRow(hearts = hearts, heartSize = 14.dp)
             Spacer(Modifier.width(12.dp))
             Text("${stepIndex + 1}/$total", color = AppGray, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold)

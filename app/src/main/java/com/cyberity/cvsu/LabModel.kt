@@ -72,10 +72,13 @@ data class LabDefinition(
     /** Folder under assets/simulations/, e.g. "inbox_triage". */
     val assetDir: String,
     val startPage: String,
-    val tasks: List<LabTask>
+    val tasks: List<LabTask>,
+    /** Clue ids that are dangerous actions: each costs a heart, once per attempt. */
+    val dangerousClues: List<String> = emptyList()
 ) {
     val baseUrl: String get() = "$LAB_ASSET_ROOT$assetDir/"
 }
+
 
 /** Human-readable label for a clue id, shown in the evidence log. */
 @Immutable

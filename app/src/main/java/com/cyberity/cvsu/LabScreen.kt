@@ -134,6 +134,8 @@ fun LabScreen(
     xpReward: Int,
     onExit: () -> Unit,
     onComplete: (xpEarned: Int, tasksSolved: Int, totalTasks: Int) -> Unit,
+    onMistake: () -> Unit,
+    hearts: Int,
     modifier: Modifier = Modifier,
     clueLabels: Map<String, String> = emptyMap()
 ) {
@@ -152,8 +154,19 @@ fun LabScreen(
 
     var webView by remember { mutableStateOf<WebView?>(null) }
 
+    // Dangerous actions cost a heart, once each, and are never logged as evidence.
+    val penalised = remember { mutableStateListOf<String>() }
+
     val bridge = remember {
-        LabBridge { clueId -> if (clueId !in clues) clues.add(clueId) }
+        LabBridge { clueId ->
+            when {
+                clueId in lab.dangerousClues -> if (clueId !in penalised) {
+                    penalised.add(clueId)
+                    onMistake()
+                }
+                clueId !in clues -> clues.add(clueId)
+            }
+        }
     }
 
     val tasks = lab.tasks
@@ -175,7 +188,7 @@ fun LabScreen(
     fun submit() {
         val correct = LabValidator.isCorrect(task.answer, answerText, choiceIndex)
         verdict = if (correct) Verdict.CORRECT else Verdict.INCORRECT
-        if (correct) solved++
+        if (correct) solved++ else onMistake()
         panelExpanded = true
     }
 
@@ -203,6 +216,7 @@ fun LabScreen(
                     taskNumber = taskIndex + 1,
                     total = total,
                     solved = solved,
+                    hearts = hearts,
                     onExit = onExit
                 )
 
@@ -388,6 +402,7 @@ private fun LabTopBar(
     taskNumber: Int,
     total: Int,
     solved: Int,
+    hearts: Int,
     onExit: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(AppCard)) {
@@ -402,6 +417,8 @@ private fun LabTopBar(
                 Text(lab.title, color = AppWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 Text(lab.subtitle, color = AppGray, fontSize = 11.sp)
             }
+            HeartsRow(hearts = hearts)
+            Spacer(Modifier.width(12.dp))
             Text(
                 "$solved/$total", color = AppCyan, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
