@@ -46,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -352,7 +353,17 @@ fun ProfileTab(
 
     val email = user?.email ?: "No email"
 
-    val username = email.substringBefore("@")
+    // Registered username and student ID from users/{uid}; until they load,
+    // fall back to the name on the Firebase account, then the email.
+    var profile by remember { mutableStateOf<UserProfile?>(null) }
+    LaunchedEffect(user?.uid) {
+        val uid = user?.uid ?: return@LaunchedEffect
+        UserProfileRepository.load(uid, onResult = { profile = it }, onError = {})
+    }
+
+    val username = profile?.displayName
+        ?: user?.displayName?.takeIf { it.isNotBlank() }
+        ?: email.substringBefore("@")
 
     val initial = username.firstOrNull()?.uppercase() ?: "?"
 
@@ -400,6 +411,14 @@ fun ProfileTab(
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
         )
+
+        profile?.studentId?.let { id ->
+            Text(
+                text = "Student ID: $id",
+                color = AppCyan,
+                fontSize = 14.sp
+            )
+        }
 
         Text(
             text = email,
