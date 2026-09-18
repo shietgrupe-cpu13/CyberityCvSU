@@ -21,7 +21,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import com.google.firebase.auth.ktx.userProfileChangeRequest
+import com.google.firebase.auth.userProfileChangeRequest
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cyberity.cvsu.ui.theme.MyFirstTryTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthMultiFactorException
+import com.google.firebase.auth.MultiFactorResolver
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -95,6 +97,7 @@ fun AppNavigator() {
                 "login"
         )
     }
+    var multiFactorResolver by remember { mutableStateOf<MultiFactorResolver?>(null) }
 
     val signOut = {
         auth.signOut()
@@ -108,7 +111,23 @@ fun AppNavigator() {
         )
         "login" -> LoginScreen(
             onRegisterClick = { currentScreen = "register" },
-            onLoginSuccess = { currentScreen = "profileCheck" }
+            onLoginSuccess = { currentScreen = "profileCheck" },
+            onMfaRequired = { resolver ->
+                multiFactorResolver = resolver
+                currentScreen = "verifyMfa"
+            }
+        )
+        "verifyMfa" -> TotpSignInScreen(
+            resolver = multiFactorResolver,
+            onSuccess = {
+                multiFactorResolver = null
+                currentScreen = "profileCheck"
+            },
+            onCancel = {
+                multiFactorResolver = null
+                auth.signOut()
+                currentScreen = "login"
+            }
         )
         "register" -> RegisterScreen(
             onBackClick = { currentScreen = "login" },
@@ -293,7 +312,8 @@ fun AuthTextField(
 @Composable
 fun LoginScreen(
     onRegisterClick: () -> Unit,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onMfaRequired: (MultiFactorResolver) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -435,8 +455,12 @@ fun LoginScreen(
                                     }
                                     .addOnFailureListener { exception ->
                                         isLoading = false
-                                        errorMessage =
-                                            exception.localizedMessage ?: "Login failed"
+                                        if (exception is FirebaseAuthMultiFactorException) {
+                                            onMfaRequired(exception.resolver)
+                                        } else {
+                                            errorMessage =
+                                                exception.localizedMessage ?: "Login failed"
+                                        }
                                     }
                             }
                         },
