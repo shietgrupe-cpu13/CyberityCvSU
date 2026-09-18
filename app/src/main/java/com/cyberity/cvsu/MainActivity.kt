@@ -18,6 +18,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.google.firebase.auth.ktx.userProfileChangeRequest
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,6 +37,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,6 +55,8 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.vector.ImageVector
 
 // Shared colors so every screen stays consistent
@@ -73,14 +82,23 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigator() {
     val auth = remember { FirebaseAuth.getInstance() }
+    val context = LocalContext.current
 
+    // Every signed-in session passes through "profileCheck" first, so accounts
+    // without a student ID are sent to CompleteProfileScreen before Home.
     var currentScreen by remember {
         mutableStateOf(
-            if (auth.currentUser != null)
-                "loggedIn"
+            // Unverified accounts (e.g. just registered) must log in again after verifying.
+            if (auth.currentUser?.isEmailVerified == true)
+                "profileCheck"
             else
                 "login"
         )
+    }
+
+    val signOut = {
+        auth.signOut()
+        currentScreen = "login"
     }
 
     when (currentScreen) {
@@ -90,7 +108,7 @@ fun AppNavigator() {
         )
         "login" -> LoginScreen(
             onRegisterClick = { currentScreen = "register" },
-            onLoginSuccess = { currentScreen = "loggedIn" }
+            onLoginSuccess = { currentScreen = "profileCheck" }
         )
         "register" -> RegisterScreen(
             onBackClick = { currentScreen = "login" },
@@ -98,6 +116,49 @@ fun AppNavigator() {
         )
         "checkEmail" -> CheckEmailScreen(
             onBackToLogin = { currentScreen = "login" }
+        )
+        "profileCheck" -> {
+            var failed by remember { mutableStateOf(false) }
+            var errorDetail by remember { mutableStateOf<String?>(null) }
+            var attempt by remember { mutableIntStateOf(0) }
+
+            LaunchedEffect(attempt) {
+                val uid = auth.currentUser?.uid
+                when {
+                    uid == null -> currentScreen = "login"
+                    // Already completed on this device: don't block on the network.
+                    ProfileCache.isComplete(context, uid) -> currentScreen = "loggedIn"
+                    else -> {
+                        failed = false
+                        UserProfileRepository.load(
+                            uid,
+                            onResult = { profile ->
+                                if (profile?.isComplete == true) {
+                                    ProfileCache.markComplete(context, uid)
+                                    currentScreen = "loggedIn"
+                                } else {
+                                    currentScreen = "completeProfile"
+                                }
+                            },
+                            onError = { message ->
+                                errorDetail = message
+                                failed = true
+                            }
+                        )
+                    }
+                }
+            }
+
+            ProfileCheckScreen(
+                failed = failed,
+                errorDetail = errorDetail,
+                onRetry = { attempt++ },
+                onSignOut = signOut
+            )
+        }
+        "completeProfile" -> CompleteProfileScreen(
+            onProfileSaved = { currentScreen = "loggedIn" },
+            onSignOut = signOut
         )
         "loggedIn" -> HomeScreen(
             onLogout = {
@@ -145,7 +206,9 @@ fun AuthTextField(
     onValueChange: (String) -> Unit,
     label: String,
     icon: ImageVector,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    enabled: Boolean = true
 ) {
 
     var passwordVisible by rememberSaveable {
@@ -200,6 +263,10 @@ fun AuthTextField(
 
         singleLine = true,
 
+        enabled = enabled,
+
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+
         shape = RoundedCornerShape(12.dp),
 
         colors = OutlinedTextFieldDefaults.colors(
@@ -212,7 +279,11 @@ fun AuthTextField(
             cursorColor = AppCyan,
 
             focusedTextColor = AppWhite,
-            unfocusedTextColor = AppWhite
+            unfocusedTextColor = AppWhite,
+            disabledTextColor = AppWhite.copy(alpha = 0.7f),
+            disabledBorderColor = AppGray.copy(alpha = 0.4f),
+            disabledLabelColor = AppGray,
+            disabledLeadingIconColor = AppCyan.copy(alpha = 0.6f)
         ),
 
         modifier = Modifier.fillMaxWidth()
@@ -404,17 +475,21 @@ fun RegisterScreen(
     onBackClick()
 }
     var username by remember { mutableStateOf("") }
+    var studentId by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val auth = remember { FirebaseAuth.getInstance() }
+    val context = LocalContext.current
+    val debugBuild = remember { context.isDebugBuild() }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppNavy)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -448,6 +523,29 @@ fun RegisterScreen(
                     { username = it },
                     "Username",
                     Icons.Filled.Person
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Shown to other students, e.g. on the leaderboard.",
+                    color = AppGray,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                AuthTextField(
+                    studentId,
+                    { input ->
+                        studentId = if (debugBuild && input.any { !it.isDigit() }) {
+                            input.take(8)
+                        } else {
+                            input.filter { it.isDigit() }.take(9)
+                        }
+                    },
+                    "Student ID (e.g. 202310502)",
+                    Icons.Filled.Badge,
+                    keyboardType = if (debugBuild) KeyboardType.Text else KeyboardType.Number
                 )
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -491,31 +589,71 @@ fun RegisterScreen(
                 } else {
                     Button(
                         onClick = {
-                            errorMessage = when {
-                                !email.endsWith("@cvsu.edu.ph") ->
-                                    "Please use your @cvsu.edu.ph email"
+                            val registerEmail = email.trim().lowercase()
+                            errorMessage =
+                                StudentIdRules.validateDisplayName(username)?.let { "Username: $it" }
+                                    ?: StudentIdRules.validateStudentId(studentId, debugBuild)
+                                            ?: when {
+                                        !android.util.Patterns.EMAIL_ADDRESS.matcher(registerEmail).matches() ||
+                                                !registerEmail.endsWith("@cvsu.edu.ph") ->
+                                            "Please use your @cvsu.edu.ph email"
 
-                                password != confirmPassword ->
-                                    "Passwords do not match"
+                                        password != confirmPassword ->
+                                            "Passwords do not match"
 
-                                password.length < 6 ->
-                                    "Password must be at least 6 characters"
+                                        password.length < 6 ->
+                                            "Password must be at least 6 characters"
 
-                                username.isBlank() ->
-                                    "Please enter a username"
-
-                                else -> ""
-                            }
+                                        else -> ""
+                                    }
 
                             if (errorMessage.isEmpty()) {
                                 isLoading = true
-                                auth.createUserWithEmailAndPassword(email, password)
-                                    .addOnSuccessListener {
-                                        auth.currentUser?.sendEmailVerification()
-                                            ?.addOnCompleteListener {
-                                                isLoading = false
-                                                onRegisterSuccess()
+                                val normalizedId = StudentIdRules.normalize(studentId)
+                                val profile = UserProfile(
+                                    studentId = normalizedId,
+                                    displayName = username.trim(),
+                                    isTester = StudentIdRules.isDevId(normalizedId)
+                                )
+
+                                fun finish() {
+                                    auth.currentUser?.sendEmailVerification()
+                                        ?.addOnCompleteListener {
+                                            isLoading = false
+                                            onRegisterSuccess()
+                                        }
+                                }
+
+                                auth.createUserWithEmailAndPassword(registerEmail, password)
+                                    .addOnSuccessListener { result ->
+                                        val newUser = result.user ?: return@addOnSuccessListener finish()
+
+                                        // Also keep the name on the Firebase account itself.
+                                        newUser.updateProfile(
+                                            userProfileChangeRequest { displayName = profile.displayName }
+                                        )
+
+                                        UserProfileRepository.save(newUser.uid, registerEmail, profile) { saved ->
+                                            when (saved) {
+                                                ProfileSaveResult.Saved -> {
+                                                    ProfileCache.markComplete(context, newUser.uid)
+                                                    finish()
+                                                }
+
+                                                // ID belongs to someone else: undo the account so the
+                                                // student can try again with the same email.
+                                                ProfileSaveResult.IdTaken -> newUser.delete()
+                                                    .addOnCompleteListener {
+                                                        isLoading = false
+                                                        errorMessage =
+                                                            "This student ID is already linked to another account."
+                                                    }
+
+                                                // Couldn't save the profile (e.g. offline). The account
+                                                // still works; "Complete your profile" asks again at login.
+                                                is ProfileSaveResult.Failed -> finish()
                                             }
+                                        }
                                     }
                                     .addOnFailureListener { exception ->
                                         isLoading = false
@@ -593,4 +731,3 @@ fun CheckEmailScreen(onBackToLogin: () -> Unit) {
         }
     }
 }
-
