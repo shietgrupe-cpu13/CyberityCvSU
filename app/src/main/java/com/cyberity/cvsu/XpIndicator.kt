@@ -7,7 +7,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -148,5 +155,101 @@ fun XpIndicator(
                 )
             }
         }
+    }
+}
+
+// ===========================================================================
+// XP BREAKDOWN
+// ===========================================================================
+
+/**
+ * Shows how a level's payout was arrived at, one line per component, with the
+ * bonuses that were missed left visible at zero rather than hidden — a student
+ * learns more from seeing the 25 they didn't get than from a bare total.
+ */
+@Composable
+fun XpBreakdown(
+    award: XpAward,
+    heartsLost: Int,
+    hintsUsed: Int,
+    hintsPaid: Int,
+    modifier: Modifier = Modifier,
+    /** A quiz has no evidence to find and no hints to buy, so those two bonuses
+     *  are granted by default — say so rather than claiming credit for them. */
+    quiz: Boolean = false
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(AppCard, RoundedCornerShape(14.dp))
+            .padding(16.dp)
+    ) {
+        BreakdownRow("Level completed", award.base)
+        BreakdownRow(
+            label = if (heartsLost == 0) "No hearts lost" else "Hearts lost ($heartsLost)",
+            amount = award.noHeartBonus
+        )
+        BreakdownRow(
+            label = when {
+                quiz -> "No evidence to miss here"
+                award.cluesBonus > 0 -> "All evidence found"
+                else -> "Evidence missed"
+            },
+            amount = award.cluesBonus
+        )
+        BreakdownRow(
+            label = when {
+                quiz -> "No hints in this level"
+                hintsUsed == 0 -> "No hints used"
+                else -> "Hints used ($hintsUsed)"
+            },
+            amount = award.noHintsBonus
+        )
+
+        Spacer(Modifier.height(10.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(AppGray.copy(alpha = 0.2f)))
+        Spacer(Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Earned this level", color = AppWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Text("+${award.total} XP", color = XpGain, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+
+        if (hintsPaid > 0) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "$hintsPaid XP was already taken from your balance for hints.",
+                color = AppGray,
+                fontSize = 11.sp,
+                lineHeight = 15.sp
+            )
+        }
+    }
+}
+
+/** One component of the payout. Zero reads as forfeited rather than as a gain. */
+@Composable
+private fun BreakdownRow(label: String, amount: Int) {
+    val earned = amount > 0
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = if (earned) AppWhite else AppGray,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = if (earned) "+$amount" else "+0",
+            color = if (earned) XpGain else AppGray,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

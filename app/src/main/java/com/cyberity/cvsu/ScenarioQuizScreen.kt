@@ -322,7 +322,7 @@ modifier: Modifier = Modifier
             )
 
             SimStage.RESULT -> {
-                val earned = scoreLevelXp(
+                val award = awardFor(
                     completed = true,
                     heartsLost = heartsLost,
                     hintsUsed = 0,
@@ -331,23 +331,11 @@ modifier: Modifier = Modifier
                 ResultStage(
                     correct = correctCount,
                     total = total,
-                    xpEarned = earned,
-                    onFinish = { onComplete(earned, correctCount, total) }
+                    heartsLost = heartsLost,
+                    award = award,
+                    onFinish = { onComplete(award.total, correctCount, total) }
                 )
             }
-            SimStage.RESULT -> ResultStage(
-                correct = correctCount,
-                total = total,
-                // Partial credit: you keep what you earned, never zero for trying.
-                xpEarned = if (total == 0) 0 else (xpReward * correctCount) / total,
-                onFinish = {
-                    onComplete(
-                        if (total == 0) 0 else (xpReward * correctCount) / total,
-                        correctCount,
-                        total
-                    )
-                }
-            )
         }
     }
 }
@@ -644,7 +632,8 @@ private fun FeedbackPanel(
 private fun ResultStage(
     correct: Int,
     total: Int,
-    xpEarned: Int,
+    heartsLost: Int,
+    award: XpAward,
     onFinish: () -> Unit
 ) {
     val passed = correct >= (total + 1) / 2  // majority correct
@@ -691,19 +680,13 @@ private fun ResultStage(
 
         Spacer(Modifier.height(28.dp))
 
-        Row(
-            modifier = Modifier
-                .background(AppCard, RoundedCornerShape(16.dp))
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(Icons.Filled.Star, contentDescription = null, tint = AppCyan,
-                modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(10.dp))
-            Text("+$xpEarned XP", color = AppWhite, fontSize = 20.sp,
-                fontWeight = FontWeight.Bold)
-        }
+        XpBreakdown(
+            award = award,
+            heartsLost = heartsLost,
+            hintsUsed = 0,
+            hintsPaid = 0,
+            quiz = true
+        )
 
         Spacer(Modifier.weight(1f))
 
