@@ -2,6 +2,8 @@ package com.cyberity.cvsu
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -371,62 +373,51 @@ fun ProfileTab(
         modifier = Modifier
             .fillMaxSize()
             .background(AppNavy)
-            .padding(24.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp),
 
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        Text(
-            text = "Profile",
-            color = AppWhite,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Text("Profile", color = AppWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth())
+        Text("Your account and security settings", color = AppGray, fontSize = 14.sp,
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
-        Box(
-            modifier = Modifier
-                .size(110.dp)
-                .background(AppBlue, CircleShape),
-
-            contentAlignment = Alignment.Center
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = AppBlue.copy(alpha = 0.20f)),
+            shape = RoundedCornerShape(24.dp)
         ) {
-
-            Text(
-                text = initial,
-                color = AppWhite,
-                fontSize = 48.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier.size(76.dp).background(AppBlue, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(initial, color = AppWhite, fontSize = 34.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(username, color = AppWhite, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("CvSU student account", color = AppCyan, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(color = Color(0xFF123E7A), shape = RoundedCornerShape(20.dp)) {
+                        Text("Email verified", color = AppWhite, fontSize = 12.sp,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
+                    }
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
-
-        Text(
-            text = username,
-            color = AppWhite,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        profile?.studentId?.let { id ->
-            Text(
-                text = "Student ID: $id",
-                color = AppCyan,
-                fontSize = 14.sp
-            )
-        }
-
-        Text(
-            text = email,
-            color = AppGray,
-            fontSize = 14.sp
-        )
-
-        Spacer(modifier = Modifier.height(36.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -439,6 +430,8 @@ fun ProfileTab(
             Column(
                 modifier = Modifier.padding(20.dp)
             ) {
+                Text("ACCOUNT DETAILS", color = AppCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -455,7 +448,7 @@ fun ProfileTab(
                     Column {
 
                         Text(
-                            "CvSU Email",
+                            "Email address",
                             color = AppWhite,
                             fontWeight = FontWeight.Bold
                         )
@@ -468,23 +461,34 @@ fun ProfileTab(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        showLogoutDialog = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red
-                    )
-                ) {
-                    Text("Sign Out")
+                profile?.studentId?.let { id ->
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Person, contentDescription = null, tint = AppCyan)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Student ID", color = AppWhite, fontWeight = FontWeight.Bold)
+                            Text(id, color = AppGray, fontSize = 13.sp)
+                        }
+                    }
                 }
-
             }
-
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        TotpMfaCard()
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = { showLogoutDialog = true },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB3261E)),
+            shape = RoundedCornerShape(12.dp)
+        ) { Text("Sign Out") }
+
+        Spacer(modifier = Modifier.height(28.dp))
     }
     if (showLogoutDialog) {
 
