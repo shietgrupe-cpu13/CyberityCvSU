@@ -72,10 +72,13 @@ data class LabDefinition(
     /** Folder under assets/simulations/, e.g. "inbox_triage". */
     val assetDir: String,
     val startPage: String,
-    val tasks: List<LabTask>
+    val tasks: List<LabTask>,
+    /** Clue ids that are dangerous actions: each costs a heart, once per attempt. */
+    val dangerousClues: List<String> = emptyList()
 ) {
     val baseUrl: String get() = "$LAB_ASSET_ROOT$assetDir/"
 }
+
 
 /** Human-readable label for a clue id, shown in the evidence log. */
 @Immutable
@@ -116,20 +119,4 @@ object LabValidator {
             is LabAnswer.Choice ->
                 choiceIndex != null && choiceIndex == answer.correctIndex
         }
-}
-
-// ===========================================================================
-// XP SCORING
-// ===========================================================================
-
-/**
- * Each task carries an equal share of the level's XP. Every hint opened on a
- * task costs a quarter of that task's share, so hints stay useful without
- * being free. Never negative.
- */
-fun scoreLabXp(xpReward: Int, totalTasks: Int, solvedTasks: Int, hintsUsed: Int): Int {
-    if (totalTasks == 0) return 0
-    val share = xpReward.toDouble() / totalTasks
-    val earned = share * solvedTasks - share * 0.25 * hintsUsed
-    return earned.coerceAtLeast(0.0).toInt()
 }

@@ -263,16 +263,22 @@ private val SimDanger = Color(0xFFFF5C7A)
  */
 @Composable
 fun ScenarioQuizScreen(
-    quiz: ScenarioQuiz,
-    xpReward: Int,
-    onExit: () -> Unit,
-    onComplete: (xpEarned: Int, correct: Int, total: Int) -> Unit,
-    modifier: Modifier = Modifier
+quiz: ScenarioQuiz,
+xpReward: Int,
+onExit: () -> Unit,
+onComplete: (xpEarned: Int, correct: Int, total: Int) -> Unit,
+onMistake: () -> Unit,
+hearts: Int,
+xpBalance: Int,
+modifier: Modifier = Modifier
 ) {
+
     var stage by remember { mutableStateOf(SimStage.BRIEFING) }
     var stepIndex by remember { mutableIntStateOf(0) }
     var chosenIndex by remember { mutableStateOf<Int?>(null) }
     var correctCount by remember { mutableIntStateOf(0) }
+    var heartsLost by remember { mutableIntStateOf(0) }
+
 
     val total = quiz.scenarios.size
 
@@ -289,12 +295,18 @@ fun ScenarioQuizScreen(
                 scenario = quiz.scenarios[stepIndex],
                 stepIndex = stepIndex,
                 total = total,
+                hearts = hearts,
+                liveXp = scoreLevelXp(true, heartsLost, 0, true),
+                xpBalance = xpBalance,
                 chosenIndex = chosenIndex,
                 onChoose = { index ->
                     if (chosenIndex == null) {
                         chosenIndex = index
                         if (quiz.scenarios[stepIndex].choices[index].isSafe) {
                             correctCount++
+                        } else {
+                            heartsLost++
+                            onMistake()
                         }
                     }
                 },
@@ -309,6 +321,20 @@ fun ScenarioQuizScreen(
                 onExit = onExit
             )
 
+            SimStage.RESULT -> {
+                val earned = scoreLevelXp(
+                    completed = true,
+                    heartsLost = heartsLost,
+                    hintsUsed = 0,
+                    allCluesFound = true
+                )
+                ResultStage(
+                    correct = correctCount,
+                    total = total,
+                    xpEarned = earned,
+                    onFinish = { onComplete(earned, correctCount, total) }
+                )
+            }
             SimStage.RESULT -> ResultStage(
                 correct = correctCount,
                 total = total,
@@ -393,6 +419,9 @@ private fun ScenarioStage(
     scenario: SimScenario,
     stepIndex: Int,
     total: Int,
+    hearts: Int,
+    liveXp: Int,
+    xpBalance: Int,
     chosenIndex: Int?,
     onChoose: (Int) -> Unit,
     onContinue: () -> Unit,
@@ -422,6 +451,12 @@ private fun ScenarioStage(
                 trackColor = AppCard
             )
             Spacer(Modifier.width(12.dp))
+            HeartsRow(hearts = hearts, heartSize = 14.dp)
+            Spacer(Modifier.width(10.dp))
+            XpIndicator(xp = xpBalance, iconSize = 14.dp, fontSize = 12.sp, showDelta = false)
+            Spacer(Modifier.width(4.dp))
+            Text("+$liveXp", color = AppCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.width(10.dp))
             Text("${stepIndex + 1}/$total", color = AppGray, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))

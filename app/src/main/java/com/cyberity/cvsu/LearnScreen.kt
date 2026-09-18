@@ -80,6 +80,9 @@ import kotlin.math.sin
 import androidx.compose.runtime.LaunchedEffect
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import kotlinx.coroutines.delay
 
 
 // ===========================================================================
@@ -384,6 +387,17 @@ fun LearnScreen(
     }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
 
+    var heartState by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadHearts(context, it) } ?: HeartState.FULL)
+    }
+    var clockSynced by remember(uid) { mutableStateOf(false) }
+    var levelXp by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadLevelXp(context, it) } ?: emptyMap())
+    }
+    var xpSpent by remember(uid) {
+        mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
+    }
+
     // Reconciles against Firestore in the background. Normally a no-op visually,
     // since it usually matches what the cache already showed.
     LaunchedEffect(uid) {
@@ -391,6 +405,21 @@ fun LearnScreen(
         ProgressRepository.loadCompletedLevels(uid) { remoteIds ->
             ProgressCache.save(context, uid, remoteIds)
             units = sampleLearningUnits().withLevelsCompleted(remoteIds)
+        }
+        ServerClock.sync(uid) { clockSynced = true }
+        ProgressRepository.loadLevelXp(uid) { remote ->
+            ProgressCache.saveLevelXp(context, uid, remote)
+            levelXp = remote
+        }
+        ProgressRepository.loadXpSpent(uid) { remote ->
+            ProgressCache.saveXpSpent(context, uid, remote)
+            xpSpent = remote
+        }
+        ProgressRepository.loadHearts(uid) { remote ->
+            if (remote != null) {
+                ProgressCache.saveHearts(context, uid, remote)
+                heartState = remote
+            }
         }
     }
 
@@ -404,10 +433,47 @@ fun LearnScreen(
         onLevelRunningChanged(runningLevel != null)
     }
 
-    val totalXp = remember(units) {
-        units.flatMap { it.levels }
-            .filter { it.status == LevelStatus.COMPLETED }
-            .sumOf { it.xpReward }
+    // Refill is measured against server time, so it only needs to tick while a heart is missing.
+    var now by remember { mutableLongStateOf(ServerClock.now()) }
+    LaunchedEffect(heartState, clockSynced) {
+        now = ServerClock.now()
+        while (heartState.heartsAt(now) < MAX_HEARTS) {
+            delay(1_000)
+            now = ServerClock.now()
+        }
+    }
+
+    val hearts = heartState.heartsAt(now)
+    val heartRefillIn = heartState.millisToNextHeart(now)?.let(::formatRefill)
+
+    // One mistake, one heart. Written optimistically, then reconciled with what
+    // the server actually stored.
+    fun spendHeart() {
+        val next = heartState.loseHeart(ServerClock.now())
+        heartState = next
+        uid?.let { id ->
+            ProgressCache.saveHearts(context, id, next)
+            ProgressRepository.spendHeart(id, next.hearts) { stored ->
+                ProgressCache.saveHearts(context, id, stored)
+                heartState = stored
+            }
+        }
+    }
+
+
+    // What the student actually holds: everything levels paid out, less what
+    // hints have cost. This is the figure hints are bought with.
+    val totalXp = xpBalance(earned = levelXp.values.sum(), spent = xpSpent)
+
+    // Charging is immediate and final — a hint stays bought even if the level
+    // is abandoned straight afterwards.
+    fun spendXp(amount: Int) {
+        if (amount <= 0) return
+        xpSpent += amount
+        uid?.let { id ->
+            ProgressCache.saveXpSpent(context, id, xpSpent)
+            ProgressRepository.addXpSpent(id, amount)
+        }
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -422,11 +488,18 @@ fun LearnScreen(
         // and for LabScreen whenever its own handler is disabled.
         BackHandler(enabled = true) { requestExit() }
 
-        // A running level takes over the whole Learn area.
-        when (val content = contentFor(running.id)) {
+        // Out of hearts mid-level: the attempt ends here and progress is lost.
+        if (hearts < MIN_HEARTS_TO_START) {
+            OutOfHeartsLevel(
+                level = running,
+                refillIn = heartRefillIn,
+                modifier = modifier,
+                onBack = { runningLevel = null }
+            )
+        } else when (val content = contentFor(running.id)) {
             is LevelContent.Inbox -> InboxSimulationScreen(
                 simulation = content.simulation,
-                xpReward = running.xpReward,
+                xpReward = MAX_LEVEL_XP,
                 modifier = modifier,
                 onExit = requestExit,
                 onComplete = { _, _, _ ->
@@ -441,14 +514,24 @@ fun LearnScreen(
 
             is LevelContent.Scenarios -> ScenarioQuizScreen(
                 quiz = content.quiz,
-                xpReward = running.xpReward,
+                xpReward = MAX_LEVEL_XP,
                 modifier = modifier,
                 onExit = requestExit,
-                onComplete = { _, _, _ ->
+                onMistake = { spendHeart() },
+                hearts = hearts,
+                xpBalance = totalXp,
+                onComplete = { earned, _, _ ->
+                    val firstClear = running.status != LevelStatus.COMPLETED
                     units = units.withLevelCompleted(running.id)
                     uid?.let {
                         ProgressRepository.markLevelCompleted(it, running.id)
                         ProgressCache.save(context, it, completedIdsOf(units))
+                        if (firstClear) {
+                            val updated = levelXp + (running.id to earned)
+                            levelXp = updated
+                            ProgressCache.saveLevelXp(context, it, updated)
+                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                        }
                     }
                     runningLevel = null
                 }
@@ -456,15 +539,26 @@ fun LearnScreen(
 
             is LevelContent.Lab -> LabScreen(
                 lab = content.lab,
-                xpReward = running.xpReward,
+                xpReward = MAX_LEVEL_XP,
                 modifier = modifier,
                 clueLabels = content.clueLabels,
                 onExit = requestExit,
-                onComplete = { _, _, _ ->
+                onMistake = { spendHeart() },
+                hearts = hearts,
+                xpBalance = totalXp,
+                onSpendXp = { spendXp(it) },
+                onComplete = { earned, _, _ ->
+                    val firstClear = running.status != LevelStatus.COMPLETED
                     units = units.withLevelCompleted(running.id)
                     uid?.let {
                         ProgressRepository.markLevelCompleted(it, running.id)
                         ProgressCache.save(context, it, completedIdsOf(units))
+                        if (firstClear) {
+                            val updated = levelXp + (running.id to earned)
+                            levelXp = updated
+                            ProgressCache.saveLevelXp(context, it, updated)
+                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                        }
                     }
                     runningLevel = null
                 }
@@ -489,7 +583,7 @@ fun LearnScreen(
         }
     } else {
         Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
-            LearnHeader(streak = 0, xp = totalXp, energy = 25)
+            LearnHeader(streak = 0, xp = totalXp, hearts = hearts, heartRefillIn = heartRefillIn)
 
             LearningPath(
                 units = units,
@@ -503,6 +597,8 @@ fun LearnScreen(
                 unit = unit,
                 level = level,
                 prerequisiteTitle = prerequisiteFor(units, level),
+                hearts = hearts,
+                heartRefillIn = heartRefillIn,
                 sheetState = sheetState,
                 onDismiss = { selected = null },
                 onStart = {
@@ -561,7 +657,8 @@ private fun prerequisiteFor(units: List<LearningUnit>, level: LearningLevel): St
 fun LearnHeader(
     streak: Int,
     xp: Int,
-    energy: Int,
+    hearts: Int,
+    heartRefillIn: String?,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -573,8 +670,15 @@ fun LearnHeader(
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         StatPill(Icons.Filled.DateRange, streak.toString(), AppCyan, "Day streak")
-        StatPill(Icons.Filled.Star, xp.toString(), AppWhite, "Total XP")
-        StatPill(Icons.Filled.Favorite, energy.toString(), AccentReward, "Energy")
+        XpIndicator(xp = xp)
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StatPill(Icons.Filled.Favorite, hearts.toString(), AccentReward, "Hearts")
+            if (heartRefillIn != null) {
+                Spacer(Modifier.width(6.dp))
+                Text(heartRefillIn, color = AppGray, fontSize = 12.sp)
+            }
+        }
     }
 }
 
@@ -1035,6 +1139,8 @@ fun LevelPreviewBottomSheet(
     unit: LearningUnit,
     level: LearningLevel,
     prerequisiteTitle: String?,
+    hearts: Int,
+    heartRefillIn: String?,
     sheetState: androidx.compose.material3.SheetState,
     onDismiss: () -> Unit,
     onStart: () -> Unit
@@ -1077,11 +1183,28 @@ fun LevelPreviewBottomSheet(
                 Row {
                     MetaChip("${level.durationMinutes} min")
                     Spacer(Modifier.width(10.dp))
-                    MetaChip("+${level.xpReward} XP")
+                    MetaChip("up to +$MAX_LEVEL_XP XP")
                 }
             }
 
             Spacer(Modifier.height(24.dp))
+
+            // Bonus nodes have no mistakes to make, so they never need hearts.
+            val outOfHearts = level.type != LevelType.REWARD && hearts < MIN_HEARTS_TO_START
+            if (outOfHearts && level.status != LevelStatus.LOCKED) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(AppNavy, RoundedCornerShape(12.dp))
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.Favorite, contentDescription = null, tint = AppGray, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(10.dp))
+                    Text("Out of hearts. Next heart in ${heartRefillIn ?: "a moment"}.", color = AppGray, fontSize = 13.sp)
+                }
+                Spacer(Modifier.height(12.dp))
+            }
 
             when (level.status) {
                 LevelStatus.LOCKED -> {
@@ -1110,9 +1233,15 @@ fun LevelPreviewBottomSheet(
                     Spacer(Modifier.height(12.dp))
                     Button(
                         onClick = onStart,
+                        enabled = !outOfHearts,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppBlue,
+                            contentColor = AppWhite,
+                            disabledContainerColor = AppNavy,
+                            disabledContentColor = AppGray
+                        )
                     ) {
                         Text("REVIEW", fontWeight = FontWeight.Bold)
                     }
@@ -1121,9 +1250,15 @@ fun LevelPreviewBottomSheet(
                 LevelStatus.CURRENT -> {
                     Button(
                         onClick = onStart,
+                        enabled = !outOfHearts,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = AppCyan, contentColor = AppNavy)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AppCyan,
+                            contentColor = AppNavy,
+                            disabledContainerColor = AppNavy,
+                            disabledContentColor = AppGray
+                        )
                     ) {
                         Text(
                             text = if (level.type == LevelType.REWARD) "CLAIM REWARD" else "START LEVEL",
@@ -1204,6 +1339,47 @@ fun ComingSoonLevel(
             "This level hasn't been built yet.",
             color = AppGray,
             fontSize = 14.sp,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(24.dp))
+        Button(
+            onClick = onBack,
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+        ) {
+            Text("BACK TO PATH", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/** Shown when the last heart is spent mid-level. The attempt ends here. */
+@Composable
+fun OutOfHeartsLevel(
+    level: LearningLevel,
+    refillIn: String?,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize().background(AppNavy).padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Favorite,
+            contentDescription = null,
+            tint = AccentReward,
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(Modifier.height(16.dp))
+        Text("Out of hearts", color = AppWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = "Your attempt at \"${level.title}\" ended here, and progress on it wasn't saved." +
+                    (refillIn?.let { "\n\nNext heart in $it." } ?: ""),
+            color = AppGray,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(24.dp))

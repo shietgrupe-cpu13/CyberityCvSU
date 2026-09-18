@@ -36,9 +36,9 @@ fun inboxTriageLab(): LabDefinition = LabDefinition(
     subtitle = "Security Operations Lab",
     briefing = "A campus inbox has four unread messages. One of them is hostile. " +
             "You have a live copy of the mailbox and a sandboxed browser — open things, " +
-            "click things, read what's underneath. Nothing here reaches the real internet.",
-    assetDir = "inbox_triage",
+            "click things, read what's underneath. Nothing here reaches the real internet.",assetDir = "inbox_triage",
     startPage = "inbox.html",
+    dangerousClues = listOf(InboxClues.CREDENTIALS_SUBMITTED),
     tasks = listOf(
 
         LabTask(
