@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Defence layers</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin console · no real accounts, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='review.html'">&#8592; Review</button>
+    <span class="topbar-title">Defence layers</span>
+  </div>
+
+  <div class="detail">
+    <h2>Between the attacker and the grade</h2>
+    <div class="detail-sub">Tap a layer to switch it on or off, then replay the 02:14 attack against your setup.</div>
+
+    <div id="layers"></div>
+    <div class="banner" id="layer-banner"></div>
+
+    <button class="cta" onclick="replayAttack()">REPLAY THE 02:14 ATTACK</button>
+
+    <div id="replay-box" style="display:none;margin-top:8px">
+      <div class="rows" id="replay-out"></div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>renderLayers('layers');</script>
+</body>
+</html>

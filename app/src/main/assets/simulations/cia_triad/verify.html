@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Integrity checker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin desk · no real files, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='desk.html'">&#8592; Desk</button>
+    <span class="topbar-title">Integrity checker</span>
+  </div>
+
+  <div class="detail">
+    <h2>Record files</h2>
+    <div class="detail-sub">
+      Baseline: SHA-256 fingerprints signed Tue 09-09 23:00 by records-backup.
+      Any change to a file, even one character, changes its fingerprint.
+    </div>
+
+    <div id="files"></div>
+
+    <div class="evidence" id="diff">
+      <div class="evidence-head">
+        <span>
+          <span class="evidence-name">Changes · grades_bsit3a_2026.csv</span>
+          <span class="evidence-sub">Baseline vs current, with audit trail</span>
+        </span>
+      </div>
+      <div class="evidence-body">
+<div class="rows">  row 14  2023-10452  ITEC 106  1.75
+<span class="hot">- row 15  2023-10457  ITEC 106  2.75</span>
+<span class="hot">+ row 15  2023-10457  ITEC 106  1.25</span>
+  row 16  2023-10461  ITEC 106  2.00</div>
+        <div class="note" style="margin:10px 0 6px">Audit trail for row 15</div>
+<div class="rows">time  : Sat 09-13 02:14
+query : UPDATE grades SET grade=1.25
+        WHERE stud='2023-10457' AND subj='ITEC 106'
+via   : portal-web · session of j.dcruz@cvsu.edu.ph
+<span class="hot">from  : 45.61.87.200</span>
+<span class="hot">ua    : grade-patcher/0.3 CYBERITY{h4sh_m1sm4tch_c4ught}</span></div>
+        <div class="note">A locked grade was rewritten at 2 a.m., from off campus, by a script — not by the professor.</div>
+      </div>
+    </div>
+
+    <button class="cta danger" onclick="rebaseline()">ACCEPT CURRENT FILES AS NEW BASELINE</button>
+    <div class="banner" id="rebase-banner"></div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>renderVerify('files');</script>
+</body>
+</html>

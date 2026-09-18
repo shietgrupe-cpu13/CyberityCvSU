@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Grade lock policy</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin console · no real accounts, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='review.html'">&#8592; Review</button>
+    <span class="topbar-title">Grade lock policy</span>
+  </div>
+
+  <div class="detail">
+    <h2>grade-lock policy</h2>
+    <div class="detail-sub">Before any grade edit, the portal asks the lock service whether the grade sheet is locked.</div>
+
+    <div class="evidence" id="lock-log">
+      <div class="evidence-head" onclick="toggleEvidence('lock-log', 'lock_log_opened')">
+        <span>
+          <span class="evidence-name">Grade-lock log</span>
+          <span class="evidence-sub">Sat 09-13, around the time of the edit</span>
+        </span>
+        <span class="evidence-caret">expand</span>
+      </div>
+      <div class="evidence-body">
+<div class="rows">02:10:41  lock-check  ITEC106-3A  -> LOCKED     (deny)
+<span class="warn">02:13:55  lock-service on records-db: disk 99% · slow writes</span>
+<span class="hot">02:13:58  lock-check  ITEC106-3A  -> TIMEOUT    (3000 ms)</span>
+<span class="hot">02:13:58  policy on_lock_service_error=allow_edit -> ALLOW</span>
+<span class="hot">02:14:02  UPDATE grades SET grade=1.25 ... by j.dcruz</span>
+02:20:17  lock-check  ITEC106-3A  -> TIMEOUT    (3000 ms)</div>
+        <div class="note">The lock service lives on the same server whose disk was filling up (INC-303).</div>
+      </div>
+    </div>
+
+    <div class="file-card" style="margin-top:12px">
+      <div class="file-name">/etc/portal/grade-lock.yaml</div>
+      <div class="rows" style="margin-top:8px">lock_service: records-db:5433
+timeout_ms: 3000
+<span class="warn" id="policy-line"></span></div>
+    </div>
+
+    <div class="section-label" style="padding:0 0 8px">When the lock service can't answer</div>
+    <select id="policy" class="select">
+      <option value="allow_edit">allow_edit — let the edit through</option>
+      <option value="allow_edit_and_log">allow_edit_and_log — let it through, log a warning</option>
+      <option value="ask_user">ask_user — let the user decide</option>
+      <option value="deny_edit">deny_edit — refuse the edit</option>
+    </select>
+
+    <button class="cta" onclick="saveAndTest()">SAVE &amp; TEST WITH LOCK SERVICE OFFLINE</button>
+    <div class="banner" id="policy-banner"></div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>initFailsafe();</script>
+</body>
+</html>

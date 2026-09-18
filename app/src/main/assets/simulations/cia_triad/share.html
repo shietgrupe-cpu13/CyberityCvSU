@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>File sharing</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin desk · no real files, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='desk.html'">&#8592; Desk</button>
+    <span class="topbar-title">File sharing</span>
+  </div>
+
+  <div class="detail">
+    <div class="file-card">
+      <div class="file-name">enrollment_masterlist_2026.xlsx</div>
+      <div class="file-meta">Owner: registrar.staff@cvsu.edu.ph · 1,284 students</div>
+      <div class="access-now" id="access-now"></div>
+    </div>
+
+    <div class="section-label" style="padding:0 0 8px">General access</div>
+
+    <div class="option" data-mode="restricted" onclick="pickShare('restricted')">
+      <span class="radio"></span>
+      <span>
+        <div class="option-title">Restricted</div>
+        <div class="option-sub">Only people added to the file can open it</div>
+      </span>
+    </div>
+    <div class="option" data-mode="campus" onclick="pickShare('campus')">
+      <span class="radio"></span>
+      <span>
+        <div class="option-title">CvSU only</div>
+        <div class="option-sub">Anyone signed in with an @cvsu.edu.ph account</div>
+      </span>
+    </div>
+    <div class="option" data-mode="anyone" onclick="pickShare('anyone')">
+      <span class="radio"></span>
+      <span>
+        <div class="option-title">Anyone with the link</div>
+        <div class="option-sub">No sign-in needed</div>
+      </span>
+    </div>
+
+    <button class="cta" onclick="applyShare()">SAVE SHARING</button>
+    <div class="banner" id="share-banner"></div>
+
+    <div class="evidence" id="access-log" style="margin-top:16px">
+      <div class="evidence-head" onclick="toggleEvidence('access-log', 'access_log_opened')">
+        <span>
+          <span class="evidence-name">Access log</span>
+          <span class="evidence-sub">Every open and download of this file</span>
+        </span>
+        <span class="evidence-caret">expand</span>
+      </div>
+      <div class="evidence-body">
+<div class="rows">09-11 08:02  registrar.staff@cvsu.edu.ph  edit
+09-12 19:15  registrar.staff@cvsu.edu.ph  sharing -> anyone with link
+<span class="hot">09-13 21:40  anonymous (link)             view      112.198.40.17</span>
+09-14 07:12  guidance.office@cvsu.edu.ph  view
+<span class="hot">09-14 10:33  anonymous (link)             view      49.145.3.201</span>
+<span class="hot">09-14 10:35  anonymous (link)             download  49.145.3.201</span>
+09-14 18:02  j.santos@cvsu.edu.ph         view
+<span class="hot">09-15 06:58  anonymous (link)             view      180.190.77.9</span></div>
+        <div class="note">"anonymous" means the person was never signed in — the link alone let them in.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>initShare();</script>
+</body>
+</html>
