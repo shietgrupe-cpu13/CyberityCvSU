@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Phish report desk</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated mail desk · fictional messages, links never load</div>
+
+  <div class="desk-head">
+    <h1>ITSO phish report desk</h1>
+    <p>CvSU IT Services Office · forwarded by students and staff this week · 5 reports</p>
+  </div>
+
+  <div class="section-label">Reported messages</div>
+  <div id="reports" class="tickets"></div>
+
+  <div class="section-label">What counts as phishing</div>
+  <div class="explain">
+    <div class="explain-row"><b>Bait</b><span>A believable reason to act now: a suspended account, a deadline, a boss's request.</span></div>
+    <div class="explain-row"><b>Hook</b><span>How you're made to act: a link, an attachment, or simply a reply.</span></div>
+    <div class="explain-row"><b>Catch</b><span>What the attacker walks away with: a password, money, or access.</span></div>
+  </div>
+
+  <div class="foot">Open a report to read the message and investigate it.</div>
+
+  <script src="script.js"></script>
+  <script>renderQueue('reports');</script>
+</body>
+</html>

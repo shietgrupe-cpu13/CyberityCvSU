@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Email</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sim-ribbon">Simulated bench · fictional messages, links never load</div>
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='inbox.html'">&#8592; Bench</button>
+    <span class="topbar-title" id="mail-code"></span>
+  </div>
+  <div class="detail" id="detail"></div>
+  <script src="script.js"></script>
+  <script>
+    renderMail('detail');
+    window.addEventListener('hashchange', function () { renderMail('detail'); });
+  </script>
+</body>
+</html>

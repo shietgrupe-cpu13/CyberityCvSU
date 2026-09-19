@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Mail forensics bench</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sim-ribbon">Simulated bench · fictional messages, links never load</div>
+  <div class="desk-head">
+    <h1>Mail forensics bench</h1>
+    <p>CvSU IT Services Office · four emails that slipped past the filter</p>
+  </div>
+  <div class="section-label">Forwarded emails</div>
+  <div id="mails" class="tickets"></div>
+  <div class="section-label">How to read an email safely</div>
+  <div class="explain">
+    <div class="explain-row"><b>Domain</b><span>The site's owner sits just before the first single slash, read right to left.</span></div>
+    <div class="explain-row"><b>Link</b><span>The blue text is a label. Only the real destination matters.</span></div>
+    <div class="explain-row"><b>Sender</b><span>The From line is typed by the sender. SPF and DMARC results are the proof.</span></div>
+  </div>
+  <div class="foot">Open an email to investigate it with the bench tools.</div>
+  <script src="script.js"></script>
+  <script>renderInbox('mails');</script>
+</body>
+</html>
