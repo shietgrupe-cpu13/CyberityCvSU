@@ -254,7 +254,7 @@ fun List<LearningUnit>.withLevelsCompleted(completedIds: Set<Int>): List<Learnin
 // While content is being built, every level can be opened directly so a unit
 // can be tested without replaying the ones before it.
 //
-//   true  → all levels open (debug builds only — students never get this)
+//   true  → all levels open in every build
 //   false → normal order: each level unlocks after the previous one
 //
 // TODO: set back to false once all content is finished.
@@ -413,7 +413,7 @@ fun LearnScreen(
 
     // Developer switch (see DEV_UNLOCK_ALL_LEVELS). Only what's shown changes;
     // `units` and saved progress keep the real lock state.
-    val devUnlockAll = remember { DEV_UNLOCK_ALL_LEVELS && context.isDebugBuild() }
+    val devUnlockAll = remember { DEV_UNLOCK_ALL_LEVELS }
     val shownUnits = if (devUnlockAll) units.withAllLevelsUnlocked() else units
 
     var heartState by remember(uid) {
