@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Treatment plan</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated risk register · no real budgets, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='register.html'">&#8592; Register</button>
+    <span class="topbar-title" >Treatment plan</span>
+  </div>
+
+  <div class="detail">
+    <h2>Spend the budget</h2>
+    <div class="detail-sub">Tap controls to add or remove them. Aim for the lowest total residual risk you can afford.</div>
+
+    <div class="budget">
+      <div class="budget-top" id="budget-top"></div>
+      <div class="bar"><div class="bar-fill" id="bar-fill"></div></div>
+    </div>
+
+    <div id="controls"></div>
+
+    <div class="section-label" style="padding:12px 0 4px">Risk: before → after</div>
+    <div id="residual"></div>
+
+    <button class="cta" onclick="submitPlan()">SUBMIT PLAN TO CISO</button>
+    <div class="banner" id="plan-banner"></div>
+
+    <div id="memo" style="display:none;margin-top:10px">
+      <div class="rows" id="memo-body"></div>
+    </div>
+
+    <div class="evidence" id="guide" style="margin-top:16px">
+      <div class="evidence-head" onclick="toggleEvidence('guide', 'treatment_guide_opened')">
+        <span>
+          <span class="evidence-name">Risk treatment guide</span>
+          <span class="evidence-sub">The four things you can do with any risk</span>
+        </span>
+        <span class="evidence-caret">expand</span>
+      </div>
+      <div class="evidence-body">
+<div class="rows">MITIGATE  add a control that lowers likelihood
+          or impact
+TRANSFER  shift the cost of the damage to someone
+          else under contract (e.g. insurance)
+AVOID     stop doing the risky activity entirely,
+          so the risk no longer exists
+ACCEPT    knowingly live with it: the risk owner
+          signs off and it is reviewed next cycle</div>
+        <div class="note">Every control on this page is a form of mitigation.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>renderPlan();</script>
+</body>
+</html>

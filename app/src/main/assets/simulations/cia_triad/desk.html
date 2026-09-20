@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Incident desk</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin desk · no real files, no network access</div>
+
+  <div class="desk-head">
+    <h1>Registrar IT desk</h1>
+    <p>Student Records Portal · enrollment week · 3 open tickets</p>
+  </div>
+
+  <div class="section-label">Open tickets</div>
+  <div id="tickets" class="tickets"></div>
+
+  <div class="section-label">Admin tools</div>
+  <div class="tools">
+    <a class="tool" href="share.html">
+      <div class="tool-name">File sharing</div>
+      <div class="tool-sub">Who can open Registrar documents</div>
+    </a>
+    <a class="tool" href="verify.html">
+      <div class="tool-name">Integrity checker</div>
+      <div class="tool-sub">Compare record files against the signed baseline</div>
+    </a>
+    <a class="tool" href="status.html">
+      <div class="tool-name">Service status</div>
+      <div class="tool-sub">Health of the portal and the servers behind it</div>
+    </a>
+  </div>
+
+  <div class="foot">Open a ticket to read the report and the evidence attached to it.</div>
+
+  <script src="script.js"></script>
+  <script>renderDesk('tickets');</script>
+</body>
+</html>

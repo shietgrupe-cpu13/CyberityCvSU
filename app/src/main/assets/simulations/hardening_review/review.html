@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Hardening review</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin console · no real accounts, no network access</div>
+
+  <div class="desk-head">
+    <h1>Post-incident hardening review</h1>
+    <p>Student Records Portal · follow-up to INC-302 (changed grade)</p>
+  </div>
+
+  <div class="detail">
+    <div class="report">
+      The grade has been restored from backup. Before closing the incident, the Registrar
+      wants three questions answered: why did a stolen student-assistant password allow a
+      grade change, why didn't the grade lock hold, and what else should have stopped it?
+    </div>
+  </div>
+
+  <div class="section-label">Review areas</div>
+  <div class="tools">
+    <a class="tool" href="roles.html">
+      <div class="tool-name">Portal accounts</div>
+      <div class="tool-sub">Who holds which role, and what their job actually is</div>
+    </a>
+    <a class="tool" href="failsafe.html">
+      <div class="tool-name">Grade lock policy</div>
+      <div class="tool-sub">What the portal does when the lock check can't answer</div>
+    </a>
+    <a class="tool" href="layers.html">
+      <div class="tool-name">Defence layers</div>
+      <div class="tool-sub">Every control between an attacker and a grade record</div>
+    </a>
+  </div>
+
+  <div class="foot">Changes you make are saved for the rest of this review.</div>
+
+  <script src="script.js"></script>
+</body>
+</html>

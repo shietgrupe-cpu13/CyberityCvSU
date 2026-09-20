@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Portal accounts</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin console · no real accounts, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='review.html'">&#8592; Review</button>
+    <span class="topbar-title">Portal accounts</span>
+  </div>
+
+  <div class="detail">
+    <h2>Registrar portal accounts</h2>
+    <div class="detail-sub">Tap an account to see its job and permissions. Uncheck anything the job doesn't need, then save.</div>
+    <div id="users"></div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>renderRoles('users');</script>
+</body>
+</html>

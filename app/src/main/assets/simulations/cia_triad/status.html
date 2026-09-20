@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Service status</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated admin desk · no real files, no network access</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='desk.html'">&#8592; Desk</button>
+    <span class="topbar-title">Service status</span>
+  </div>
+
+  <div class="detail">
+    <h2>Student Records Portal</h2>
+    <div class="detail-sub">Tap a service to see its health details.</div>
+    <div id="services"></div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>renderStatus('services');</script>
+</body>
+</html>

@@ -155,6 +155,8 @@ fun LabScreen(
     val hintsOpened = remember { mutableStateMapOf<String, Int>() }
     // Mistakes made this attempt — decides the no-heart-lost bonus.
     var heartsLost by remember { mutableIntStateOf(0) }
+    // XP already taken from the balance for hints this attempt, for the result breakdown.
+    var hintsPaid by remember { mutableIntStateOf(0) }
 
     var webView by remember { mutableStateOf<WebView?>(null) }
 
@@ -260,6 +262,7 @@ fun LabScreen(
                     onOpenHint = {
                         if (canAffordHint) {
                             hintsOpened[task.id] = (hintsOpened[task.id] ?: 0) + 1
+                            hintsPaid += hintCost
                             onSpendXp(hintCost)
                         }
                     },
@@ -285,7 +288,7 @@ fun LabScreen(
             }
 
             LabStage.RESULT -> {
-                val earned = scoreLevelXp(
+                val award = awardFor(
                     completed = solved == total,
                     heartsLost = heartsLost,
                     hintsUsed = hintsUsedTotal,
@@ -297,8 +300,10 @@ fun LabScreen(
                     total = total,
                     cluesFound = clues.size,
                     hintsUsed = hintsUsedTotal,
-                    xpEarned = earned,
-                    onFinish = { onComplete(earned, solved, total) }
+                    heartsLost = heartsLost,
+                    hintsPaid = hintsPaid,
+                    award = award,
+                    onFinish = { onComplete(award.total, solved, total) }
                 )
             }
         }
@@ -901,7 +906,9 @@ private fun LabResult(
     total: Int,
     cluesFound: Int,
     hintsUsed: Int,
-    xpEarned: Int,
+    heartsLost: Int,
+    hintsPaid: Int,
+    award: XpAward,
     onFinish: () -> Unit
 ) {
     val passed = solved == total
@@ -945,16 +952,12 @@ private fun LabResult(
         }
 
         Spacer(Modifier.height(24.dp))
-        Row(
-            modifier = Modifier
-                .background(AppCard, RoundedCornerShape(14.dp))
-                .padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.Star, contentDescription = null, tint = AppCyan, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("+$xpEarned XP", color = AppWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        }
+        XpBreakdown(
+            award = award,
+            heartsLost = heartsLost,
+            hintsUsed = hintsUsed,
+            hintsPaid = hintsPaid
+        )
 
         Spacer(Modifier.weight(1f))
 

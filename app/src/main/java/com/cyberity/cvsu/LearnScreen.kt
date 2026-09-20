@@ -132,10 +132,10 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         levels = listOf(
             LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.CURRENT, durationMinutes = 12),
             LearningLevel(102, "Cybersecurity Threats", "Security lab: triage a night's worth of SOC alerts, classify the real threat, and pivot on the indicator.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 10),
-            LearningLevel(103, "CIA Triad", "Confidentiality, Integrity, Availability — the core model.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(150, "Bonus XP Cache", "A quick reward for clearing the first three levels.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 1),
-            LearningLevel(104, "Security Principles", "Least privilege, defence in depth, and fail-safe defaults.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(105, "Fundamentals Quiz", "Prove you've got the basics locked down.", 40, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 8)
+            LearningLevel(103, "CIA Triad", "Security lab: work three registrar incidents — one per pillar — then prove, contain, and restore.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(104, "Security Principles", "Security lab: audit roles, fix a fail-open lock, and stack defences until the attack replay fails.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(106, "Risk Assessment", "Security lab: inventory assets, scan the campus, and rank every risk by likelihood and impact.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(105, "Fundamentals Quiz", "Prove you've got the basics locked down.", 40, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 8),
         )
     ),
     LearningUnit(
@@ -739,38 +739,13 @@ fun LearningPath(
 // 8. UNIT HEADER — also carries the trail through its own height
 // ===========================================================================
 
-/**
- * Row wrapper: draws the connector passing behind the banner, then lays the
- * banner card on top of it. Private because it takes the internal row type.
- */
+/** Row wrapper for the unit card. Units are separate sections, so no trail is drawn through it. */
 @Composable
 private fun UnitHeader(row: PathRow.UnitBanner) {
-    val density = LocalDensity.current
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 14.dp)
-            .drawBehind {
-                if (row.incomingStatus == null) return@drawBehind
-
-                val amplitude = size.width * AMPLITUDE_RATIO
-                val centerX = size.width / 2f
-                val fromX = centerX + amplitude * horizontalFactor(row.incomingIndex)
-                val toX = centerX + amplitude * horizontalFactor(row.outgoingIndex)
-                // Both neighbouring level rows terminate their halves at this same
-                // midpoint x, so one straight stroke spanning the banner's height
-                // reads as the path continuing underneath it.
-                val seamX = (fromX + toX) / 2f
-
-                drawPathConnector(
-                    start = Offset(seamX, 0f),
-                    end = Offset(seamX, size.height),
-                    strokeWidth = with(density) { TrailWidth.toPx() },
-                    lit = row.incomingStatus == LevelStatus.COMPLETED,
-                    straight = true
-                )
-            }
     ) {
         UnitBanner(unit = row.unit)
     }
@@ -834,23 +809,22 @@ fun UnitBanner(
                 }
             }
 
-            Spacer(Modifier.width(14.dp))
+            if (locked) {
+                Spacer(Modifier.width(14.dp))
 
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        color = if (locked) AppNavy.copy(alpha = 0.5f) else AppNavy.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (locked) Icons.Filled.Lock else Icons.Filled.List,
-                    contentDescription = if (locked) "Unit locked" else "Unit syllabus",
-                    tint = if (locked) AppGray else AppWhite,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(AppNavy.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = "Unit locked",
+                        tint = AppGray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
@@ -1310,7 +1284,10 @@ sealed interface LevelContent {
 fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     101 -> LevelContent.Lab(inboxTriageLab(), inboxClueLabels)
     102 -> LevelContent.Lab(threatConsoleLab(), threatClueLabels)
+    103 -> LevelContent.Lab(ciaTriadLab(), ciaClueLabels)
+    104 -> LevelContent.Lab(hardeningReviewLab(), principleClueLabels)
     105 -> LevelContent.Scenarios(spotTheThreatQuiz())
+    106 -> LevelContent.Lab(riskRegisterLab(), riskClueLabels)
     else -> null
 }
 

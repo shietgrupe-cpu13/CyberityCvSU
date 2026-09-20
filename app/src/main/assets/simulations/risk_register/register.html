@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Risk register</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated risk register · no real budgets, no network access</div>
+
+  <div class="desk-head">
+    <h1>Registrar risk register</h1>
+    <p>From the hardening review · budget ₱150,000 · 4 open findings</p>
+  </div>
+
+  <div class="section-label">Findings</div>
+  <div id="findings" class="tickets"></div>
+
+  <div class="section-label">Tools</div>
+  <div class="tools">
+    <a class="tool" href="matrix.html">
+      <div class="tool-name">Risk matrix</div>
+      <div class="tool-sub">Score each finding: likelihood × impact</div>
+    </a>
+    <a class="tool" href="plan.html">
+      <div class="tool-name">Treatment plan</div>
+      <div class="tool-sub">Choose controls within the budget</div>
+    </a>
+  </div>
+
+  <div class="foot">Risk = likelihood × impact. Score first, then spend.</div>
+
+  <script src="script.js"></script>
+  <script>renderRegister('findings');</script>
+</body>
+</html>

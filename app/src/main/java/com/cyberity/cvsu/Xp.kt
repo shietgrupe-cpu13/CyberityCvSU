@@ -1,5 +1,7 @@
 package com.cyberity.cvsu
 
+import androidx.compose.runtime.Immutable
+
 // ===========================================================================
 // XP
 // ===========================================================================
@@ -32,20 +34,45 @@ private val HINT_COSTS = listOf(15, 30, 50)
 fun nextHintCost(opened: Int): Int = HINT_COSTS.getOrElse(opened) { HINT_COSTS.last() }
 
 /**
- * What a level pays out. Hints are not deducted here — they were already paid
- * for out of the balance when they were opened — but using one still forfeits
- * the no-hints bonus, so a hint costs its price plus that bonus.
+ * A level's payout, kept in parts so the result screen can show the student
+ * how the figure was arrived at rather than just the sum. A bonus that wasn't
+ * earned is present as zero, which is what lets the breakdown list it as
+ * missed instead of hiding it.
  */
+@Immutable
+data class XpAward(
+    val base: Int,
+    val noHeartBonus: Int,
+    val cluesBonus: Int,
+    val noHintsBonus: Int
+) {
+    val total: Int get() = base + noHeartBonus + cluesBonus + noHintsBonus
+}
+
+/**
+ * What a level pays out, itemised. Hints are not deducted here — they were
+ * already paid for out of the balance when they were opened — but using one
+ * still forfeits the no-hints bonus, so a hint costs its price plus that bonus.
+ */
+fun awardFor(
+    completed: Boolean,
+    heartsLost: Int,
+    hintsUsed: Int,
+    allCluesFound: Boolean
+): XpAward {
+    if (!completed) return XpAward(0, 0, 0, 0)
+    return XpAward(
+        base = LEVEL_XP,
+        noHeartBonus = if (heartsLost == 0) BONUS_NO_HEART_LOST else 0,
+        cluesBonus = if (allCluesFound) BONUS_ALL_CLUES else 0,
+        noHintsBonus = if (hintsUsed == 0) BONUS_NO_HINTS else 0
+    )
+}
+
+/** The payout as a single figure. */
 fun scoreLevelXp(
     completed: Boolean,
     heartsLost: Int,
     hintsUsed: Int,
     allCluesFound: Boolean
-): Int {
-    if (!completed) return 0
-    var xp = LEVEL_XP
-    if (heartsLost == 0) xp += BONUS_NO_HEART_LOST
-    if (allCluesFound) xp += BONUS_ALL_CLUES
-    if (hintsUsed == 0) xp += BONUS_NO_HINTS
-    return xp
-}
+): Int = awardFor(completed, heartsLost, hintsUsed, allCluesFound).total
