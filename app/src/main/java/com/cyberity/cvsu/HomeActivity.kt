@@ -61,8 +61,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.vector.ImageVector
 
 
 // ---------------------------------------------------------------------------
@@ -344,13 +348,8 @@ fun ProfileTab(
 ) {
 
     val auth = FirebaseAuth.getInstance()
-
-    var showLogoutDialog by remember {
-        mutableStateOf(false)
-    }
-
+    var showLogoutDialog by remember { mutableStateOf(false) }
     val user = auth.currentUser
-
     val email = user?.email ?: "No email"
 
     // Registered username and student ID from users/{uid}; until they load,
@@ -372,14 +371,11 @@ fun ProfileTab(
             .fillMaxSize()
             .background(AppNavy)
             .padding(24.dp),
-
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Spacer(modifier = Modifier.height(24.dp))
-
         Text(
-            text = "Profile",
+            text = "Profile Dashboard",
             color = AppWhite,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold
@@ -390,11 +386,11 @@ fun ProfileTab(
         Box(
             modifier = Modifier
                 .size(110.dp)
+                .background(AppBlue.copy(alpha = 0.2f), CircleShape)
+                .padding(8.dp)
                 .background(AppBlue, CircleShape),
-
             contentAlignment = Alignment.Center
         ) {
-
             Text(
                 text = initial,
                 color = AppWhite,
@@ -408,101 +404,71 @@ fun ProfileTab(
         Text(
             text = username,
             color = AppWhite,
-            fontSize = 22.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
 
-        profile?.studentId?.let { id ->
-            Text(
-                text = "Student ID: $id",
-                color = AppCyan,
-                fontSize = 14.sp
-            )
-        }
-
         Text(
-            text = email,
+            text = "CvSU Student",
             color = AppGray,
             fontSize = 14.sp
         )
 
-        Spacer(modifier = Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(32.dp))
 
+        // Personal Information Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = AppCard
-            ),
-            shape = RoundedCornerShape(18.dp)
+            colors = CardDefaults.cardColors(containerColor = AppCard),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Icon(
-                        imageVector = Icons.Filled.Email,
-                        contentDescription = null,
-                        tint = AppCyan
+            Column(modifier = Modifier.padding(20.dp)) {
+                ProfileInfoRow(icon = Icons.Filled.Email, label = "CvSU Email", value = email)
+                
+                profile?.studentId?.let { id ->
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        thickness = 1.dp,
+                        color = AppNavy.copy(alpha = 0.5f)
                     )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-
-                        Text(
-                            "CvSU Email",
-                            color = AppWhite,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            email,
-                            color = AppGray,
-                            fontSize = 13.sp
-                        )
-                    }
+                    ProfileInfoRow(icon = Icons.Filled.Badge, label = "Student ID", value = id)
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        showLogoutDialog = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red
-                    )
-                ) {
-                    Text("Sign Out")
-                }
-
             }
-
         }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Security Section
+        TotpMfaCard()
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Sign Out Button
+        Button(
+            onClick = { showLogoutDialog = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Red.copy(alpha = 0.1f),
+                contentColor = Color.Red
+            ),
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.2f))
+        ) {
+            Text("Sign Out", fontWeight = FontWeight.Bold)
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
     }
+
     if (showLogoutDialog) {
-
         AlertDialog(
-            onDismissRequest = {
-                showLogoutDialog = false
-            },
-
-            title = {
-                Text("Sign Out")
-            },
-
-            text = {
-                Text("Are you sure you want to sign out?")
-            },
-
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Sign Out") },
+            text = { Text("Are you sure you want to sign out?") },
             confirmButton = {
-
                 TextButton(
                     onClick = {
                         showLogoutDialog = false
@@ -510,23 +476,31 @@ fun ProfileTab(
                         onLogout()
                     }
                 ) {
-                    Text(
-                        "Sign Out",
-                        color = Color.Red
-                    )
+                    Text("Sign Out", color = Color.Red)
                 }
             },
-
             dismissButton = {
-
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                    }
-                ) {
+                TextButton(onClick = { showLogoutDialog = false }) {
                     Text("Cancel")
                 }
             }
         )
+    }
+}
+
+@Composable
+fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = AppCyan,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(label, color = AppGray, fontSize = 12.sp)
+            Text(value, color = AppWhite, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        }
     }
 }

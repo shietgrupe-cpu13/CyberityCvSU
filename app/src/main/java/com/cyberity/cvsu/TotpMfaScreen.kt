@@ -3,15 +3,23 @@ package com.cyberity.cvsu
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -30,7 +38,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -64,22 +74,67 @@ fun TotpMfaCard() {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = AppCard),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Icon(Icons.Filled.Security, contentDescription = null, tint = AppCyan)
-            Spacer(Modifier.height(10.dp))
-            Text("Authenticator app", color = AppWhite, fontSize = 18.sp)
-            Text(
-                if (isEnabled) "Two-factor authentication is enabled."
-                else "Add Google Authenticator or another compatible app.",
-                color = AppGray, fontSize = 13.sp
-            )
+        Row(
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        if (isEnabled) Color(0xFF00C853).copy(alpha = 0.15f)
+                        else AppCyan.copy(alpha = 0.15f),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Security,
+                    contentDescription = null,
+                    tint = if (isEnabled) Color(0xFF00C853) else AppCyan,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Authenticator app",
+                    color = AppWhite,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    if (isEnabled) "Enhanced security is active"
+                    else "Add an extra layer of protection",
+                    color = AppGray,
+                    fontSize = 13.sp
+                )
+            }
+
             if (!isEnabled) {
-                Spacer(Modifier.height(14.dp))
-                Button(onClick = { showEnrollment = true }, colors = ButtonDefaults.buttonColors(containerColor = AppBlue)) {
-                    Text("Enable 2FA")
+                Button(
+                    onClick = { showEnrollment = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Text("Setup", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
+            } else {
+                Icon(
+                    imageVector = Icons.Filled.CheckCircle,
+                    contentDescription = "Enabled",
+                    tint = Color(0xFF00C853),
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
