@@ -156,8 +156,8 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Phishing & Social Engineering",
         description = "The attacks that target people, not systems",
         levels = listOf(
-            LearningLevel(301, "What is Phishing?", "How deceptive messages bypass technical controls.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(302, "Identifying Suspicious Emails", "Headers, domains, and the tells that give it away.", 25, LevelType.LESSON, LevelStatus.LOCKED),
+            LearningLevel(301, "What is Phishing?", "Security lab: sort a week of reported messages, name each phishing type, and find out why the filters let them through.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(302, "Identifying Suspicious Emails", "Security lab: work a forensics bench — read the real domain, expose where links go, and prove a forged sender.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(303, "Social Engineering", "Pretexting, baiting, and manufactured urgency.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(304, "Scam Messages", "Smishing and vishing in the Philippine context.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(350, "Quick Quiz", "Six questions, sixty seconds.", 30, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 3),
@@ -247,6 +247,30 @@ fun List<LearningUnit>.withLevelsCompleted(completedIds: Set<Int>): List<Learnin
     return result
 }
 
+
+// ===========================================================================
+// DEVELOPER SWITCH — UNLOCK ALL LEVELS
+// ===========================================================================
+// While content is being built, every level can be opened directly so a unit
+// can be tested without replaying the ones before it.
+//
+//   true  → all levels open (debug builds only — students never get this)
+//   false → normal order: each level unlocks after the previous one
+//
+// TODO: set back to false once all content is finished.
+const val DEV_UNLOCK_ALL_LEVELS = true
+
+/**
+ * Display-only: shows every LOCKED level as playable. Saved progress is not
+ * touched, so switching DEV_UNLOCK_ALL_LEVELS off restores normal locking.
+ */
+fun List<LearningUnit>.withAllLevelsUnlocked(): List<LearningUnit> = map { unit ->
+    unit.copy(
+        levels = unit.levels.map { level ->
+            if (level.status == LevelStatus.LOCKED) level.copy(status = LevelStatus.CURRENT) else level
+        }
+    )
+}
 
 /** Ids currently marked COMPLETED — what actually gets cached and persisted. */
 private fun completedIdsOf(units: List<LearningUnit>): Set<Int> =
@@ -386,6 +410,11 @@ fun LearnScreen(
         mutableStateOf(sampleLearningUnits().withLevelsCompleted(cached))
     }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
+
+    // Developer switch (see DEV_UNLOCK_ALL_LEVELS). Only what's shown changes;
+    // `units` and saved progress keep the real lock state.
+    val devUnlockAll = remember { DEV_UNLOCK_ALL_LEVELS && context.isDebugBuild() }
+    val shownUnits = if (devUnlockAll) units.withAllLevelsUnlocked() else units
 
     var heartState by remember(uid) {
         mutableStateOf(uid?.let { ProgressCache.loadHearts(context, it) } ?: HeartState.FULL)
@@ -585,8 +614,18 @@ fun LearnScreen(
         Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
             LearnHeader(streak = 0, xp = totalXp, hearts = hearts, heartRefillIn = heartRefillIn)
 
+            if (devUnlockAll) {
+                Text(
+                    "DEV: all levels unlocked",
+                    color = AppCyan,
+                    fontSize = 12.sp,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+
             LearningPath(
-                units = units,
+                units = shownUnits,
                 modifier = Modifier.weight(1f),
                 onLevelClick = { unit, level -> selected = unit to level }
             )
@@ -596,7 +635,7 @@ fun LearnScreen(
             LevelPreviewBottomSheet(
                 unit = unit,
                 level = level,
-                prerequisiteTitle = prerequisiteFor(units, level),
+                prerequisiteTitle = prerequisiteFor(shownUnits, level),
                 hearts = hearts,
                 heartRefillIn = heartRefillIn,
                 sheetState = sheetState,
@@ -1288,6 +1327,8 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     104 -> LevelContent.Lab(hardeningReviewLab(), principleClueLabels)
     105 -> LevelContent.Scenarios(spotTheThreatQuiz())
     106 -> LevelContent.Lab(riskRegisterLab(), riskClueLabels)
+    301 -> LevelContent.Lab(phishDeskLab(), phishDeskClueLabels)
+    302 -> LevelContent.Lab(mailForensicsLab(), mailForensicsClueLabels)
     else -> null
 }
 

