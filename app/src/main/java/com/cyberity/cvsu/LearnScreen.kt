@@ -83,6 +83,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.lazy.LazyListState
 
 
 // ===========================================================================
@@ -507,6 +508,8 @@ fun LearnScreen(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val pathListState = rememberLazyListState()
+
     val running = runningLevel
     if (running != null) {
         val requestExit = { showExitConfirm = true }
@@ -627,6 +630,7 @@ fun LearnScreen(
             LearningPath(
                 units = shownUnits,
                 modifier = Modifier.weight(1f),
+                listState = pathListState,
                 onLevelClick = { unit, level -> selected = unit to level }
             )
         }
@@ -744,10 +748,11 @@ fun LearningPath(
     units: List<LearningUnit>,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(bottom = 40.dp),
+    listState: LazyListState = rememberLazyListState(),
     onLevelClick: (LearningUnit, LearningLevel) -> Unit
 ) {
     val rows = remember(units) { buildPathRows(units) }
-    val listState = rememberLazyListState()
+
 
     LazyColumn(
         state = listState,
