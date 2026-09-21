@@ -21,12 +21,37 @@ var Cyberity = (function () {
   };
 })();
 
+/* Read / unread state.
+ *
+ * Every page here is a real navigation, so this has to survive a page load.
+ * sessionStorage is the primary store; window.name follows the frame across
+ * navigations and covers the case where DOM storage is unavailable. Both are
+ * tied to this WebView, so re-opening the lab correctly starts fresh.
+ */
 var Store = {
-  get: function (key) {
-    try { return window.sessionStorage.getItem('phish_' + key); } catch (e) { return null; }
+  KEY: 'phish_read',
+
+  raw: function () {
+    var raw = null;
+    try { raw = window.sessionStorage.getItem(Store.KEY); } catch (e) { raw = null; }
+    if (raw === null) {
+      var tag = Store.KEY + '=';
+      raw = window.name.indexOf(tag) === 0 ? window.name.substring(tag.length) : '';
+    }
+    return raw || '';
   },
-  set: function (key, value) {
-    try { window.sessionStorage.setItem('phish_' + key, value); } catch (e) { /* ignore */ }
+
+  has: function (id) {
+    return Store.raw().split(',').indexOf(id) !== -1;
+  },
+
+  mark: function (id) {
+    if (Store.has(id)) return;
+    var ids = Store.raw().split(',').filter(function (s) { return s.length > 0; });
+    ids.push(id);
+    var raw = ids.join(',');
+    try { window.sessionStorage.setItem(Store.KEY, raw); } catch (e) { /* ignored */ }
+    window.name = Store.KEY + '=' + raw;
   }
 };
 
@@ -56,7 +81,7 @@ var REPORTS = {
       'Dear Customer,',
       'We detected unusual activity on your account. To avoid permanent suspension, ' +
         'verify your identity within 24 hours.',
-      'LINK:Verify my account|hxxps://gcash-ph-alerts.example/verify',
+      'LINK:Verify my account|hxxps://gcash-ph-alerts.example/verify|r1',
       'Failure to verify will result in loss of your remaining balance.',
       'GCash Security Team'
     ],
@@ -97,7 +122,7 @@ var REPORTS = {
       'I finished reviewing Chapter 3 of "Smart Irrigation Monitoring for Indang Farms". ' +
         'The panel wants the revisions before your defense on the 26th, so please check my ' +
         'comments tonight.',
-      'LINK:Open revision comments|hxxps://docs-review.cvsu-share.example/ch3',
+      'LINK:Open revision comments|hxxps://docs-review.cvsu-share.example/ch3|r2',
       'You\'ll need to sign in with your CvSU account to see the comments.',
       'Ma\'am Santos'
     ],
@@ -258,23 +283,32 @@ var REPORT_ORDER = ['r1', 'r2', 'r3', 'r4', 'r5'];
 function renderQueue(mountId) {
   var html = REPORT_ORDER.map(function (key) {
     var r = REPORTS[key];
-    var seen = Store.get('seen_' + key) === '1';
+    var read = Store.has(key);
     return '' +
-      '<a class="ticket-row" href="report.html#' + r.id + '">' +
-        '<span class="sev-bar ' + (seen ? 'seen' : 'new') + '"></span>' +
+      '<a class="ticket-row ' + (read ? 'read' : 'unread') + '" href="report.html#' + r.id + '">' +
+        '<span class="sev-bar ' + (read ? 'seen' : 'new') + '"></span>' +
         '<span class="ticket-body">' +
           '<span class="ticket-meta">' +
             '<span class="ticket-id">' + escapeHtml(r.code) + '</span>' +
-            '<span class="seen-chip' + (seen ? '' : ' new') + '">' + (seen ? 'read' : 'new') + '</span>' +
-            '<span>' + escapeHtml(r.time) + '</span>' +
+            '<span class="kind">EMAIL</span>' +
+            '<span style="margin-left:auto">' + escapeHtml(r.time) + '</span>' +
           '</span>' +
           '<span class="ticket-title">' + escapeHtml(r.subject) + '</span>' +
           '<span class="ticket-from">From ' + escapeHtml(r.fromName) +
             ' · reported by ' + escapeHtml(r.reportedBy) + '</span>' +
+          '<span class="mail-badge">' + (read ? 'READ' : 'NOT READ YET') + '</span>' +
         '</span>' +
       '</a>';
   }).join('');
   document.getElementById(mountId).innerHTML = html;
+
+  var left = REPORT_ORDER.filter(function (k) { return !Store.has(k); }).length;
+  var counter = document.getElementById('unread-count');
+  if (counter) {
+    counter.textContent = left === 0
+      ? 'All five read — compare them before you decide'
+      : left + ' of 5 still unread';
+  }
 }
 
 /* ---------------------------------------------------------------------------
@@ -294,21 +328,15 @@ function renderRows(ev) {
 function renderBodyLine(line) {
   if (line.indexOf('LINK:') === 0) {
     var parts = line.substring(5).split('|');
-    return '<div class="mail-link" onclick="hoverLink(this)" data-url="' + escapeHtml(parts[1]) + '">' +
-      escapeHtml(parts[0]) + '</div>' +
-      '<div class="link-target">Link goes to: <span class="mono">' + escapeHtml(parts[1]) +
-      '</span><br>Links are disabled in this simulation.</div>';
+    var label = parts[0], shown = parts[1], site = parts[2];
+    return '<a class="mail-link" href="browser.html#' + site + '">' + escapeHtml(label) + '</a>' +
+      '<div class="link-target">Opens a safe copy of the page in the sandbox browser.<br>' +
+      'Address: <span class="mono">' + escapeHtml(shown) + '</span></div>';
   }
   if (line.indexOf('BOX:') === 0) {
     return '<div class="mail-box">' + escapeHtml(line.substring(4)) + '</div>';
   }
   return '<p>' + escapeHtml(line) + '</p>';
-}
-
-/** Tapping a link never opens it. It only reveals where it points. */
-function hoverLink(el) {
-  var target = el.nextElementSibling;
-  if (target) target.classList.add('show');
 }
 
 function currentReport() {
@@ -336,7 +364,7 @@ function evidenceBox(boxId, name, sub, ev, clue) {
 function renderReport(mountId) {
   var r = currentReport();
 
-  Store.set('seen_' + r.id, '1');
+  Store.mark(r.id);
   Cyberity.clueFound('report_opened_' + r.id);
 
   var html =
@@ -417,12 +445,100 @@ function inspectPage() {
   Cyberity.flagDiscovered('form_hidden_field');
 }
 
-/** The dangerous action: typing a password into the fake portal. */
-function fakeSignIn() {
+/** The dangerous action: handing credentials to any of the fake pages. */
+function fakeSignIn(which) {
   var banner = document.getElementById('signin-banner');
   banner.className = 'banner show bad';
-  banner.textContent = 'Blocked by the simulation. On a real device, your CvSU email and ' +
-    'password would already be on the attacker\'s server, and the page would quietly send ' +
-    'you to the real schedule so you never notice.';
+  banner.textContent = (SITES[which] && SITES[which].warning) ||
+    'Blocked by the simulation. On a real device your CvSU email and password would already ' +
+    'be on the attacker\'s server, and the page would quietly send you on to the real ' +
+    'schedule so you never notice.';
+  banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
   Cyberity.clueFound('credentials_submitted');
+}
+
+/* ---------------------------------------------------------------------------
+ * Sandbox browser — the pages R1 and R2 actually open
+ *
+ * Students are meant to look: reading a URL teaches far less than seeing what
+ * it serves. Nothing here reaches the network, and a page only calls itself
+ * out as hostile once the student tries to sign in, so opening a link never
+ * gives away which report is which before they decide.
+ * ------------------------------------------------------------------------ */
+var SITES = {
+  r1: {
+    report: 'r1',
+    url: 'hxxps://gcash-ph-alerts.example/verify',
+    realDomain: 'gcash-ph-alerts.example',
+    clue: 'site_visited_r1',
+    brand: 'GCash',
+    accent: '#0b6b2e',
+    title: 'Verify your account to avoid suspension',
+    note: 'Wallet verification · expires in 23:41',
+    fields: [
+      { label: 'Mobile number', type: 'tel', placeholder: '09XX XXX XXXX' },
+      { label: 'MPIN', type: 'password', placeholder: '\u2022\u2022\u2022\u2022' }
+    ],
+    button: 'Verify now',
+    warning: 'Blocked by the simulation. On a real phone your mobile number and MPIN would ' +
+      'now be on the attacker\'s server, and the wallet could be emptied within minutes. ' +
+      'No wallet provider asks for your MPIN on a page you reached from an email.'
+  },
+  r2: {
+    report: 'r2',
+    url: 'hxxps://docs-review.cvsu-share.example/ch3',
+    realDomain: 'cvsu-share.example',
+    clue: 'site_visited_r2',
+    brand: 'CvSU Document Review',
+    accent: '#005CEB',
+    title: 'Sign in to view "Chapter 3 \u2014 revision comments"',
+    note: 'Shared with you by m.santos@cvsu.edu.ph',
+    fields: [
+      { label: 'CvSU email', type: 'email', placeholder: 'name@cvsu.edu.ph' },
+      { label: 'Password', type: 'password', placeholder: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' }
+    ],
+    button: 'Sign in',
+    warning: 'Blocked by the simulation. Look at the address again — this page is not part ' +
+      'of cvsu.edu.ph. On a real phone your CvSU password would now belong to the attacker, ' +
+      'and your account would send the next round of these emails.'
+  }
+};
+
+function renderBrowser(mountId) {
+  var key = (window.location.hash || '#r1').substring(1);
+  var site = SITES[key] || SITES.r1;
+
+  Cyberity.clueFound(site.clue);
+
+  var fields = site.fields.map(function (f) {
+    return '<label class="fake-label">' + escapeHtml(f.label) + '</label>' +
+      '<input class="fake-input" type="' + f.type + '" placeholder="' + escapeHtml(f.placeholder) +
+      '" autocomplete="off">';
+  }).join('');
+
+  document.getElementById(mountId).innerHTML =
+    '<div class="url-bar">' +
+      '<div class="url-label">Address of the page you are on</div>' +
+      '<div class="mono url-text">' + escapeHtml(site.url) + '</div>' +
+      '<div class="url-note">Site owner: <b>' + escapeHtml(site.realDomain) + '</b></div>' +
+    '</div>' +
+    '<div class="fake-page">' +
+      '<div class="fake-bar" style="background:' + site.accent + ';color:#ffffff">' +
+        escapeHtml(site.brand) + '</div>' +
+      '<div class="fake-inner">' +
+        '<div class="fake-head">' + escapeHtml(site.title) + '</div>' +
+        '<div class="fake-title">' + escapeHtml(site.note) + '</div>' +
+        fields +
+        '<button class="fake-btn" style="background:' + site.accent + '" ' +
+          'onclick="fakeSignIn(\'' + key + '\')">' + escapeHtml(site.button) + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="banner" id="signin-banner"></div>' +
+    '<div class="note">A safe copy — nothing you type is sent anywhere. Look at what the page ' +
+      'asks for, and at who is really asking.</div>';
+
+  var back = document.getElementById('back-link');
+  if (back) back.setAttribute('onclick', "location.href='report.html#" + site.report + "'");
+  var title = document.getElementById('browser-url');
+  if (title) title.textContent = site.realDomain;
 }

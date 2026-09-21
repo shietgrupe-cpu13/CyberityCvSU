@@ -20,9 +20,15 @@ object MailForensicsClues {
     const val LINK_INSPECTED_E3 = "link_inspected_e3"
     const val HEADERS_ANALYZED_E4 = "headers_analyzed_e4"
     const val ALL_TELLS_E4 = "all_tells_e4"
+    const val SITE_VISITED_E1 = "site_visited_e1"
+    const val SITE_VISITED_E2 = "site_visited_e2"
+    const val SITE_VISITED_E3 = "site_visited_e3"
 
     /** Dangerous: running the "PDF" attachment. */
     const val ATTACHMENT_RUN = "attachment_run"
+
+    /** Dangerous: typing credentials into one of the fake pages. */
+    const val CREDENTIALS_SUBMITTED = "credentials_submitted"
 }
 
 val mailForensicsClueLabels: Map<String, String> = mapOf(
@@ -34,7 +40,10 @@ val mailForensicsClueLabels: Map<String, String> = mapOf(
     MailForensicsClues.DOMAIN_LOOKUP_E2 to "Looked up E2's sender domain",
     MailForensicsClues.LINK_INSPECTED_E3 to "Checked where E3's link really goes",
     MailForensicsClues.HEADERS_ANALYZED_E4 to "Ran the header analyzer on E4",
-    MailForensicsClues.ALL_TELLS_E4 to "Tagged all six tells in E4"
+    MailForensicsClues.ALL_TELLS_E4 to "Tagged all six tells in E4",
+    MailForensicsClues.SITE_VISITED_E1 to "Opened E1's page in the sandbox browser",
+    MailForensicsClues.SITE_VISITED_E2 to "Opened E2's page in the sandbox browser",
+    MailForensicsClues.SITE_VISITED_E3 to "Opened E3's page in the sandbox browser"
 )
 
 fun mailForensicsLab(): LabDefinition = LabDefinition(
@@ -44,10 +53,16 @@ fun mailForensicsLab(): LabDefinition = LabDefinition(
     briefing = "A student forwarded four emails that made it past the filters. Each one hides " +
             "a different giveaway: a fake domain, a swapped letter, a link that goes " +
             "somewhere else, or a forged sender. Use the bench tools to find the proof. Your " +
-            "own eyes are the last filter.",
+            "own eyes are the last filter.\n\n" +
+            "Revealing a link shows you where it goes; opening it in the sandbox browser shows " +
+            "you what it serves. Both are safe here. Typing a password into one of those pages " +
+            "is not, and costs a heart.",
     assetDir = "mail_forensics",
     startPage = "inbox.html",
-    dangerousClues = listOf(MailForensicsClues.ATTACHMENT_RUN),
+    dangerousClues = listOf(
+        MailForensicsClues.ATTACHMENT_RUN,
+        MailForensicsClues.CREDENTIALS_SUBMITTED
+    ),
     tasks = listOf(
 
         LabTask(

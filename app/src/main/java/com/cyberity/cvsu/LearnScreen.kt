@@ -159,7 +159,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         levels = listOf(
             LearningLevel(301, "What is Phishing?", "Security lab: sort a week of reported messages, name each phishing type, and find out why the filters let them through.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(302, "Identifying Suspicious Emails", "Security lab: work a forensics bench — read the real domain, expose where links go, and prove a forged sender.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
-            LearningLevel(303, "Social Engineering", "Pretexting, baiting, and manufactured urgency.", 25, LevelType.LESSON, LevelStatus.LOCKED),
+            LearningLevel(303, "Social Engineering", "Security lab: review a week of campus incidents — a tailgater, a helpful caller, a found flash drive, and a friend's hijacked account.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(304, "Scam Messages", "Smishing and vishing in the Philippine context.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(350, "Quick Quiz", "Six questions, sixty seconds.", 30, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 3),
             LearningLevel(305, "Phishing Simulation", "Inspect a live inbox and flag every malicious message.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
@@ -1334,6 +1334,7 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     106 -> LevelContent.Lab(riskRegisterLab(), riskClueLabels)
     301 -> LevelContent.Lab(phishDeskLab(), phishDeskClueLabels)
     302 -> LevelContent.Lab(mailForensicsLab(), mailForensicsClueLabels)
+    303 -> LevelContent.Lab(socialEngineeringLab(), socialEngClueLabels)
     else -> null
 }
 

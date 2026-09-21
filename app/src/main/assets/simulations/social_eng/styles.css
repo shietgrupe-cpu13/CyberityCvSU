@@ -1,4 +1,4 @@
-/* Cyberity — ITSO Mail Forensics Bench (level 302). Shares the phish desk base. */
+/* Cyberity — Campus Security Review (level 303). Shares the phish desk base. */
 
 :root {
   --navy: #010E45;
@@ -494,74 +494,45 @@ body { padding-bottom: 28px; }
 /* Long headers, links and page code wrap instead of running off a phone screen. */
 .rows { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 
-/* ===================== Mail forensics additions ===================== */
-
-.bench-note { margin: 10px 2px; font-size: 12px; color: var(--gray); }
-
-/* Tag mode: highlight tappable tells */
-body.tagging [data-tell]:not([data-tell=""]) {
-  outline: 1px dashed rgba(108, 184, 236, 0.6);
-  outline-offset: 2px;
-  border-radius: 4px;
-  cursor: pointer;
+/* Read / unread label. Spelled out, so the state never has to be guessed
+   from the colour of a bar alone. */
+.mail-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
-[data-tell].tagged {
-  background: rgba(255, 92, 122, 0.16) !important;
-  outline: 1px solid var(--red) !important;
-  border-radius: 4px;
+.ticket-row.unread .mail-badge {
+  background: rgba(108, 184, 236, 0.16);
+  border: 1px solid rgba(108, 184, 236, 0.5);
+  color: var(--cyan);
 }
-
-.tag-status {
-  margin-top: 10px;
-  padding: 9px 12px;
-  border-radius: 10px;
-  background: var(--card);
-  border: 1px solid rgba(154, 169, 194, 0.22);
-  font-size: 13px;
+.ticket-row.read .mail-badge {
+  background: rgba(154, 169, 194, 0.10);
+  border: 1px solid rgba(154, 169, 194, 0.32);
+  color: var(--gray);
 }
 
-/* Domain lookup */
-.lookup-card {
-  background: var(--card);
-  border: 1px solid rgba(154, 169, 194, 0.22);
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 10px;
+/* An opened report sits back: the unread ones should catch the eye. */
+.ticket-row.read .ticket-title { color: var(--gray); font-weight: 500; }
+.ticket-row.read .ticket-from { color: rgba(154, 169, 194, 0.7); }
+
+/* Channel chip — EMAIL / SMS / CALL all share one outline, never a colour. */
+.kind {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--cyan);
+  border: 1px solid rgba(108, 184, 236, 0.4);
+  border-radius: 5px;
+  padding: 1px 5px;
 }
-.lookup-h { font-size: 12px; color: var(--cyan); text-transform: uppercase; letter-spacing: 0.06em; }
-.lookup-dom { font-size: 18px; margin: 6px 0 10px; word-break: break-all; }
-.charmap { display: flex; flex-wrap: wrap; gap: 4px; }
-.char {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-width: 22px;
-  padding: 4px 2px;
-  border-radius: 6px;
-  background: #000a2a;
-}
-.char.hot { background: rgba(255, 92, 122, 0.18); outline: 1px solid var(--red); }
-.char .ch { font-family: "Roboto Mono", monospace; font-size: 15px; }
-.char .cn { font-size: 8px; color: var(--gray); margin-top: 2px; letter-spacing: 0.02em; }
-.lookup-meta { margin-top: 10px; font-size: 12px; }
-.lookup-meta.warn { color: var(--amber); }
-.lookup-meta.ok { color: var(--green); }
+.unread-line { color: var(--cyan) !important; font-size: 12px; margin-top: 2px; }
 
 /* ---------- sandbox browser ---------- */
 
-.open-site {
-  display: block;
-  margin-top: 9px;
-  padding: 9px;
-  border-radius: 8px;
-  background: var(--blue);
-  color: var(--white);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-align: center;
-  text-decoration: none;
-}
 .url-bar {
   background: var(--card);
   border: 1px solid rgba(108, 184, 236, 0.35);
@@ -576,6 +547,163 @@ body.tagging [data-tell]:not([data-tell=""]) {
   color: var(--cyan);
 }
 .url-text { font-size: 12px; margin-top: 3px; }
-.url-note { font-size: 11px; color: var(--gray); margin-top: 5px; line-height: 1.5; }
+.url-note { font-size: 11px; color: var(--gray); margin-top: 5px; }
 .url-note b { color: var(--amber); }
+
 .fake-head { font-weight: 700; font-size: 15px; color: #1c2533; }
+
+/* ===================== Security review additions ===================== */
+
+.chat { display: flex; flex-direction: column; gap: 8px; }
+.bubble-row { display: flex; }
+.bubble-row.us { justify-content: flex-end; }
+.bubble {
+  max-width: 82%;
+  padding: 8px 11px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  background: rgba(154, 169, 194, 0.14);
+}
+.bubble-row.us .bubble { background: rgba(0, 92, 235, 0.35); }
+.bubble-name {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 3px;
+}
+.bubble-row.us .bubble-name { color: rgba(245, 248, 252, 0.75); }
+
+/* the found drive */
+.drive {
+  background: #d8dee8;
+  color: #1c2533;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.drive-label {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+}
+.drive-label span { font-weight: 600; font-size: 12px; color: #5b6778; }
+.drive-sub { font-size: 12px; color: #5b6778; margin-top: 8px; }
+
+/* ---------- CCTV viewer + doorway scene ---------- */
+
+.scene-card {
+  background: #0a1330;
+  border: 1px solid rgba(108, 184, 236, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.scene-time {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  color: var(--cyan);
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(108, 184, 236, 0.2);
+}
+.rec {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 6px var(--red);
+}
+.cctv-svg { display: block; width: 100%; height: auto; background: #0a1330; }
+
+.frame-dots { display: flex; gap: 6px; justify-content: center; margin: 10px 0 4px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(154, 169, 194, 0.3); }
+.dot.seen { background: rgba(108, 184, 236, 0.55); }
+.dot.on { background: var(--cyan); transform: scale(1.35); }
+
+.caption { font-size: 14px; line-height: 1.5; margin: 8px 2px 12px; }
+
+.frame-nav { display: flex; gap: 10px; margin-top: 12px; }
+.nav-btn {
+  flex: 1;
+  padding: 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(154, 169, 194, 0.35);
+  background: transparent;
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 700;
+}
+.nav-btn.primary { background: var(--blue); border-color: var(--blue); }
+.nav-btn:disabled { opacity: 0.35; }
+
+.cta.ghost {
+  background: transparent;
+  border: 1px solid rgba(108, 184, 236, 0.5);
+  color: var(--cyan);
+}
+
+.speech {
+  margin: 12px 0 10px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: rgba(255, 196, 107, 0.12);
+  color: var(--amber);
+  font-size: 14px;
+  font-style: italic;
+}
+
+.choice-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 9px;
+  padding: 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(154, 169, 194, 0.3);
+  background: var(--card);
+  color: var(--white);
+  font-size: 14px;
+  line-height: 1.4;
+}
+.choice-btn:active { border-color: var(--cyan); }
+
+/* ---------- badge reconciliation ---------- */
+
+.event {
+  background: var(--card);
+  border: 1px solid rgba(154, 169, 194, 0.22);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-bottom: 9px;
+}
+.event.ok { border-color: rgba(39, 224, 168, 0.5); }
+.event.flag { border-color: rgba(255, 92, 122, 0.6); }
+.event.wrong { border-color: rgba(255, 196, 107, 0.6); }
+.event-top { font-size: 12px; color: var(--cyan); }
+.event-what { font-size: 14px; margin: 3px 0 9px; line-height: 1.4; }
+.event-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.event-log { font-family: "Roboto Mono", monospace; font-size: 11px; margin-top: 8px; line-height: 1.6; }
+.event-log .ok { color: var(--green); }
+.event-log .hot { color: var(--red); }
+.event-log .warn { color: var(--amber); }
+
+/* ---------- visitor book ---------- */
+
+.book {
+  background: #f3f1e7;
+  color: #2b2b26;
+  border-radius: 8px;
+  padding: 6px 10px 10px;
+  font-family: "Segoe Script", "Bradley Hand", cursive;
+}
+.book-row {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  padding: 7px 2px 3px;
+  border-bottom: 1px solid #c9c3ac;
+}
+.book-row span:first-child { flex: 0 0 46px; color: #5a5647; }
+.book-row.empty { height: 27px; }

@@ -37,7 +37,7 @@ var MAILS = {
       'Good day,',
       'Your ₱10,000 stipend release is on hold pending identity verification. Verify now ' +
         'to receive it this cycle.',
-      { link: 'https://ched.gov.ph.verify-portal/claim', real: 'https://ched.gov.ph.stipend-verify.com/claim', clue: 'link_inspected_e1' },
+      { link: 'https://ched.gov.ph.verify-portal/claim', real: 'https://ched.gov.ph.stipend-verify.com/claim', clue: 'link_inspected_e1', site: 'e1' },
       'CHED Scholarship Office'
     ]
   },
@@ -50,7 +50,7 @@ var MAILS = {
       'Dear Client,',
       'A new device signed in to your BPI account. If this wasn\'t you, secure your account ' +
         'immediately.',
-      { link: 'https://Iogin-bpi.com/secure', real: 'https://Iogin-bpi.com/secure', clue: null },
+      { link: 'https://Iogin-bpi.com/secure', real: 'https://Iogin-bpi.com/secure', clue: 'link_inspected_e2', site: 'e2' },
       'BPI Online Security'
     ]
   },
@@ -62,7 +62,7 @@ var MAILS = {
     body: [
       'Dear Student,',
       'Your grades for the 2nd semester are now available. View them at the link below.',
-      { link: 'https://portal.cvsu.edu.ph/grades', real: 'http://45.61.87.200/grades', clue: 'link_inspected_e3' },
+      { link: 'https://portal.cvsu.edu.ph/grades', real: 'http://45.61.87.200/grades', clue: 'link_inspected_e3', site: 'e3' },
       'CvSU Student Portal'
     ]
   },
@@ -163,7 +163,8 @@ function renderMail(mountId) {
 
   // Per-message bench tool
   if (m.id === 'e1' || m.id === 'e3') {
-    html += '<div class="bench-note">Tap the blue link to reveal where it actually goes. It will not open.</div>';
+    html += '<div class="bench-note">Tap the blue link to reveal where it actually goes, ' +
+      'then open that page in the sandbox if you want to see what it serves.</div>';
   } else if (m.id === 'e2') {
     html += '<a class="cta" href="lookup.html">OPEN DOMAIN LOOKUP</a>';
   } else if (m.id === 'e4') {
@@ -184,10 +185,11 @@ function renderBody(m) {
     if (typeof part === 'string') return '<p>' + escapeHtml(part) + '</p>';
     if (part.link) {
       return '<span class="mail-link" onclick="revealLink(this)" ' +
-        'data-real="' + escapeHtml(part.real) + '" data-clue="' + (part.clue || '') + '">' +
-        escapeHtml(part.link) + '</span>' +
+        'data-clue="' + (part.clue || '') + '">' + escapeHtml(part.link) + '</span>' +
         '<div class="link-target">Really goes to: <span class="mono">' + escapeHtml(part.real) +
-        '</span><br>Links are disabled in this simulation.</div>';
+        '</span><br>Tapping the link here only reveals the destination — it never opens.' +
+        '<a class="open-site" href="site.html#' + part.site + '">OPEN THIS PAGE IN THE SANDBOX</a>' +
+        '</div>';
     }
     if (part.attachment) {
       return '<div class="attachment" onclick="runAttachment()">' +
@@ -341,4 +343,121 @@ function charName(c) {
   if (c === '.') return 'dot';
   if (c === '-') return 'dash';
   return c;
+}
+
+/* ---------------------------------------------------------------------------
+ * Sandbox browser — the pages E1, E2 and E3 actually serve
+ *
+ * Reading a destination teaches the check; seeing what it serves teaches why
+ * the check matters. Nothing reaches the network, and a page only calls
+ * itself out once the student tries to sign in.
+ * ------------------------------------------------------------------------ */
+var SITES = {
+  e1: {
+    mail: 'e1',
+    url: 'https://ched.gov.ph.stipend-verify.com/claim',
+    owner: 'stipend-verify.com',
+    ownerNote: 'The words ched.gov.ph are just a label in front of it.',
+    clue: 'site_visited_e1',
+    brand: 'CHED Scholarship Portal',
+    accent: '#0b3f8f',
+    title: 'Claim your stipend release',
+    note: 'Verification required before 5:00 PM today',
+    fields: [
+      { label: 'Student number', type: 'text', placeholder: '2023-XXXXX' },
+      { label: 'Bank or e-wallet number', type: 'text', placeholder: '09XX XXX XXXX' },
+      { label: 'PIN', type: 'password', placeholder: '\u2022\u2022\u2022\u2022' }
+    ],
+    button: 'Claim stipend',
+    warning: 'Blocked by the simulation. A real scholarship office never asks for your ' +
+      'wallet PIN, and never on a site owned by stipend-verify.com. On a real phone the ' +
+      'stipend would not arrive — the money would leave.'
+  },
+  e2: {
+    mail: 'e2',
+    url: 'https://Iogin-bpi.com/secure',
+    owner: 'Iogin-bpi.com',
+    ownerNote: 'First character is a capital i, not a lowercase L. Registered 3 days ago.',
+    clue: 'site_visited_e2',
+    brand: 'BPI Online',
+    accent: '#8b1a1a',
+    title: 'Secure your account',
+    note: 'A new device signed in · confirm it was not you',
+    fields: [
+      { label: 'User ID', type: 'text', placeholder: 'your user ID' },
+      { label: 'Password', type: 'password', placeholder: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' }
+    ],
+    button: 'Secure my account',
+    warning: 'Blocked by the simulation. The page is convincing, but the address is not the ' +
+      'bank\'s. Typing here hands over online banking — check the domain before the design.'
+  },
+  e3: {
+    mail: 'e3',
+    url: 'http://45.61.87.200/grades',
+    owner: '45.61.87.200 · a bare address, with no name and no https',
+    ownerNote: 'No real university portal lives at a naked number address.',
+    clue: 'site_visited_e3',
+    brand: 'CvSU Student Portal',
+    accent: '#0b6b2e',
+    title: 'Sign in to view your grades',
+    note: '2nd semester grades are ready',
+    fields: [
+      { label: 'CvSU email', type: 'email', placeholder: 'name@cvsu.edu.ph' },
+      { label: 'Password', type: 'password', placeholder: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022' }
+    ],
+    button: 'Sign in',
+    warning: 'Blocked by the simulation. The link said portal.cvsu.edu.ph, but the page came ' +
+      'from 45.61.87.200 — the same address behind the brute-force alert and the tampered ' +
+      'grade in Unit 1. The same attacker is now collecting passwords.'
+  }
+};
+
+function renderSite(mountId) {
+  var key = (window.location.hash || '#e1').substring(1);
+  var site = SITES[key] || SITES.e1;
+
+  Cyberity.clueFound(site.clue);
+
+  var fields = site.fields.map(function (f) {
+    return '<label class="fake-label">' + escapeHtml(f.label) + '</label>' +
+      '<input class="fake-input" type="' + f.type + '" placeholder="' + escapeHtml(f.placeholder) +
+      '" autocomplete="off">';
+  }).join('');
+
+  document.getElementById(mountId).innerHTML =
+    '<div class="url-bar">' +
+      '<div class="url-label">Address of the page you are on</div>' +
+      '<div class="mono url-text">' + escapeHtml(site.url) + '</div>' +
+      '<div class="url-note">Site owner: <b>' + escapeHtml(site.owner) + '</b><br>' +
+        escapeHtml(site.ownerNote) + '</div>' +
+    '</div>' +
+    '<div class="fake-page">' +
+      '<div class="fake-bar" style="background:' + site.accent + ';color:#ffffff">' +
+        escapeHtml(site.brand) + '</div>' +
+      '<div class="fake-inner">' +
+        '<div class="fake-head">' + escapeHtml(site.title) + '</div>' +
+        '<div class="fake-title">' + escapeHtml(site.note) + '</div>' +
+        fields +
+        '<button class="fake-btn" style="background:' + site.accent + '" ' +
+          'onclick="siteSignIn(\'' + key + '\')">' + escapeHtml(site.button) + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="banner" id="site-banner"></div>' +
+    '<div class="note">In this lab, opening a link is safe. On your own phone it is not: ' +
+      'long-press a link to preview where it goes, or type the site\'s address yourself ' +
+      'instead of tapping.</div>';
+
+  var back = document.getElementById('back-link');
+  if (back) back.setAttribute('onclick', "location.href='mail.html#" + site.mail + "'");
+  var title = document.getElementById('site-owner');
+  if (title) title.textContent = site.owner.split(' ')[0];
+}
+
+/** Dangerous: handing credentials to one of the fake pages. */
+function siteSignIn(which) {
+  var banner = document.getElementById('site-banner');
+  banner.className = 'banner show bad';
+  banner.textContent = SITES[which].warning;
+  banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  Cyberity.clueFound('credentials_submitted');
 }

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Campus security review</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sim-ribbon">Simulated review desk · fictional incidents and people</div>
+  <div class="desk-head">
+    <h1>Campus security review</h1>
+    <p>ITSO + Security Office · incidents logged this week</p>
+    <p id="review-count" class="unread-line">4 of 4 still to review</p>
+  </div>
+  <div class="section-label">Incidents</div>
+  <div id="incidents" class="tickets"></div>
+  <div class="section-label">What social engineering uses</div>
+  <div class="explain">
+    <div class="explain-row"><b>Authority</b><span>Claiming a role you would not argue with: IT, the registrar, a manager.</span></div>
+    <div class="explain-row"><b>Urgency</b><span>A deadline that leaves no time to check with anyone.</span></div>
+    <div class="explain-row"><b>Trust</b><span>A familiar name, a uniform, or a favour that feels rude to refuse.</span></div>
+    <div class="explain-row"><b>Curiosity</b><span>Something you want to look inside: a found drive, a confidential label.</span></div>
+  </div>
+  <div class="foot">Open an incident to read the report and the evidence attached to it.</div>
+  <script src="script.js"></script>
+  <script>renderDesk('incidents');</script>
+</body>
+</html>

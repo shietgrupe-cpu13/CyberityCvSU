@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Incident</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sim-ribbon">Simulated review desk · fictional incidents and people</div>
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='desk.html'">&#8592; Review</button>
+    <span class="topbar-title" id="incident-code"></span>
+  </div>
+  <div class="detail" id="detail"></div>
+  <script src="script.js"></script>
+  <script>
+    renderIncident('detail');
+    window.addEventListener('hashchange', function () { renderIncident('detail'); });
+  </script>
+</body>
+</html>
