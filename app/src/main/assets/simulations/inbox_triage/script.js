@@ -24,6 +24,60 @@ var Cyberity = (function () {
 })();
 
 /* ---------------------------------------------------------------------------
+ * Read / unread state.
+ *
+ * Every page here is a real navigation, so this has to survive a page load.
+ * sessionStorage is the primary store; window.name follows the frame across
+ * navigations and covers the case where DOM storage is unavailable. Both are
+ * tied to this WebView, so closing the lab and starting it again correctly
+ * gives a fresh mailbox with everything unread.
+ * ------------------------------------------------------------------------ */
+var ReadState = (function () {
+  var KEY = 'cyberity.read';
+  var TAG = KEY + '=';
+
+  function load() {
+    var raw = null;
+    try {
+      raw = window.sessionStorage.getItem(KEY);
+    } catch (e) {
+      raw = null; /* DOM storage unavailable — fall through */
+    }
+    if (raw === null) {
+      raw = window.name.indexOf(TAG) === 0 ? window.name.substring(TAG.length) : '';
+    }
+    return raw.split(',').filter(function (s) { return s.length > 0; });
+  }
+
+  function store(ids) {
+    var raw = ids.join(',');
+    try {
+      window.sessionStorage.setItem(KEY, raw);
+    } catch (e) {
+      /* ignored — window.name below is the fallback */
+    }
+    window.name = TAG + raw;
+  }
+
+  return {
+    has: function (id) { return load().indexOf(id) !== -1; },
+
+    mark: function (id) {
+      var ids = load();
+      if (ids.indexOf(id) === -1) {
+        ids.push(id);
+        store(ids);
+      }
+    },
+
+    unreadCount: function (allIds) {
+      var ids = load();
+      return allIds.filter(function (id) { return ids.indexOf(id) === -1; }).length;
+    }
+  };
+})();
+
+/* ---------------------------------------------------------------------------
  * Mailbox contents
  * ------------------------------------------------------------------------ */
 var EMAILS = {
@@ -145,8 +199,10 @@ function renderInbox(mountId) {
   var html = '';
   MAIL_ORDER.forEach(function (key) {
     var m = EMAILS[key];
+    var isRead = ReadState.has(m.id);
+
     html +=
-      '<a class="mail-item" href="email.html#' + m.id + '">' +
+      '<a class="mail-item ' + (isRead ? 'read' : 'unread') + '" href="email.html#' + m.id + '">' +
         '<span class="mail-dot"></span>' +
         '<span class="mail-body">' +
           '<span class="mail-row">' +
@@ -155,10 +211,24 @@ function renderInbox(mountId) {
           '</span>' +
           '<span class="mail-subject">' + escapeHtml(m.subject) + '</span>' +
           '<span class="mail-preview">' + escapeHtml(m.preview) + '</span>' +
+          '<span class="mail-badge">' + (isRead ? 'READ' : 'UNREAD') + '</span>' +
         '</span>' +
       '</a>';
   });
   mount.innerHTML = html;
+
+  updateUnreadCount('unread-count');
+}
+
+/* Keeps the "N unread" line in the header honest. */
+function updateUnreadCount(countId) {
+  var el = document.getElementById(countId);
+  if (!el) return;
+
+  var unread = ReadState.unreadCount(MAIL_ORDER);
+  el.textContent = unread === 0
+    ? 'student.account@cvsu.edu.ph · all read'
+    : 'student.account@cvsu.edu.ph · ' + unread + ' unread';
 }
 
 function toggleReveal(id, onFirstOpen) {
@@ -172,6 +242,7 @@ function renderMessage(mountId) {
   var id = (window.location.hash || '#it').substring(1);
   var m = EMAILS[id] || EMAILS.it;
 
+  ReadState.mark(m.id);
   Cyberity.emailOpened(m.id);
 
   var html = '';

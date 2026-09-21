@@ -47,6 +47,10 @@ sealed interface LabAnswer {
  * [requiredClues] are ids the simulation must have reported through the JS
  * bridge before the answer box unlocks — this is what stops the level being a
  * quiz: you cannot answer until you have actually investigated.
+ *
+ * [guide] and [steps] are the taught part of the task: why this matters, then
+ * what to actually do in the simulation. Both are optional — a task with
+ * neither just shows its objective.
  */
 @Immutable
 data class LabTask(
@@ -56,6 +60,10 @@ data class LabTask(
     val answer: LabAnswer,
     val successFeedback: String,
     val failureFeedback: String,
+    /** Teaching paragraphs shown above the objective. */
+    val guide: List<String> = emptyList(),
+    /** Numbered actions to carry out inside the simulation. */
+    val steps: List<String> = emptyList(),
     val requiredClues: List<String> = emptyList(),
     val lockedMessage: String = "Investigate the simulation before you can answer.",
     val hints: List<String> = emptyList(),

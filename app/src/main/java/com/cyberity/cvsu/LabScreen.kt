@@ -9,13 +9,14 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -37,9 +38,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
@@ -60,16 +60,21 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 // ===========================================================================
 // 1. PALETTE (file-scoped)
@@ -147,7 +152,9 @@ fun LabScreen(
     var verdict by remember { mutableStateOf<Verdict?>(null) }
     var answerText by remember { mutableStateOf("") }
     var choiceIndex by remember { mutableStateOf<Int?>(null) }
-    var panelExpanded by remember { mutableStateOf(true) }
+    // The simulation opens on demand, as a sheet over the task — it is not shown
+    // the moment the lab starts.
+    var simulationOpen by remember { mutableStateOf(false) }
 
     // Evidence discovered in the simulation, in the order it was found.
     val clues = remember { mutableStateListOf<String>() }
@@ -207,7 +214,11 @@ fun LabScreen(
 
     BackHandler(enabled = stage == LabStage.RUNNING) {
         val view = webView
-        if (view != null && view.canGoBack()) view.goBack() else onExit()
+        when {
+            simulationOpen && view != null && view.canGoBack() -> view.goBack()
+            simulationOpen -> simulationOpen = false
+            else -> onExit()
+        }
     }
 
     fun submit() {
@@ -217,7 +228,6 @@ fun LabScreen(
             heartsLost++
             onMistake()
         }
-        panelExpanded = true
     }
 
     fun nextTask() {
@@ -274,15 +284,8 @@ fun LabScreen(
                     onSubmit = { submit() },
                     onRetry = { verdict = null },
                     onNext = { nextTask() },
-                    expanded = panelExpanded,
-                    onToggle = { panelExpanded = !panelExpanded },
-                    isLast = taskIndex == total - 1
-                )
-
-                SimulationWebView(
-                    lab = lab,
-                    bridge = bridge,
-                    onCreated = { webView = it },
+                    onOpenSimulation = { simulationOpen = true },
+                    isLast = taskIndex == total - 1,
                     modifier = Modifier.fillMaxWidth().weight(1f)
                 )
             }
@@ -306,6 +309,20 @@ fun LabScreen(
                     onFinish = { onComplete(award.total, solved, total) }
                 )
             }
+        }
+
+        // The simulation, as a sheet over the task. It is opened from the task
+        // and dismissed by swiping its handle down. While closed it stays in the
+        // composition — parked off-screen — so the page the student was on and
+        // everything they opened in it survive reopening.
+        if (stage == LabStage.RUNNING) {
+            SimulationSheet(
+                open = simulationOpen,
+                lab = lab,
+                bridge = bridge,
+                onCreated = { webView = it },
+                onClose = { simulationOpen = false }
+            )
         }
     }
 }
@@ -365,6 +382,124 @@ private fun SimulationWebView(
     )
 }
 
+/**
+ * The simulation as a dismissible sheet. Slides up over the task when opened,
+ * and goes away when its handle is dragged down far enough — or fast enough —
+ * or when the close button is used.
+ *
+ * It is never removed from the composition while the lab is running: closing it
+ * only parks it below the screen. Taking it out would destroy the WebView and
+ * throw away the page the student was working on.
+ */
+@Composable
+private fun SimulationSheet(
+    open: Boolean,
+    lab: LabDefinition,
+    bridge: LabBridge,
+    onCreated: (WebView) -> Unit,
+    onClose: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+
+    // Full travel of the sheet, learned at measure time. Until then it sits far
+    // enough down that it can't flash into view on the first frame.
+    var sheetHeight by remember { mutableIntStateOf(0) }
+    val offsetY = remember { Animatable(SHEET_PARKED_OFFSET) }
+
+    LaunchedEffect(open, sheetHeight) {
+        if (sheetHeight == 0) return@LaunchedEffect
+        offsetY.animateTo(
+            targetValue = if (open) 0f else sheetHeight.toFloat(),
+            animationSpec = tween(260)
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .onSizeChanged { sheetHeight = it.height }
+            .offset { IntOffset(0, offsetY.value.roundToInt()) }
+            .background(AppNavy)
+    ) {
+        SheetHandle(
+            title = lab.title,
+            onClose = onClose,
+            modifier = Modifier.draggable(
+                orientation = Orientation.Vertical,
+                state = rememberDraggableState { delta ->
+                    scope.launch {
+                        val limit = sheetHeight.toFloat()
+                        offsetY.snapTo((offsetY.value + delta).coerceIn(0f, limit))
+                    }
+                },
+                onDragStopped = { velocity ->
+                    // Past a quarter of the way down, or thrown downwards: let go.
+                    if (offsetY.value > sheetHeight * 0.25f || velocity > 1200f) {
+                        onClose()
+                    } else {
+                        offsetY.animateTo(0f, tween(180))
+                    }
+                }
+            )
+        )
+
+        SimulationWebView(
+            lab = lab,
+            bridge = bridge,
+            onCreated = onCreated,
+            modifier = Modifier.fillMaxWidth().weight(1f)
+        )
+    }
+}
+
+/** Where the sheet waits before it has been measured. */
+private const val SHEET_PARKED_OFFSET = 6000f
+
+/** Grab bar at the top of the sheet: drag it down to put the simulation away. */
+@Composable
+private fun SheetHandle(title: String, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth().background(AppCard),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(Modifier.height(8.dp))
+        Box(
+            modifier = Modifier
+                .width(42.dp)
+                .height(4.dp)
+                .background(AppGray.copy(alpha = 0.55f), RoundedCornerShape(2.dp))
+        )
+        Spacer(Modifier.height(6.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(8.dp).background(LabGreen, CircleShape)
+            )
+            Spacer(Modifier.width(9.dp))
+            Text(
+                "Simulation running · $title",
+                color = AppWhite, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                maxLines = 1, modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Filled.Close, contentDescription = "Close simulation",
+                    tint = AppGray, modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        Text(
+            "Swipe this bar down to go back to the task",
+            color = AppGray, fontSize = 10.sp
+        )
+        Spacer(Modifier.height(7.dp))
+    }
+}
+
 // ===========================================================================
 // 5. BRIEFING
 // ===========================================================================
@@ -381,36 +516,45 @@ private fun LabBriefing(
             Icon(Icons.Filled.Close, contentDescription = "Exit lab", tint = AppGray)
         }
 
-        Spacer(Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier.size(84.dp).background(AppBlue, CircleShape),
-            contentAlignment = Alignment.Center
+        // Starts at the top and scrolls when it overflows — briefings vary in
+        // length and small screens shouldn't push the start button off.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
         ) {
-            Icon(
-                Icons.Filled.Email, contentDescription = null, tint = AppWhite,
-                modifier = Modifier.size(38.dp)
+            Spacer(Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier.size(84.dp).background(AppBlue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Email, contentDescription = null, tint = AppWhite,
+                    modifier = Modifier.size(38.dp)
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Text(
+                lab.subtitle.uppercase(), color = AppCyan, fontSize = 12.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = 1.sp
             )
+            Spacer(Modifier.height(6.dp))
+            Text(lab.title, color = AppWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
+            Text(lab.briefing, color = AppGray, fontSize = 15.sp, lineHeight = 22.sp)
+
+            Spacer(Modifier.height(20.dp))
+            Row {
+                LabChip("${lab.tasks.size} tasks")
+                Spacer(Modifier.width(10.dp))
+                LabChip("up to +$xpReward XP")
+            }
         }
 
         Spacer(Modifier.height(20.dp))
-        Text(
-            lab.subtitle.uppercase(), color = AppCyan, fontSize = 12.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 1.sp
-        )
-        Spacer(Modifier.height(6.dp))
-        Text(lab.title, color = AppWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-        Text(lab.briefing, color = AppGray, fontSize = 15.sp, lineHeight = 22.sp)
-
-        Spacer(Modifier.height(20.dp))
-        Row {
-            LabChip("${lab.tasks.size} tasks")
-            Spacer(Modifier.width(10.dp))
-            LabChip("up to +$xpReward XP")
-        }
-
-        Spacer(Modifier.weight(1f))
 
         Button(
             onClick = onBegin,
@@ -517,126 +661,212 @@ private fun TaskPanel(
     onSubmit: () -> Unit,
     onRetry: () -> Unit,
     onNext: () -> Unit,
-    expanded: Boolean,
-    onToggle: () -> Unit,
-    isLast: Boolean
+    onOpenSimulation: () -> Unit,
+    isLast: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val unlocked = task.requiredClues.all { it in clues }
 
     Column(
+        modifier = modifier
+            .background(AppNavy)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 18.dp, vertical = 14.dp)
+    ) {
+        Text(
+            "TASK $taskNumber OF $total", color = AppCyan, fontSize = 10.sp,
+            fontWeight = FontWeight.Bold, letterSpacing = 1.sp
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(task.title, color = AppWhite, fontSize = 21.sp, fontWeight = FontWeight.Bold)
+
+        // What this task is teaching, before what it is asking.
+        task.guide.forEach { paragraph ->
+            Spacer(Modifier.height(11.dp))
+            Text(paragraph, color = AppGray, fontSize = 13.sp, lineHeight = 20.sp)
+        }
+
+        Spacer(Modifier.height(16.dp))
+        ObjectiveCard(task.objective)
+
+        if (task.steps.isNotEmpty()) {
+            Spacer(Modifier.height(16.dp))
+            StepList(task.steps)
+        }
+
+        Spacer(Modifier.height(16.dp))
+        OpenSimulationButton(onClick = onOpenSimulation)
+
+        Spacer(Modifier.height(12.dp))
+        EvidenceStrip(clues = clues, clueLabels = clueLabels)
+
+        when (verdict) {
+            Verdict.CORRECT -> {
+                Spacer(Modifier.height(16.dp))
+                FeedbackCard(
+                    correct = true,
+                    heading = "Task complete",
+                    body = task.successFeedback
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onNext,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppCyan, contentColor = AppNavy
+                    )
+                ) {
+                    Text(
+                        if (isLast) "FINISH LAB" else "NEXT TASK",
+                        fontWeight = FontWeight.Bold, fontSize = 13.sp
+                    )
+                }
+            }
+
+            Verdict.INCORRECT -> {
+                Spacer(Modifier.height(16.dp))
+                FeedbackCard(
+                    correct = false,
+                    heading = "Not it",
+                    body = task.failureFeedback
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = onRetry,
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AppCard, contentColor = AppWhite
+                    )
+                ) {
+                    Text("KEEP INVESTIGATING", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                }
+            }
+
+            null -> {
+                Spacer(Modifier.height(12.dp))
+                HintSection(
+                    hints = task.hints,
+                    opened = hintsOpened,
+                    cost = hintCost,
+                    affordable = canAffordHint,
+                    onOpenHint = onOpenHint
+                )
+
+                Spacer(Modifier.height(18.dp))
+                SectionLabel("ANSWER THE QUESTION BELOW")
+                Spacer(Modifier.height(10.dp))
+
+                if (!unlocked) {
+                    LockedNotice(task.lockedMessage)
+                } else {
+                    AnswerArea(
+                        answer = task.answer,
+                        answerText = answerText,
+                        onAnswerChange = onAnswerChange,
+                        choiceIndex = choiceIndex,
+                        onChoose = onChoose,
+                        onSubmit = onSubmit
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** A thin divider-and-label, so the reader can see where a new part starts. */
+@Composable
+private fun SectionLabel(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text, color = AppCyan, fontSize = 10.sp,
+            fontWeight = FontWeight.Bold, letterSpacing = 1.sp
+        )
+        Spacer(Modifier.width(10.dp))
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(1.dp)
+                .background(AppGray.copy(alpha = 0.22f))
+        )
+    }
+}
+
+/** The ask, lifted out of the prose so it can't be skimmed past. */
+@Composable
+private fun ObjectiveCard(objective: String) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(AppNavy)
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .background(AppCard, RoundedCornerShape(12.dp))
+            .border(1.dp, AppCyan.copy(alpha = 0.30f), RoundedCornerShape(12.dp))
+            .padding(14.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onToggle),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    "TASK $taskNumber OF $total", color = AppCyan, fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold, letterSpacing = 1.sp
-                )
-                Spacer(Modifier.height(2.dp))
-                Text(task.title, color = AppWhite, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            }
-            Icon(
-                imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                contentDescription = if (expanded) "Hide task" else "Show task",
-                tint = AppGray
+        Icon(
+            Icons.Filled.Star, contentDescription = null, tint = AppCyan,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(11.dp))
+        Column {
+            Text(
+                "YOUR OBJECTIVE", color = AppCyan, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = 1.sp
             )
+            Spacer(Modifier.height(5.dp))
+            Text(objective, color = AppWhite, fontSize = 13.sp, lineHeight = 19.sp)
         }
+    }
+}
 
-        AnimatedVisibility(
-            visible = expanded,
-            enter = fadeIn(tween(180)) + expandVertically(tween(180))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 330.dp)
-                    .verticalScroll(rememberScrollState())
+/** The numbered walk-through of what to actually do inside the simulation. */
+@Composable
+private fun StepList(steps: List<String>) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SectionLabel("HOW TO DO IT")
+        Spacer(Modifier.height(10.dp))
+
+        steps.forEachIndexed { index, step ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 9.dp),
+                verticalAlignment = Alignment.Top
             ) {
-                Spacer(Modifier.height(8.dp))
-                Text(task.objective, color = AppGray, fontSize = 13.sp, lineHeight = 19.sp)
-
-                Spacer(Modifier.height(10.dp))
-                EvidenceStrip(clues = clues, clueLabels = clueLabels)
-
-                when (verdict) {
-                    Verdict.CORRECT -> {
-                        Spacer(Modifier.height(12.dp))
-                        FeedbackCard(
-                            correct = true,
-                            heading = "Task complete",
-                            body = task.successFeedback
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Button(
-                            onClick = onNext,
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppCyan, contentColor = AppNavy
-                            )
-                        ) {
-                            Text(
-                                if (isLast) "FINISH LAB" else "NEXT TASK",
-                                fontWeight = FontWeight.Bold, fontSize = 13.sp
-                            )
-                        }
-                    }
-
-                    Verdict.INCORRECT -> {
-                        Spacer(Modifier.height(12.dp))
-                        FeedbackCard(
-                            correct = false,
-                            heading = "Not it",
-                            body = task.failureFeedback
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Button(
-                            onClick = onRetry,
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = AppCard, contentColor = AppWhite
-                            )
-                        ) {
-                            Text("KEEP INVESTIGATING", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                        }
-                    }
-
-                    null -> {
-                        HintSection(
-                            hints = task.hints,
-                            opened = hintsOpened,
-                            cost = hintCost,
-                            affordable = canAffordHint,
-                            onOpenHint = onOpenHint
-                        )
-
-                        Spacer(Modifier.height(12.dp))
-
-                        if (!unlocked) {
-                            LockedNotice(task.lockedMessage)
-                        } else {
-                            AnswerArea(
-                                answer = task.answer,
-                                answerText = answerText,
-                                onAnswerChange = onAnswerChange,
-                                choiceIndex = choiceIndex,
-                                onChoose = onChoose,
-                                onSubmit = onSubmit
-                            )
-                        }
-                    }
+                Box(
+                    modifier = Modifier.size(20.dp).background(AppCard, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "${index + 1}", color = AppCyan, fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.width(11.dp))
+                Text(
+                    step, color = AppGray, fontSize = 13.sp, lineHeight = 19.sp,
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
+    }
+}
+
+/** The way into the simulation — deliberately not the same colour as SUBMIT. */
+@Composable
+private fun OpenSimulationButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth().height(50.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+    ) {
+        Icon(
+            Icons.Filled.PlayArrow, contentDescription = null,
+            modifier = Modifier.size(19.dp)
+        )
+        Spacer(Modifier.width(8.dp))
+        Text("OPEN SIMULATION", fontWeight = FontWeight.Bold, fontSize = 13.sp)
     }
 }
 

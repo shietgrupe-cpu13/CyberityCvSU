@@ -32,7 +32,9 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
     subtitle = "Campus SOC · Night Shift",
     briefing = "Five alerts fired on the campus network overnight and nobody has looked at " +
             "them yet. Each one has evidence attached — logs, processes, connections. Your job " +
-            "is to work out what each alert actually is, not what the alert title claims.",
+            "is to work out what each alert actually is, not what the alert title claims.\n\n" +
+            "Each task explains what to look for, then hands you the console. Open it with " +
+            "the button, and swipe the bar at the top of it down when you are ready to answer.",
     assetDir = "threat_console",
     startPage = "console.html",
     tasks = listOf(
@@ -42,6 +44,33 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             title = "Clear the noise",
             objective = "Not every alert is an attack. Open the alerts, read the evidence " +
                     "attached to each, and identify the one that is a false positive.",
+            guide = listOf(
+                "A SOC — Security Operations Centre — is where an organisation's alerts land, " +
+                        "and the queue is always longer than the shift. Most of what fires is " +
+                        "not an attack: a backup job, a patch cycle, a lecturer moving a large " +
+                        "dataset at an odd hour. Triage is deciding quickly, and with evidence, " +
+                        "which alerts actually deserve a human.",
+                "An alert that fires on real but legitimate activity is called a false " +
+                        "positive. You prove one by finding something that accounts for what " +
+                        "happened — a schedule, a documented process, the host's role. You do " +
+                        "not prove it from the alert title, which was written by a rule long " +
+                        "before anyone knew the context.",
+                "\"Accounts for\" is the strict part. Half an explanation is not an " +
+                        "explanation: if a backup window explains the volume but not the " +
+                        "destination, you keep digging. Closing a real attack as a false " +
+                        "positive is the most expensive mistake in this job."
+            ),
+            steps = listOf(
+                "Open the simulation. Five alerts are queued, each with a severity chip and " +
+                        "the host it fired on.",
+                "Tap an alert to open it, then tap each evidence panel to expand it.",
+                "Use ← Queue to go back, and do the same for the rest.",
+                "Pay attention to \"Asset notes\" — that is where a host's role and its " +
+                        "scheduled jobs are recorded.",
+                "Find the alert whose evidence accounts for everything: the volume, the " +
+                        "destination and the timing.",
+                "Swipe the console down and name that alert below."
+            ),
             entryPage = "console.html",
             requiredClues = listOf(ThreatClues.ALERT_OPENED_A1),
             lockedMessage = "Open the alerts and read their evidence before ruling any of them out.",
@@ -71,6 +100,30 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             title = "Classify the threat",
             objective = "Alert A3 on LIB-PC-14 is real. Read its evidence and classify what " +
                     "kind of threat it is.",
+            guide = listOf(
+                "Classifying a threat means naming the technique behind it, and that name " +
+                        "decides everything that follows: who gets called, what gets isolated, " +
+                        "what gets reset. \"Something bad on LIB-PC-14\" cannot be acted on. " +
+                        "\"Credential attack\" can.",
+                "Four families cover most of what you will see. Malware is hostile code " +
+                        "running on a host. A credential attack is someone guessing or stealing " +
+                        "a login. Denial of service is drowning a service in traffic so real " +
+                        "users can't reach it. A policy breach is a person doing something they " +
+                        "shouldn't — no attacker involved at all.",
+                "The evidence usually names the family for you. Malware shows up in processes " +
+                        "and changed files. A credential attack shows up in authentication logs. " +
+                        "Denial of service shows up as volume from many sources at once. What " +
+                        "the evidence does NOT show is just as telling as what it does."
+            ),
+            steps = listOf(
+                "Open the simulation and open alert A3 on LIB-PC-14.",
+                "Expand every evidence panel attached to it, not just the first.",
+                "In the authentication log, count the failures and check the timestamps — how " +
+                        "long did all of them take?",
+                "Ask whether a person could physically do that, or whether it took a machine.",
+                "Note what the process and file evidence shows, and what it does not.",
+                "Come back and classify the threat."
+            ),
             requiredClues = listOf(ThreatClues.ALERT_OPENED_A3),
             lockedMessage = "Open alert A3 and read what the evidence actually shows.",
             answer = LabAnswer.Choice(
@@ -98,6 +151,26 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             title = "Find the source",
             objective = "Open the authentication evidence on A3 and submit the address the " +
                     "sign-in attempts came from.",
+            guide = listOf(
+                "An indicator of compromise — an IOC — is a concrete, searchable fact about an " +
+                        "attack: an address, a file hash, a domain, an account name. It is what " +
+                        "turns analysis into action. \"We were attacked\" cannot be blocked or " +
+                        "searched for; an address can be both.",
+                "Authentication logs record where every attempt came from, not just whether it " +
+                        "worked. When hundreds of failures all share one source, that source is " +
+                        "the attacker's machine. The account named in the log is the target, not " +
+                        "the culprit — the student whose account it is has done nothing.",
+                "Copy indicators exactly. One wrong digit and the search in the next task " +
+                        "returns nothing, and \"nothing found\" is very easy to mistake for " +
+                        "\"nothing happened\"."
+            ),
+            steps = listOf(
+                "Open the simulation, open alert A3, and expand the Authentication log panel.",
+                "Read the failed sign-in rows and find the src field on them.",
+                "Check whether every failure shares one source, or whether they come from many.",
+                "Note the address down character by character.",
+                "Come back and submit it."
+            ),
             requiredClues = listOf(ThreatClues.AUTH_LOG_OPENED),
             lockedMessage = "Expand the authentication log inside alert A3.",
             answer = LabAnswer.Text(
@@ -119,6 +192,28 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             title = "Pivot on the indicator",
             objective = "The raw log archive holds every event from every host. Query it for " +
                     "the address you just identified and submit the flag hidden in the results.",
+            guide = listOf(
+                "Pivoting means taking one indicator and asking what else it touched. A single " +
+                        "alert shows you one host on one night. The same indicator searched " +
+                        "across every log shows you the shape of the whole intrusion: where " +
+                        "else the attacker reached, what worked, and what they did once they " +
+                        "were in.",
+                "This is the step that turns an incident from \"one compromised account\" into " +
+                        "a scope you can actually report — and it is why extracting the " +
+                        "indicator carefully in the last task mattered.",
+                "The archive works like a real log search. It holds every event from every " +
+                        "host, and returns only the rows that match what you type. Read all of " +
+                        "them: the interesting row is rarely the one you expected."
+            ),
+            steps = listOf(
+                "Open the simulation. This task opens straight into the log archive — if you " +
+                        "end up on the queue, use the log archive link at the top.",
+                "Type the source address from Task 3 into the query box.",
+                "Tap RUN.",
+                "Read every row that comes back, not only the failures — including anything " +
+                        "that reads like an audit entry.",
+                "Come back and submit the flag in full, CYBERITY{...} wrapper included."
+            ),
             entryPage = "logs.html",
             requiredClues = listOf(ThreatClues.LOG_SEARCH_USED),
             lockedMessage = "The archive shows nothing until you query it. Search for your indicator.",
@@ -140,6 +235,27 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             title = "Contain it",
             objective = "You've confirmed a compromised account on a shared library machine. " +
                     "Choose the containment action.",
+            guide = listOf(
+                "Containment is the step between finding an intrusion and cleaning up after " +
+                        "it: cut the attacker's access now, before anything else is decided. " +
+                        "Done late, your investigation is still running while the attacker is " +
+                        "still working.",
+                "The right action follows from what was actually taken. If hostile code is " +
+                        "running on a machine, you isolate the machine. If a credential was " +
+                        "stolen, the machine barely matters — a working password can be used " +
+                        "from anywhere in the world, and reimaging the PC it happened to be " +
+                        "typed on takes nothing back from the attacker.",
+                "Two traps worth naming. Raising a threshold so the alert stops firing is not " +
+                        "containment, it is unplugging the smoke detector. And asking the " +
+                        "account owner to confirm is a reasonable thing to do later — it is " +
+                        "just not an action that removes anyone's access."
+            ),
+            steps = listOf(
+                "Open the simulation if you want to re-read alert A3 before you decide.",
+                "Ask what the attacker walked away with: access to a machine, or a working " +
+                        "credential?",
+                "Weigh each option by whether it actually takes that back from them."
+            ),
             entryPage = "console.html",
             answer = LabAnswer.Choice(
                 options = listOf(

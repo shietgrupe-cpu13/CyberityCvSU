@@ -113,6 +113,33 @@ body { padding-bottom: 28px; }
   overflow-wrap: break-word;
 }
 
+/* New / reviewed label, spelled out — the queue should say what has already
+   been looked at rather than leaving it to memory. */
+.alert-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.alert-row.new .alert-badge {
+  background: rgba(108, 184, 236, 0.16);
+  border: 1px solid rgba(108, 184, 236, 0.5);
+  color: var(--cyan);
+}
+
+.alert-row.reviewed .alert-badge {
+  background: rgba(154, 169, 194, 0.10);
+  border: 1px solid rgba(154, 169, 194, 0.32);
+  color: var(--gray);
+}
+
+/* A reviewed alert steps back so the untouched ones stand out. */
+.alert-row.reviewed .alert-title { font-weight: 500; color: var(--gray); }
+
 .sev-chip {
   font-size: 10px;
   letter-spacing: 0.06em;

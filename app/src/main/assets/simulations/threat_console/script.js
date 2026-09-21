@@ -23,6 +23,56 @@ var Cyberity = (function () {
 })();
 
 /* ---------------------------------------------------------------------------
+ * Which alerts have been looked at.
+ *
+ * Same approach as the Inbox Triage lab: every page here is a real navigation,
+ * so this has to survive a page load. sessionStorage first, window.name — which
+ * follows the frame across navigations — as the fallback. Both belong to this
+ * WebView, so reopening the lab correctly starts with a queue of new alerts.
+ * ------------------------------------------------------------------------ */
+var ReviewState = (function () {
+  var KEY = 'cyberity.reviewed';
+  var TAG = KEY + '=';
+
+  function load() {
+    var raw = null;
+    try {
+      raw = window.sessionStorage.getItem(KEY);
+    } catch (e) {
+      raw = null; /* DOM storage unavailable — fall through */
+    }
+    if (raw === null) {
+      raw = window.name.indexOf(TAG) === 0 ? window.name.substring(TAG.length) : '';
+    }
+    return raw.split(',').filter(function (s) { return s.length > 0; });
+  }
+
+  function store(ids) {
+    var raw = ids.join(',');
+    try {
+      window.sessionStorage.setItem(KEY, raw);
+    } catch (e) {
+      /* ignored — window.name below is the fallback */
+    }
+    window.name = TAG + raw;
+  }
+
+  return {
+    has: function (id) { return load().indexOf(id) !== -1; },
+
+    mark: function (id) {
+      var ids = load();
+      if (ids.indexOf(id) === -1) {
+        ids.push(id);
+        store(ids);
+      }
+    },
+
+    reviewedCount: function () { return load().length; }
+  };
+})();
+
+/* ---------------------------------------------------------------------------
  * Alert queue
  * ------------------------------------------------------------------------ */
 var ALERTS = {
@@ -260,8 +310,10 @@ function renderConsole(mountId) {
   var html = '';
   ALERT_ORDER.forEach(function (key) {
     var a = ALERTS[key];
+    var seen = ReviewState.has(a.id);
+
     html +=
-      '<a class="alert-row" href="alert.html#' + a.id + '">' +
+      '<a class="alert-row ' + (seen ? 'reviewed' : 'new') + '" href="alert.html#' + a.id + '">' +
         '<span class="sev-bar ' + a.severity + '"></span>' +
         '<span class="alert-body">' +
           '<span class="alert-meta">' +
@@ -271,16 +323,31 @@ function renderConsole(mountId) {
           '</span>' +
           '<span class="alert-title">' + escapeHtml(a.title) + '</span>' +
           '<span class="alert-host">' + escapeHtml(a.host) + '</span>' +
+          '<span class="alert-badge">' + (seen ? 'REVIEWED' : 'NEW') + '</span>' +
         '</span>' +
       '</a>';
   });
   document.getElementById(mountId).innerHTML = html;
+
+  updateTriageCount('triaged-count');
+}
+
+/* Keeps the "N reviewed" line in the queue bar honest. */
+function updateTriageCount(countId) {
+  var el = document.getElementById(countId);
+  if (!el) return;
+
+  var done = ReviewState.reviewedCount();
+  el.textContent = done === 0
+    ? '· none reviewed'
+    : '· ' + done + ' of ' + ALERT_ORDER.length + ' reviewed';
 }
 
 function renderAlert(mountId) {
   var id = (window.location.hash || '#a1').substring(1);
   var a = ALERTS[id] || ALERTS.a1;
 
+  ReviewState.mark(a.id);
   Cyberity.alertOpened(a.id);
 
   var html =
