@@ -82,7 +82,9 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyListState
 
 
@@ -414,8 +416,12 @@ fun LearnScreen(
 
     // Developer switch (see DEV_UNLOCK_ALL_LEVELS). Only what's shown changes;
     // `units` and saved progress keep the real lock state.
+    // Remembered because it rebuilds every unit and every level: without this it
+    // ran on each recomposition, including the once-a-second heart tick below.
     val devUnlockAll = remember { DEV_UNLOCK_ALL_LEVELS }
-    val shownUnits = if (devUnlockAll) units.withAllLevelsUnlocked() else units
+    val shownUnits = remember(units, devUnlockAll) {
+        if (devUnlockAll) units.withAllLevelsUnlocked() else units
+    }
 
     var heartState by remember(uid) {
         mutableStateOf(uid?.let { ProgressCache.loadHearts(context, it) } ?: HeartState.FULL)
@@ -459,8 +465,17 @@ fun LearnScreen(
 
     var showExitConfirm by remember { mutableStateOf(false) }
 
-    LaunchedEffect(runningLevel) {
-        onLevelRunningChanged(runningLevel != null)
+    /**
+     * Starting or leaving a level also shows or hides the bottom navigation bar,
+     * which changes how much room this screen gets. Both have to move together:
+     * reporting it from a LaunchedEffect lands a frame late, so the new screen
+     * is laid out once at the old size and then jumps when the padding changes.
+     * Every caller goes through here, and all of them are event handlers, so the
+     * two updates land in the same frame and the screen lays out once.
+     */
+    fun setRunningLevel(level: LearningLevel?) {
+        runningLevel = level
+        onLevelRunningChanged(level != null)
     }
 
     // Refill is measured against server time, so it only needs to tick while a heart is missing.
@@ -507,6 +522,7 @@ fun LearnScreen(
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
     val pathListState = rememberLazyListState()
 
@@ -526,7 +542,7 @@ fun LearnScreen(
                 level = running,
                 refillIn = heartRefillIn,
                 modifier = modifier,
-                onBack = { runningLevel = null }
+                onBack = { setRunningLevel(null) }
             )
         }
         // Replaying an already-completed level pays out no further XP — that
@@ -534,7 +550,11 @@ fun LearnScreen(
         // to show XP as still up for grabs.
         else {
             val isReplay = running.status == LevelStatus.COMPLETED
-            when (val content = contentFor(running.id)) {
+            // Remembered per level: building a lab allocates its whole definition
+            // — every task, hint and guide string — and a fresh instance each
+            // recomposition would also stop the level screen below from skipping.
+            val content = remember(running.id) { contentFor(running.id) }
+            when (content) {
             is LevelContent.Inbox -> InboxSimulationScreen(
                 simulation = content.simulation,
                 xpReward = MAX_LEVEL_XP,
@@ -546,7 +566,7 @@ fun LearnScreen(
                         ProgressRepository.markLevelCompleted(it, running.id)
                         ProgressCache.save(context, it, completedIdsOf(units))
                     }
-                    runningLevel = null
+                    setRunningLevel(null)
                 }
             )
 
@@ -572,7 +592,7 @@ fun LearnScreen(
                             ProgressRepository.saveLevelXp(it, running.id, earned)
                         }
                     }
-                    runningLevel = null
+                    setRunningLevel(null)
                 }
             )
 
@@ -600,7 +620,7 @@ fun LearnScreen(
                             ProgressRepository.saveLevelXp(it, running.id, earned)
                         }
                     }
-                    runningLevel = null
+                    setRunningLevel(null)
                 }
 
             )
@@ -608,7 +628,7 @@ fun LearnScreen(
             null -> ComingSoonLevel(
                 level = running,
                 modifier = modifier,
-                onBack = { runningLevel = null }
+                onBack = { setRunningLevel(null) }
             )
             }
         }
@@ -618,7 +638,7 @@ fun LearnScreen(
                 onDismiss = { showExitConfirm = false },
                 onConfirm = {
                     showExitConfirm = false
-                    runningLevel = null
+                    setRunningLevel(null)
                 }
             )
         }
@@ -654,9 +674,21 @@ fun LearnScreen(
                 sheetState = sheetState,
                 onDismiss = { selected = null },
                 onStart = {
-                    selected = null
-                    runningLevel = level
-                    onStartLevel(level)
+                    // The sheet is its own window. Closing that window and
+                    // swapping the whole screen underneath it in one frame is
+                    // the hitch you see on START LEVEL — so let the sheet
+                    // animate away first, then bring the level up.
+                    scope.launch {
+                        // finally, so an interrupted hide still starts the level
+                        // rather than leaving the tap doing nothing.
+                        try {
+                            sheetState.hide()
+                        } finally {
+                            selected = null
+                            setRunningLevel(level)
+                            onStartLevel(level)
+                        }
+                    }
                 }
             )
         }

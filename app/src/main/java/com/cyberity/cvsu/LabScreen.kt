@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -158,6 +159,15 @@ fun LabScreen(
     // The simulation opens on demand, as a sheet over the task — it is not shown
     // the moment the lab starts.
     var simulationOpen by remember { mutableStateOf(false) }
+
+    // Building the WebView is expensive, so it is done shortly after the briefing
+    // is on screen rather than as part of the tap that brings the briefing up —
+    // otherwise the cost just moves from one tap to the other.
+    var simulationWarmedUp by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        delay(WEBVIEW_WARMUP_DELAY_MS)
+        simulationWarmedUp = true
+    }
 
     // Evidence discovered in the simulation, in the order it was found.
     val clues = remember { mutableStateListOf<String>() }
@@ -321,7 +331,12 @@ fun LabScreen(
         // and dismissed by swiping its handle down. While closed it stays in the
         // composition — parked off-screen — so the page the student was on and
         // everything they opened in it survive reopening.
-        if (stage == LabStage.RUNNING) {
+        //
+        // It is built during the briefing rather than on ENTER LAB: the first
+        // WebView in the process has to start the whole browser engine, which is
+        // far too slow to do on a tap. Parked off-screen it costs nothing to
+        // look at, and by the time the briefing has been read it is ready.
+        if (stage != LabStage.RESULT && (simulationWarmedUp || stage == LabStage.RUNNING)) {
             SimulationSheet(
                 open = simulationOpen,
                 lab = lab,
@@ -460,6 +475,9 @@ private fun SimulationSheet(
 
 /** Where the sheet waits before it has been measured. */
 private const val SHEET_PARKED_OFFSET = 6000f
+
+/** Long enough for the briefing to be on screen before the WebView is built. */
+private const val WEBVIEW_WARMUP_DELAY_MS = 400L
 
 /** Grab bar at the top of the sheet: drag it down to put the simulation away. */
 @Composable
@@ -772,6 +790,16 @@ private fun TaskPanel(
                 Spacer(Modifier.height(18.dp))
                 SectionLabel("ANSWER THE QUESTION BELOW")
                 Spacer(Modifier.height(10.dp))
+
+                // The objective IS the question, but it's drawn up in the objective
+                // card — above the guide, the steps, the simulation button and the
+                // evidence strip, so it has long scrolled off by the time the answer
+                // is on screen. Restating it here is what makes the label above true.
+                Text(
+                    task.objective,
+                    color = AppWhite, fontSize = 14.sp, lineHeight = 20.sp
+                )
+                Spacer(Modifier.height(12.dp))
 
                 if (!unlocked) {
                     LockedNotice(task.lockedMessage)

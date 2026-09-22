@@ -39,7 +39,9 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
     subtitle = "Risk Assessment · Budget Season",
     briefing = "The hardening review produced four findings, and the Registrar has ₱150,000 " +
             "to fix them before next enrollment — not enough for everything. Score each " +
-            "risk, rank them, and build a plan that removes the most risk for the money.",
+            "risk, rank them, and build a plan that removes the most risk for the money.\n\n" +
+            "Each task explains what to look for, then hands you the register. Open it with the " +
+            "button, and swipe the bar at the top of it down when you are ready to answer.",
     assetDir = "risk_register",
     startPage = "register.html",
     dangerousClues = listOf(RiskClues.RISK_HIDDEN),
@@ -50,6 +52,35 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
             title = "Break down a risk",
             objective = "Open finding F-01 and read its evidence. Every risk has an asset, a " +
                     "threat, and a vulnerability — identify all three.",
+            guide = listOf(
+                "\"Risk\" on its own is a feeling, and feelings can't be ranked or budgeted for. " +
+                        "The assessment starts by breaking each one into three named parts. The " +
+                        "asset is what you are protecting. The threat is who or what could harm " +
+                        "it. The vulnerability is the specific weakness the threat would use to " +
+                        "get there.",
+                "Separating them matters because only one of the three is yours to change. You " +
+                        "cannot remove attackers from the world, and the Registrar cannot stop " +
+                        "holding student records — that is the entire purpose of the office. The " +
+                        "vulnerability is the part you control, which is why every control you " +
+                        "will ever buy is aimed at it rather than at the threat.",
+                "The three are easy to mix up when they are written as one sentence, so pull " +
+                        "them apart deliberately. A test that works: the asset is what you would " +
+                        "be apologising for losing, the threat is who you would be blaming, and " +
+                        "the vulnerability is the only one you could write a purchase order " +
+                        "against."
+            ),
+            steps = listOf(
+                "Open the simulation. The register lists the four findings the hardening review " +
+                        "produced, each with its owner.",
+                "Tap F-01 to open it.",
+                "Read the summary line, then the evidence block underneath. The highlighted " +
+                        "lines are the ones that decide this finding's score later.",
+                "Pick the three parts out of what you have read: what is being protected, who " +
+                        "or what could harm it, and the weakness that would let them.",
+                "Do not tap REMOVE FROM REGISTER. Deleting a risk doesn't reduce it, the " +
+                        "simulation blocks it anyway, and it costs you a heart.",
+                "Come back and choose the breakdown that puts all three in the right place."
+            ),
             entryPage = "register.html",
             requiredClues = listOf(RiskClues.FINDING_OPENED_F01),
             lockedMessage = "Open finding F-01 in the register first.",
@@ -78,6 +109,39 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
             title = "Score and rank",
             objective = "Place every finding on the risk matrix using the rubric and the " +
                     "evidence in each finding. Then submit the ID of the highest-risk finding.",
+            guide = listOf(
+                "Scoring exists because every finding feels urgent to the person who reported " +
+                        "it. Risk = likelihood × impact turns that pile into an order. Both " +
+                        "halves are needed: a catastrophic event that cannot realistically happen " +
+                        "and a trivial one that happens weekly are both mis-handled if you look " +
+                        "at only one number.",
+                "Likelihood is a reading of evidence, not a gut estimate, and the rubric here " +
+                        "anchors it in history — has this already happened at CvSU, how recently, " +
+                        "and how often. Where there is no history the question changes rather " +
+                        "than disappearing: does a public exploit exist, and is the weakness " +
+                        "actually reachable from where an attacker stands?",
+                "Impact is about reach and the kind of data behind it. Grades of every enrolled " +
+                        "student are not in the same class as lab machines that hold no records " +
+                        "and are wiped nightly. Score what the evidence states rather than what " +
+                        "sounds alarming — the output of this step is an order you have to defend " +
+                        "to whoever controls the budget, so it has to come from the written " +
+                        "record."
+            ),
+            steps = listOf(
+                "Open the simulation and open Risk matrix from the tools on the register.",
+                "Expand the Scoring rubric first and read both scales. Every number from 1 to 5 " +
+                        "has a written meaning on each axis.",
+                "Use the chips at the top to choose which finding you are placing. That " +
+                        "finding's evidence appears just below them, with the deciding lines " +
+                        "highlighted.",
+                "Read the history line for likelihood and the reach or data line for impact, " +
+                        "then tap the cell where the two meet. Likelihood runs up the left side, " +
+                        "impact across the bottom.",
+                "Read the banner under the grid — it either confirms the placement matches the " +
+                        "rubric, or tells you to read both again.",
+                "Work through all four, adjusting until every chip is marked done.",
+                "Look at the ranking below the matrix and come back with the ID sitting at the top."
+            ),
             entryPage = "matrix.html",
             requiredClues = listOf(RiskClues.RUBRIC_OPENED, RiskClues.RISKS_SCORED),
             lockedMessage = "Read the rubric and place all four findings where the evidence puts them.",
@@ -101,6 +165,37 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
             objective = "Build a treatment plan within ₱150,000 that leaves the lowest total " +
                     "residual risk. When the CISO approves the best possible plan, the approval " +
                     "memo carries a flag — submit it.",
+            guide = listOf(
+                "This is the step where risk assessment turns into a budget meeting. There is " +
+                        "never enough money for every control, and the goal is not to buy as much " +
+                        "security as the budget allows. It is to remove as much risk as possible " +
+                        "with it — those are different targets, and they usually point at " +
+                        "different shopping lists.",
+                "The number that decides it is residual risk: what each finding still scores " +
+                        "after your controls are applied. Add it up across all four and you have " +
+                        "one figure to minimise. Without that total you are comparing adjectives " +
+                        "— \"comprehensive\", \"enterprise-grade\" — instead of comparing outcomes.",
+                "Two traps are laid here on purpose. One control is priced far beyond the whole " +
+                        "budget, because the obvious fix is often the unaffordable one and there " +
+                        "is usually a cheaper control that addresses the same finding a different " +
+                        "way. Another sounds the most impressive on the page, covers two findings " +
+                        "at once, and still leaves more risk standing than several cheap targeted " +
+                        "ones — because covering a risk partly is not the same as covering it."
+            ),
+            steps = listOf(
+                "Open the simulation and open Treatment plan from the register.",
+                "Read all six controls. Each shows its cost on top, and underneath what it would " +
+                        "do to a finding's score — for example F-04 12 → 3.",
+                "Find the two controls aimed at the same finding at very different prices, and " +
+                        "the one that touches two findings at once.",
+                "Tap controls to switch them on and off. Watch the spend bar at the top and the " +
+                        "Total residual risk line at the bottom of the before → after list.",
+                "Tap SUBMIT PLAN TO CISO. Over budget is rejected outright; within budget but " +
+                        "not the best available gets sent back with the total it left behind.",
+                "Keep recombining until the CISO approves it, then read the memo that appears.",
+                "Come back and submit the flag from the memo in full, CYBERITY{...} wrapper " +
+                        "included."
+            ),
             entryPage = "plan.html",
             requiredClues = listOf(RiskClues.PLAN_SUBMITTED),
             lockedMessage = "Submit a plan that stays within budget.",
@@ -125,6 +220,35 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
             objective = "Read the risk treatment guide on the plan page, then classify these " +
                     "four decisions: turn on MFA, buy cyber insurance, stop posting records " +
                     "online entirely, and leave the lab PCs as-is until next year.",
+            guide = listOf(
+                "Whatever you decide about a risk, the decision lands in one of four boxes: " +
+                        "mitigate, transfer, avoid, accept. Naming the box is not paperwork. It " +
+                        "forces you to state what you are actually doing, and it makes the " +
+                        "decision reviewable by someone who wasn't in the room.",
+                "They are easy to tell apart once you ask the right question of each. Mitigate " +
+                        "lowers likelihood or impact — every control on the plan page is a " +
+                        "mitigation. Transfer shifts who carries the cost, usually by contract; " +
+                        "insurance pays for the breach, it does not prevent one. Avoid stops the " +
+                        "risky activity altogether, so the risk stops existing rather than " +
+                        "shrinking — the most complete option, and usually the most expensive in " +
+                        "what the organisation gives up.",
+                "Accept is the one that gets misread. It is a legitimate, common choice: the " +
+                        "risk owner signs off and it comes back next cycle. What makes it " +
+                        "acceptance rather than negligence is that somebody decided it and wrote " +
+                        "it down. A risk nobody looked at is not accepted — it is just unmanaged, " +
+                        "and the register exists to tell those two apart."
+            ),
+            steps = listOf(
+                "You should still be on the Treatment plan page. If not, open it again from the " +
+                        "register.",
+                "Scroll to the bottom and expand the Risk treatment guide.",
+                "Read all four definitions, and the note underneath about what every control on " +
+                        "that page counts as.",
+                "Take the four decisions in the question one at a time and ask which it is: does " +
+                        "it lower the risk, shift who pays, stop the activity, or knowingly live " +
+                        "with it?",
+                "Come back and match all four at once."
+            ),
             requiredClues = listOf(RiskClues.TREATMENT_GUIDE_OPENED),
             lockedMessage = "Open the risk treatment guide on the plan page.",
             answer = LabAnswer.Choice(
@@ -152,6 +276,30 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
             title = "Own the residual",
             objective = "Even the best plan leaves residual risk — F-03 still scores 6. " +
                     "Decide what the Registrar should do with it.",
+            guide = listOf(
+                "Residual risk is what remains after the controls are in place, and it is never " +
+                        "zero. Spending until it is isn't an option that exists: the cost of " +
+                        "removing the last of something climbs steeply, and there is always a " +
+                        "final sliver no budget can buy away.",
+                "So an honest assessment does not end with \"fixed\". It ends with a number, a " +
+                        "named owner who has signed off on living with it, and a date to look " +
+                        "again. The date matters as much as the signature, because both halves " +
+                        "of the score drift — a weakness nobody was exploiting last year becomes " +
+                        "routine, and a system that held little data grows.",
+                "A treated risk also stays on the register. Striking it off because it has been " +
+                        "dealt with throws away the history that made it scorable in the first " +
+                        "place, and leaves the next person assessing it with nothing. That is the " +
+                        "same instinct as deleting a finding to tidy up the report, only slower " +
+                        "and easier to justify."
+            ),
+            steps = listOf(
+                "Open the simulation and look at the Risk: before → after list on the plan page.",
+                "Find F-03. It is the largest number still standing after the best plan you can " +
+                        "afford.",
+                "Ask what honestly happens to it now: it cannot be spent down to zero, and it " +
+                        "has not gone away by being treated.",
+                "Come back and choose what the Registrar should do with what is left."
+            ),
             answer = LabAnswer.Choice(
                 options = listOf(
                     "Keep spending until every risk reaches zero",
