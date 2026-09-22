@@ -555,81 +555,81 @@ fun LearnScreen(
             // recomposition would also stop the level screen below from skipping.
             val content = remember(running.id) { contentFor(running.id) }
             when (content) {
-            is LevelContent.Inbox -> InboxSimulationScreen(
-                simulation = content.simulation,
-                xpReward = MAX_LEVEL_XP,
-                modifier = modifier,
-                onExit = requestExit,
-                onComplete = { _, _, _ ->
-                    units = units.withLevelCompleted(running.id)
-                    uid?.let {
-                        ProgressRepository.markLevelCompleted(it, running.id)
-                        ProgressCache.save(context, it, completedIdsOf(units))
-                    }
-                    setRunningLevel(null)
-                }
-            )
-
-            is LevelContent.Scenarios -> ScenarioQuizScreen(
-                quiz = content.quiz,
-                xpReward = MAX_LEVEL_XP,
-                modifier = modifier,
-                onExit = requestExit,
-                onMistake = { spendHeart() },
-                hearts = hearts,
-                xpBalance = totalXp,
-                isReplay = isReplay,
-                onComplete = { earned, _, _ ->
-                    val firstClear = running.status != LevelStatus.COMPLETED
-                    units = units.withLevelCompleted(running.id)
-                    uid?.let {
-                        ProgressRepository.markLevelCompleted(it, running.id)
-                        ProgressCache.save(context, it, completedIdsOf(units))
-                        if (firstClear) {
-                            val updated = levelXp + (running.id to earned)
-                            levelXp = updated
-                            ProgressCache.saveLevelXp(context, it, updated)
-                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                is LevelContent.Inbox -> InboxSimulationScreen(
+                    simulation = content.simulation,
+                    xpReward = MAX_LEVEL_XP,
+                    modifier = modifier,
+                    onExit = requestExit,
+                    onComplete = { _, _, _ ->
+                        units = units.withLevelCompleted(running.id)
+                        uid?.let {
+                            ProgressRepository.markLevelCompleted(it, running.id)
+                            ProgressCache.save(context, it, completedIdsOf(units))
                         }
+                        setRunningLevel(null)
                     }
-                    setRunningLevel(null)
-                }
-            )
+                )
 
-            is LevelContent.Lab -> LabScreen(
-                lab = content.lab,
-                xpReward = MAX_LEVEL_XP,
-                modifier = modifier,
-                clueLabels = content.clueLabels,
-                onExit = requestExit,
-                onMistake = { spendHeart() },
-                hearts = hearts,
-                xpBalance = totalXp,
-                onSpendXp = { spendXp(it) },
-                isReplay = isReplay,
-                onComplete = { earned, _, _ ->
-                    val firstClear = running.status != LevelStatus.COMPLETED
-                    units = units.withLevelCompleted(running.id)
-                    uid?.let {
-                        ProgressRepository.markLevelCompleted(it, running.id)
-                        ProgressCache.save(context, it, completedIdsOf(units))
-                        if (firstClear) {
-                            val updated = levelXp + (running.id to earned)
-                            levelXp = updated
-                            ProgressCache.saveLevelXp(context, it, updated)
-                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                is LevelContent.Scenarios -> ScenarioQuizScreen(
+                    quiz = content.quiz,
+                    xpReward = MAX_LEVEL_XP,
+                    modifier = modifier,
+                    onExit = requestExit,
+                    onMistake = { spendHeart() },
+                    hearts = hearts,
+                    xpBalance = totalXp,
+                    isReplay = isReplay,
+                    onComplete = { earned, _, _ ->
+                        val firstClear = running.status != LevelStatus.COMPLETED
+                        units = units.withLevelCompleted(running.id)
+                        uid?.let {
+                            ProgressRepository.markLevelCompleted(it, running.id)
+                            ProgressCache.save(context, it, completedIdsOf(units))
+                            if (firstClear) {
+                                val updated = levelXp + (running.id to earned)
+                                levelXp = updated
+                                ProgressCache.saveLevelXp(context, it, updated)
+                                ProgressRepository.saveLevelXp(it, running.id, earned)
+                            }
                         }
+                        setRunningLevel(null)
                     }
-                    setRunningLevel(null)
-                }
+                )
 
-            )
+                is LevelContent.Lab -> LabScreen(
+                    lab = content.lab,
+                    xpReward = MAX_LEVEL_XP,
+                    modifier = modifier,
+                    clueLabels = content.clueLabels,
+                    onExit = requestExit,
+                    onMistake = { spendHeart() },
+                    hearts = hearts,
+                    xpBalance = totalXp,
+                    onSpendXp = { spendXp(it) },
+                    isReplay = isReplay,
+                    onComplete = { earned, _, _ ->
+                        val firstClear = running.status != LevelStatus.COMPLETED
+                        units = units.withLevelCompleted(running.id)
+                        uid?.let {
+                            ProgressRepository.markLevelCompleted(it, running.id)
+                            ProgressCache.save(context, it, completedIdsOf(units))
+                            if (firstClear) {
+                                val updated = levelXp + (running.id to earned)
+                                levelXp = updated
+                                ProgressCache.saveLevelXp(context, it, updated)
+                                ProgressRepository.saveLevelXp(it, running.id, earned)
+                            }
+                        }
+                        setRunningLevel(null)
+                    }
 
-            null -> ComingSoonLevel(
-                level = running,
-                modifier = modifier,
-                onBack = { setRunningLevel(null) }
-            )
+                )
+
+                null -> ComingSoonLevel(
+                    level = running,
+                    modifier = modifier,
+                    onBack = { setRunningLevel(null) }
+                )
             }
         }
 

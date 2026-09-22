@@ -138,10 +138,14 @@ fun hardeningReviewLab(): LabDefinition = LabDefinition(
                 "Count how many you switched off, and come back and submit that number."
             ),
             entryPage = "roles.html",
-            requiredClues = listOf(
-                PrincipleClues.JOB_DESC_OPENED,
-                PrincipleClues.LEAST_PRIVILEGE_APPLIED
-            ),
+            // Not JOB_DESC_OPENED as well: the "Job description" panel is a separate
+            // collapsible sub-box, and the permissions list and SAVE ACCOUNT sit next
+            // to it, not behind it — so a student can trim and save correctly without
+            // ever tapping it open, and the task would stay locked despite the real
+            // work being done. A correct trim already only fires when the saved set
+            // matches jdcruz's two real duties exactly, which is stronger proof of
+            // reading the job description than clicking an accordion is anyway.
+            requiredClues = listOf(PrincipleClues.LEAST_PRIVILEGE_APPLIED),
             lockedMessage = "Read the job description, then save the account with only the " +
                     "permissions the job needs.",
             answer = LabAnswer.Text(
