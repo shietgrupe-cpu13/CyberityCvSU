@@ -528,7 +528,13 @@ fun LearnScreen(
                 modifier = modifier,
                 onBack = { runningLevel = null }
             )
-        } else when (val content = contentFor(running.id)) {
+        }
+        // Replaying an already-completed level pays out no further XP — that
+        // happened on the first clear — so the screens below need to know not
+        // to show XP as still up for grabs.
+        else {
+            val isReplay = running.status == LevelStatus.COMPLETED
+            when (val content = contentFor(running.id)) {
             is LevelContent.Inbox -> InboxSimulationScreen(
                 simulation = content.simulation,
                 xpReward = MAX_LEVEL_XP,
@@ -552,6 +558,7 @@ fun LearnScreen(
                 onMistake = { spendHeart() },
                 hearts = hearts,
                 xpBalance = totalXp,
+                isReplay = isReplay,
                 onComplete = { earned, _, _ ->
                     val firstClear = running.status != LevelStatus.COMPLETED
                     units = units.withLevelCompleted(running.id)
@@ -579,6 +586,7 @@ fun LearnScreen(
                 hearts = hearts,
                 xpBalance = totalXp,
                 onSpendXp = { spendXp(it) },
+                isReplay = isReplay,
                 onComplete = { earned, _, _ ->
                     val firstClear = running.status != LevelStatus.COMPLETED
                     units = units.withLevelCompleted(running.id)
@@ -602,6 +610,7 @@ fun LearnScreen(
                 modifier = modifier,
                 onBack = { runningLevel = null }
             )
+            }
         }
 
         if (showExitConfirm) {

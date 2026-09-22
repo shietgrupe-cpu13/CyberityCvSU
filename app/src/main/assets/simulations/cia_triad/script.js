@@ -24,14 +24,61 @@ var Cyberity = (function () {
 /* Small persistence so the desk remembers what the student did while they move
  * between pages. DOM storage is enabled in LabScreen; if it ever isn't, the
  * simulation still works, it just forgets on navigation. */
-var Store = {
-  get: function (key) {
-    try { return window.sessionStorage.getItem('cia_' + key); } catch (e) { return null; }
-  },
-  set: function (key, value) {
-    try { window.sessionStorage.setItem('cia_' + key, value); } catch (e) { /* ignore */ }
+/* Desk state that has to survive a page load — which tickets have been read,
+ * and the sharing mode. sessionStorage is the primary store; window.name
+ * follows the frame across navigations and covers the case where DOM storage
+ * is unavailable in the WebView. Both belong to this WebView, so reopening the
+ * lab correctly starts with three unread tickets again. */
+var Store = (function () {
+  var TAG = 'cia_store:';
+
+  function fallbackRead() {
+    var out = {};
+    if (window.name.indexOf(TAG) !== 0) return out;
+
+    window.name.substring(TAG.length).split('&').forEach(function (pair) {
+      var eq = pair.indexOf('=');
+      if (eq === -1) return;
+      out[decodeURIComponent(pair.substring(0, eq))] =
+        decodeURIComponent(pair.substring(eq + 1));
+    });
+    return out;
   }
-};
+
+  function fallbackWrite(map) {
+    var parts = [];
+    for (var k in map) {
+      if (Object.prototype.hasOwnProperty.call(map, k)) {
+        parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(map[k]));
+      }
+    }
+    window.name = TAG + parts.join('&');
+  }
+
+  return {
+    get: function (key) {
+      try {
+        var v = window.sessionStorage.getItem('cia_' + key);
+        if (v !== null) return v;
+      } catch (e) {
+        /* DOM storage unavailable — fall through */
+      }
+      var map = fallbackRead();
+      return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : null;
+    },
+
+    set: function (key, value) {
+      try {
+        window.sessionStorage.setItem('cia_' + key, value);
+      } catch (e) {
+        /* ignored — window.name below is the fallback */
+      }
+      var map = fallbackRead();
+      map[key] = value;
+      fallbackWrite(map);
+    }
+  };
+})();
 
 function escapeHtml(text) {
   return String(text)

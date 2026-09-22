@@ -270,7 +270,10 @@ onComplete: (xpEarned: Int, correct: Int, total: Int) -> Unit,
 onMistake: () -> Unit,
 hearts: Int,
 xpBalance: Int,
-modifier: Modifier = Modifier
+modifier: Modifier = Modifier,
+/** True when this level was already completed — XP was paid out on the
+ *  first clear, so nothing here should look like it's still up for grabs. */
+isReplay: Boolean = false
 ) {
 
     var stage by remember { mutableStateOf(SimStage.BRIEFING) }
@@ -287,6 +290,7 @@ modifier: Modifier = Modifier
             SimStage.BRIEFING -> BriefingStage(
                 quiz = quiz,
                 xpReward = xpReward,
+                isReplay = isReplay,
                 onExit = onExit,
                 onBegin = { stage = SimStage.RUNNING }
             )
@@ -298,6 +302,7 @@ modifier: Modifier = Modifier
                 hearts = hearts,
                 liveXp = scoreLevelXp(true, heartsLost, 0, true),
                 xpBalance = xpBalance,
+                isReplay = isReplay,
                 chosenIndex = chosenIndex,
                 onChoose = { index ->
                     if (chosenIndex == null) {
@@ -333,6 +338,7 @@ modifier: Modifier = Modifier
                     total = total,
                     heartsLost = heartsLost,
                     award = award,
+                    isReplay = isReplay,
                     onFinish = { onComplete(award.total, correctCount, total) }
                 )
             }
@@ -350,6 +356,7 @@ private enum class SimStage { BRIEFING, RUNNING, RESULT }
 private fun BriefingStage(
     quiz: ScenarioQuiz,
     xpReward: Int,
+    isReplay: Boolean,
     onExit: () -> Unit,
     onBegin: () -> Unit
 ) {
@@ -386,7 +393,11 @@ private fun BriefingStage(
         Row {
             SimChip("${quiz.scenarios.size} scenarios")
             Spacer(Modifier.width(10.dp))
-            SimChip("up to +$xpReward XP")
+            if (isReplay) {
+                SimChip("Review · already completed")
+            } else {
+                SimChip("up to +$xpReward XP")
+            }
         }
 
         Spacer(Modifier.weight(1f))
@@ -410,6 +421,7 @@ private fun ScenarioStage(
     hearts: Int,
     liveXp: Int,
     xpBalance: Int,
+    isReplay: Boolean,
     chosenIndex: Int?,
     onChoose: (Int) -> Unit,
     onContinue: () -> Unit,
@@ -442,8 +454,10 @@ private fun ScenarioStage(
             HeartsRow(hearts = hearts, heartSize = 14.dp)
             Spacer(Modifier.width(10.dp))
             XpIndicator(xp = xpBalance, iconSize = 14.dp, fontSize = 12.sp, showDelta = false)
-            Spacer(Modifier.width(4.dp))
-            Text("+$liveXp", color = AppCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            if (!isReplay) {
+                Spacer(Modifier.width(4.dp))
+                Text("+$liveXp", color = AppCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
             Spacer(Modifier.width(10.dp))
             Text("${stepIndex + 1}/$total", color = AppGray, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold)
@@ -634,6 +648,7 @@ private fun ResultStage(
     total: Int,
     heartsLost: Int,
     award: XpAward,
+    isReplay: Boolean,
     onFinish: () -> Unit
 ) {
     val passed = correct >= (total + 1) / 2  // majority correct
@@ -680,13 +695,17 @@ private fun ResultStage(
 
         Spacer(Modifier.height(28.dp))
 
-        XpBreakdown(
-            award = award,
-            heartsLost = heartsLost,
-            hintsUsed = 0,
-            hintsPaid = 0,
-            quiz = true
-        )
+        if (isReplay) {
+            ReplayNotice()
+        } else {
+            XpBreakdown(
+                award = award,
+                heartsLost = heartsLost,
+                hintsUsed = 0,
+                hintsPaid = 0,
+                quiz = true
+            )
+        }
 
         Spacer(Modifier.weight(1f))
 

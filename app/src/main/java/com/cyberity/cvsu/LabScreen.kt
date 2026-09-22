@@ -144,7 +144,10 @@ fun LabScreen(
     xpBalance: Int,
     onSpendXp: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    clueLabels: Map<String, String> = emptyMap()
+    clueLabels: Map<String, String> = emptyMap(),
+    /** True when this level was already completed — XP was paid out on the
+     *  first clear, so nothing here should look like it's still up for grabs. */
+    isReplay: Boolean = false
 ) {
     var stage by remember { mutableStateOf(LabStage.BRIEFING) }
     var taskIndex by remember { mutableIntStateOf(0) }
@@ -243,6 +246,7 @@ fun LabScreen(
             LabStage.BRIEFING -> LabBriefing(
                 lab = lab,
                 xpReward = xpReward,
+                isReplay = isReplay,
                 onExit = onExit,
                 onBegin = { stage = LabStage.RUNNING }
             )
@@ -257,6 +261,7 @@ fun LabScreen(
                     hearts = hearts,
                     liveXp = liveXp,
                     xpBalance = xpBalance,
+                    isReplay = isReplay,
                     onExit = onExit
                 )
 
@@ -306,6 +311,7 @@ fun LabScreen(
                     heartsLost = heartsLost,
                     hintsPaid = hintsPaid,
                     award = award,
+                    isReplay = isReplay,
                     onFinish = { onComplete(award.total, solved, total) }
                 )
             }
@@ -508,6 +514,7 @@ private fun SheetHandle(title: String, onClose: () -> Unit, modifier: Modifier =
 private fun LabBriefing(
     lab: LabDefinition,
     xpReward: Int,
+    isReplay: Boolean,
     onExit: () -> Unit,
     onBegin: () -> Unit
 ) {
@@ -550,7 +557,11 @@ private fun LabBriefing(
             Row {
                 LabChip("${lab.tasks.size} tasks")
                 Spacer(Modifier.width(10.dp))
-                LabChip("up to +$xpReward XP")
+                if (isReplay) {
+                    LabChip("Review · already completed")
+                } else {
+                    LabChip("up to +$xpReward XP")
+                }
             }
         }
 
@@ -591,6 +602,7 @@ private fun LabTopBar(
     hearts: Int,
     liveXp: Int,
     xpBalance: Int,
+    isReplay: Boolean,
     onExit: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(AppCard)) {
@@ -618,13 +630,16 @@ private fun LabTopBar(
         ) {
             HeartsRow(hearts = hearts)
             Spacer(Modifier.weight(1f))
-            // Balance first — it moves when a hint is bought — then what this
-            // level would add to it.
+            // Balance first — it moves when a hint is bought — then, on a first
+            // attempt only, what this level would add to it. A replay can't pay
+            // out again, so there is nothing to show beside the balance.
             XpIndicator(xp = xpBalance, iconSize = 16.dp, fontSize = 14.sp)
-            Spacer(Modifier.width(8.dp))
-            Text(
-                "+$liveXp", color = AppCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold
-            )
+            if (!isReplay) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "+$liveXp", color = AppCyan, fontSize = 12.sp, fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         Spacer(Modifier.height(6.dp))
@@ -1139,6 +1154,7 @@ private fun LabResult(
     heartsLost: Int,
     hintsPaid: Int,
     award: XpAward,
+    isReplay: Boolean,
     onFinish: () -> Unit
 ) {
     val passed = solved == total
@@ -1182,12 +1198,16 @@ private fun LabResult(
         }
 
         Spacer(Modifier.height(24.dp))
-        XpBreakdown(
-            award = award,
-            heartsLost = heartsLost,
-            hintsUsed = hintsUsed,
-            hintsPaid = hintsPaid
-        )
+        if (isReplay) {
+            ReplayNotice()
+        } else {
+            XpBreakdown(
+                award = award,
+                heartsLost = heartsLost,
+                hintsUsed = hintsUsed,
+                hintsPaid = hintsPaid
+            )
+        }
 
         Spacer(Modifier.weight(1f))
 
@@ -1199,6 +1219,30 @@ private fun LabResult(
         ) {
             Text("BACK TO PATH", fontWeight = FontWeight.Bold)
         }
+    }
+}
+
+/** Stands in for the XP breakdown on a replay — this attempt pays out nothing.
+ *  Not private: ScenarioQuizScreen uses the same notice for the same reason. */
+@Composable
+fun ReplayNotice() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppCard, RoundedCornerShape(14.dp))
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Filled.Info, contentDescription = null, tint = AppGray,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            "Review run — you already earned XP for this level on your first clear. " +
+                    "Nothing more is awarded for replaying it.",
+            color = AppGray, fontSize = 12.sp, lineHeight = 17.sp
+        )
     }
 }
 
