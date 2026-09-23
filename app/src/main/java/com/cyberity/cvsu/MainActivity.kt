@@ -148,40 +148,21 @@ fun AppNavigator() {
 
             LaunchedEffect(attempt) {
                 val uid = auth.currentUser?.uid
-                Log.d("CYBERITY_ONBOARDING", "LOGIN SUCCESS")
-                Log.d("CYBERITY_ONBOARDING", "AUTH UID: $uid")
-
                 when {
-                    uid == null -> {
-                        Log.d("CYBERITY_ONBOARDING", "NO AUTHENTICATED USER - SHOWING ENTRY CHOICE")
-                        currentScreen = "entry"
-                    }
-                    DEBUG_FORCE_ONBOARDING -> {
-                        Log.d("CYBERITY_ONBOARDING", "DEBUG_FORCE_ONBOARDING IS TRUE - FORCING TUTORIAL")
-                        currentScreen = "onboarding"
-                    }
+                    uid == null -> currentScreen = "entry"
                     else -> {
                         failed = false
-                        Log.d("CYBERITY_ONBOARDING", "LOOKING FOR STUDENT DOCUMENT")
                         UserProfileRepository.load(
                             uid,
                             onResult = { profile ->
                                 if (profile?.isComplete == true) {
                                     ProfileCache.markComplete(context, uid)
-                                    if (profile.hasCompletedOnboarding) {
-                                        Log.d("CYBERITY_ONBOARDING", "DECISION: GO TO HOME")
-                                        currentScreen = "loggedIn"
-                                    } else {
-                                        Log.d("CYBERITY_ONBOARDING", "DECISION: SHOW TUTORIAL")
-                                        currentScreen = "onboarding"
-                                    }
+                                    currentScreen = "loggedIn"
                                 } else {
-                                    Log.d("CYBERITY_ONBOARDING", "PROFILE INCOMPLETE - GOING TO COMPLETE PROFILE")
                                     currentScreen = "completeProfile"
                                 }
                             },
                             onError = { message ->
-                                Log.e("CYBERITY_ONBOARDING", "FIRESTORE ERROR: $message")
                                 errorDetail = message
                                 failed = true
                             }
@@ -201,49 +182,7 @@ fun AppNavigator() {
             onProfileSaved = { currentScreen = "profileCheck" },
             onSignOut = signOut
         )
-        "onboarding" -> HomeScreen(
-            isTutorialMode = true,
-            onFinishTutorial = {
-                val uid = auth.currentUser?.uid
-                Log.d("CYBERITY_ONBOARDING", "ONBOARDING COMPLETED")
-                Log.d("CYBERITY_ONBOARDING", "UPDATING FIRESTORE")
-
-                if (uid != null) {
-                    UserProfileRepository.load(
-                        uid,
-                        onResult = { profile ->
-                            UserProfileRepository.setOnboardingCompleted(uid, profile?.studentId) { success, exception ->
-                                if (success) {
-                                    Log.d("CYBERITY_ONBOARDING", "FIRESTORE UPDATE SUCCESS")
-                                    Log.d("CYBERITY_ONBOARDING", "OPENING HOME")
-                                } else {
-                                    Log.e("CYBERITY_ONBOARDING", "FIRESTORE UPDATE FAILED", exception)
-                                }
-                                currentScreen = "loggedIn"
-                            }
-                        },
-                        onError = {
-                            UserProfileRepository.setOnboardingCompleted(uid) { success, exception ->
-                                if (success) {
-                                    Log.d("CYBERITY_ONBOARDING", "FIRESTORE UPDATE SUCCESS")
-                                    Log.d("CYBERITY_ONBOARDING", "OPENING HOME")
-                                } else {
-                                    Log.e("CYBERITY_ONBOARDING", "FIRESTORE UPDATE FAILED", exception)
-                                }
-                                currentScreen = "loggedIn"
-                            }
-                        }
-                    )
-                } else {
-                    currentScreen = "loggedIn"
-                }
-            },
-            onLogout = {
-                currentScreen = "entry"
-            }
-        )
         "loggedIn" -> HomeScreen(
-            isTutorialMode = false,
             onLogout = {
                 currentScreen = "entry"
             }

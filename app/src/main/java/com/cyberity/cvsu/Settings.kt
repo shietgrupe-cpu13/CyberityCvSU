@@ -237,7 +237,7 @@ fun SettingsDialog(
                     Text("Replay Guided Tutorial", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(16.dp))
                 HorizontalDivider(color = AppNavy, thickness = 1.dp)
                 Spacer(Modifier.height(20.dp))
 

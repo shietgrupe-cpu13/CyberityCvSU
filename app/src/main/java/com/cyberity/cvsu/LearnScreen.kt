@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.unit.Density
@@ -68,6 +69,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
@@ -101,6 +103,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 
 
 // ===========================================================================
@@ -148,8 +152,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Cybersecurity Fundamentals",
         description = "Start here — the language and mindset of security",
         levels = listOf(
-            LearningLevel(100, "Level 0: CYBERITY Tutorial", "Learn how CYBERITY works before starting your cybersecurity training.", 25, LevelType.LESSON, LevelStatus.CURRENT, durationMinutes = 3),
-            LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.CURRENT, durationMinutes = 12),
             LearningLevel(102, "Cybersecurity Threats", "Security lab: triage a night's worth of SOC alerts, classify the real threat, and pivot on the indicator.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 10),
             LearningLevel(103, "CIA Triad", "Security lab: work three registrar incidents — one per pillar — then prove, contain, and restore.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(104, "Security Principles", "Security lab: audit roles, fix a fail-open lock, and stack defences until the attack replay fails.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
@@ -428,6 +431,7 @@ fun LearnScreen(
         val cached = uid?.let { ProgressCache.load(context, it) } ?: emptySet()
         mutableStateOf(sampleLearningUnits().withLevelsCompleted(cached))
     }
+    var hasCompletedOnboarding by remember(uid) { mutableStateOf(false) }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
 
     // Developer switch (see DEV_UNLOCK_ALL_LEVELS). Only what's shown changes;
@@ -454,6 +458,15 @@ fun LearnScreen(
     // since it usually matches what the cache already showed.
     LaunchedEffect(uid) {
         if (uid == null) return@LaunchedEffect
+        UserProfileRepository.load(
+            uid,
+            onResult = { profile ->
+                if (profile != null) {
+                    hasCompletedOnboarding = profile.hasCompletedOnboarding
+                }
+            },
+            onError = {}
+        )
         ProgressRepository.loadCompletedLevels(uid) { remoteIds ->
             ProgressCache.save(context, uid, remoteIds)
             units = sampleLearningUnits().withLevelsCompleted(remoteIds)
@@ -584,11 +597,20 @@ fun LearnScreen(
             if (running.id == 100) {
                 LevelZeroTutorialScreen(
                     onCompleteTutorial = {
-                        units = units.withLevelCompleted(100)
-                        uid?.let {
-                            ProgressRepository.markLevelCompleted(it, 100)
-                            ProgressCache.save(context, it, completedIdsOf(units))
-                            UserProfileRepository.setOnboardingCompleted(it) { _, _ -> }
+                        uid?.let { id ->
+                            UserProfileRepository.load(
+                                id,
+                                onResult = { profile ->
+                                    UserProfileRepository.setOnboardingCompleted(id, profile?.studentId) { success, _ ->
+                                        if (success) hasCompletedOnboarding = true
+                                    }
+                                },
+                                onError = {
+                                    UserProfileRepository.setOnboardingCompleted(id) { success, _ ->
+                                        if (success) hasCompletedOnboarding = true
+                                    }
+                                }
+                            )
                         }
                         setRunningLevel(null)
                     },
@@ -712,6 +734,15 @@ fun LearnScreen(
                     setRunningLevel(levelZero)
                 }
             )
+
+            if (!hasCompletedOnboarding) {
+                NewToCyberityBanner(
+                    onStartTutorial = {
+                        val levelZero = LearningLevel(100, "Level 0: CYBERITY Tutorial", "Learn how CYBERITY works before starting your cybersecurity training.", 25, LevelType.LESSON, LevelStatus.CURRENT, durationMinutes = 3)
+                        setRunningLevel(levelZero)
+                    }
+                )
+            }
 
             if (devUnlockAll) {
                 Text(
@@ -869,6 +900,55 @@ fun LearnHeader(
                     onReplayTutorial()
                 }
             )
+        }
+    }
+}
+
+@Composable
+fun NewToCyberityBanner(onStartTutorial: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { onStartTutorial() },
+        colors = CardDefaults.cardColors(containerColor = AppCard),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, AppCyan.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(AppBlue.copy(alpha = 0.25f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = AppCyan,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "NEW TO CYBERITY?",
+                    color = AppCyan,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Play Level 0 — Tutorial first to understand the basics and learn how challenges work.",
+                    color = AppWhite,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
+            }
         }
     }
 }

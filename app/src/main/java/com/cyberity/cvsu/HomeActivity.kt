@@ -113,23 +113,10 @@ private fun sampleModules(): List<ModuleData> = listOf(
 
 @Composable
 fun HomeScreen(
-    isTutorialMode: Boolean = false,
-    onFinishTutorial: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var levelRunning by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isTutorialMode) {
-        if (isTutorialMode) {
-            TutorialManager.startTutorial()
-        } else {
-            TutorialManager.finishTutorial()
-        }
-    }
-
-    val currentStep = TutorialManager.currentStep
-    val isTutorial = isTutorialMode && TutorialManager.isTutorialActive
 
     Scaffold(
         containerColor = AppNavy,
@@ -166,147 +153,6 @@ fun HomeScreen(
                 0 -> LearnScreen(onLevelRunningChanged = { levelRunning = it })
                 1 -> LeaderboardTab()
                 2 -> ProfileTab(onLogout = onLogout)
-            }
-
-            if (isTutorial) {
-                when (currentStep) {
-                    TutorialStep.STEP1_HOME -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Start Your Journey",
-                            description = "This is where you can access your cybersecurity lessons and challenges. Tap the highlighted level node to continue.",
-                            stepNumber = 1,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP2_LEVEL_PREVIEW
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP2_LEVEL_PREVIEW -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Your First Level",
-                            description = "Start here to learn the fundamentals of cybersecurity. Tap START LEVEL to continue.",
-                            stepNumber = 2,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP3_SCENARIO
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP3_SCENARIO -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Read Carefully",
-                            description = "CYBERITY presents realistic cybersecurity situations. Read the scenario carefully before choosing your answer.",
-                            stepNumber = 3,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP4_CHOICE
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP4_CHOICE -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Choose Your Answer",
-                            description = "Select the option you think is the safest response. Tap an answer to continue.",
-                            stepNumber = 4,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP5_HINT
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP5_HINT -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Need Help?",
-                            description = "You can use a hint when you're unsure. Tap Hint to see how assistance works.",
-                            stepNumber = 5,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP6_SUBMIT
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP6_SUBMIT -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Submit Your Answer",
-                            description = "Once you've chosen your answer, tap Submit to check your response.",
-                            stepNumber = 6,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP7_FEEDBACK
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP7_FEEDBACK -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Learn From Your Result",
-                            description = "CYBERITY gives you feedback after each challenge so you can understand why an answer is correct or incorrect.",
-                            stepNumber = 7,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP8_PROGRESS
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP8_PROGRESS -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "Track Your Progress",
-                            description = "You can monitor your completed levels, streak, and performance here.",
-                            stepNumber = 8,
-                            onTargetTapped = {
-                                TutorialManager.currentStep = TutorialStep.STEP9_FINISH
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                    TutorialStep.STEP9_FINISH -> {
-                        TutorialSpotlightOverlay(
-                            targetBounds = TutorialManager.targetBounds,
-                            title = "You're Ready!",
-                            description = "You've learned how to navigate CYBERITY. Now you're ready to start your cybersecurity training.",
-                            stepNumber = 9,
-                            onTargetTapped = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            },
-                            onSkipTutorial = {
-                                TutorialManager.finishTutorial()
-                                onFinishTutorial()
-                            }
-                        )
-                    }
-                }
             }
         }
     }
