@@ -1,4 +1,4 @@
-/* Cyberity — Campus Security Review (level 303). Shares the phish desk base. */
+/* Cyberity — Sixty Seconds (level 350). Shares the phish desk base. */
 
 :root {
   --navy: #010E45;
@@ -709,6 +709,172 @@ body { padding-bottom: 28px; }
 .book-row.empty { height: 27px; }
 
 /* ==========================================================================
+   Level 304 — the phone: message list, threads, recorded call
+   ========================================================================== */
+
+/* ---------- message list ---------- */
+
+.sms-list { padding: 4px 0 0; }   /* .choice supplies the side gutter */
+
+.sms-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.18);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sms-row.unread { border-color: rgba(108, 184, 236, 0.5); }
+.sms-row.read .sms-name { color: var(--gray); font-weight: 600; }
+
+.sms-row.unread .mail-badge {
+  background: rgba(108, 184, 236, 0.16);
+  border: 1px solid rgba(108, 184, 236, 0.5);
+  color: var(--cyan);
+}
+.sms-row.read .mail-badge {
+  background: rgba(154, 169, 194, 0.10);
+  border: 1px solid rgba(154, 169, 194, 0.32);
+  color: var(--gray);
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--blue-dark);
+  border: 1px solid rgba(108, 184, 236, 0.35);
+  color: var(--cyan);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sms-body { flex: 1 1 auto; min-width: 0; display: block; }
+.sms-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.sms-name { font-size: 15px; font-weight: 700; }
+.sms-when { font-size: 11px; color: var(--gray); flex: 0 0 auto; }
+.sms-sub { display: block; font-size: 11px; color: var(--cyan); margin-top: 1px; }
+.sms-prev {
+  display: block;
+  font-size: 13px;
+  color: var(--gray);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- thread ---------- */
+
+.thread { padding: 12px 14px 0; }
+
+.sms-msg { margin-bottom: 16px; }
+.sms-time {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-bottom: 4px;
+}
+
+.sms-bubble {
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.22);
+  border-radius: 4px 16px 16px 16px;
+  padding: 11px 13px;
+  font-size: 14px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.sms-link { color: var(--cyan); text-decoration: underline; }
+
+.sms-details-btn {
+  margin-top: 6px;
+  background: transparent;
+  border: 1px solid rgba(108, 184, 236, 0.4);
+  color: var(--cyan);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sms-details:not(:empty) {
+  margin-top: 8px;
+  background: rgba(1, 26, 108, 0.55);
+  border: 1px solid rgba(108, 184, 236, 0.3);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.det-title {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+
+/* ---------- reply bar (a trap, on purpose) ---------- */
+
+.reply-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 14px 0;
+  padding: 8px 0 12px;
+  border-top: 1px solid rgba(154, 169, 194, 0.18);
+}
+
+.reply-box {
+  flex: 1 1 auto;
+  background: rgba(1, 26, 108, 0.6);
+  border: 1px solid rgba(154, 169, 194, 0.3);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.reply-send {
+  flex: 0 0 auto;
+  background: var(--blue);
+  color: var(--white);
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- recorded call ---------- */
+
+.call-card {
+  margin: 14px 14px 10px;
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.22);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.call-who { font-size: 16px; font-weight: 700; }
+.call-num { font-size: 12px; color: var(--cyan); margin-top: 2px; }
+.call-note { font-size: 12px; color: var(--gray); margin-top: 8px; }
+
+.chat { padding: 0 14px; }
+
+/* ==========================================================================
    SCENARIO CONTENT FRAMES — shared block, identical in every simulation.
    Paste this unchanged into each styles.css; never edit one copy alone.
 
@@ -827,3 +993,278 @@ body { padding-bottom: 28px; }
 /* A rail sits flush against the card's left edge, so the card gives up its
    own padding and lets the body carry it. */
 .choice.has-rail { align-items: stretch; padding: 0; gap: 0; }
+
+/* ==========================================================================
+   Level 305 — the help desk mailbox: a verdict on every card
+   ========================================================================== */
+
+.mail-choice { display: block; padding: 0; }
+.mail-choice-body { display: block; }
+
+.mail-choice-link {
+  display: block;
+  padding: 12px 14px 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.mail-choice-subject {
+  display: block;
+  font-size: 13.5px;
+  color: var(--white);
+  margin-top: 5px;
+  font-weight: 600;
+}
+
+.mail-choice.read .sms-name { color: var(--gray); font-weight: 600; }
+.mail-choice.read .mail-badge {
+  background: rgba(154, 169, 194, 0.10);
+  border: 1px solid rgba(154, 169, 194, 0.32);
+  color: var(--gray);
+}
+.mail-choice.unread .mail-badge {
+  background: rgba(108, 184, 236, 0.16);
+  border: 1px solid rgba(108, 184, 236, 0.5);
+  color: var(--cyan);
+}
+
+/* The verdict strip. Both buttons look identical until one is chosen: the
+   colour marks WHAT YOU DECIDED, not whether you were right — the mailbox
+   never reveals which individual verdicts are wrong. */
+.verdict-row {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 12px;
+  border-top: 1px solid rgba(154, 169, 194, 0.14);
+  padding-top: 10px;
+  margin-top: 2px;
+}
+
+.verdict-btn {
+  flex: 1 1 0;
+  background: rgba(1, 26, 108, 0.55);
+  border: 1px solid rgba(154, 169, 194, 0.35);
+  color: var(--gray);
+  border-radius: 999px;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.verdict-btn.picked-genuine {
+  background: rgba(108, 184, 236, 0.18);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+.verdict-btn.picked-phishing {
+  background: rgba(180, 155, 247, 0.18);
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+.verdict-locked {
+  flex: 1 1 auto;
+  font-size: 11.5px;
+  color: var(--gray);
+  font-style: italic;
+}
+
+/* Progress line at the top of the mailbox. */
+.warn-line { color: var(--amber); }
+.good-line { color: var(--green); }
+
+/* A secondary action, and one the student should think twice about. */
+.cta.ghost {
+  background: none;
+  border: 1px solid rgba(108, 184, 236, 0.45);
+  color: var(--cyan);
+}
+
+.cta.danger {
+  background: none;
+  border: 1px solid rgba(255, 92, 122, 0.55);
+  color: var(--red);
+}
+
+/* Slots that reveal a whole frame (a link's destination, a file's details).
+   Distinct from .link-target, which is the older one-line amber callout. */
+.reveal-slot { display: none; }
+.reveal-slot.open { display: block; }
+
+/* ==========================================================================
+   Level 350 — the sixty-second quiz
+   ========================================================================== */
+
+/* ---------- the clock ---------- */
+
+.timer {
+  position: sticky;
+  top: 22px;
+  z-index: 9;
+  background: var(--navy);
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid rgba(154, 169, 194, 0.18);
+}
+
+.timer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.timer-label {
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+
+.timer-num {
+  font-family: "Roboto Mono", monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--cyan);
+}
+
+.timer-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(154, 169, 194, 0.18);
+  overflow: hidden;
+}
+
+.timer-fill {
+  height: 100%;
+  width: 100%;
+  background: var(--cyan);
+  border-radius: 999px;
+}
+
+/* Time pressure, not a verdict on anything the student is reading. */
+.timer.low .timer-fill { background: var(--amber); }
+.timer.low .timer-num { color: var(--amber); }
+.timer.critical .timer-fill { background: var(--red); }
+.timer.critical .timer-num { color: var(--red); }
+
+/* ---------- start screen ---------- */
+
+.quiz-intro { padding: 26px 16px 10px; text-align: center; }
+
+.quiz-big {
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.quiz-big.accent { color: var(--cyan); }
+
+.quiz-intro-note {
+  margin: 14px auto 0;
+  max-width: 320px;
+  font-size: 13px;
+  color: var(--gray);
+}
+
+/* ---------- a question ---------- */
+
+.quiz-count {
+  padding: 12px 16px 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.quiz-from { color: var(--gray); }
+
+.quiz-card { margin: 8px 14px 14px; }
+.quiz-q { font-size: 15.5px; line-height: 1.45; }
+.q-url { display: block; margin-top: 8px; font-size: 12.5px; color: var(--white); }
+
+.quiz-options { padding: 0 14px; }
+
+/* Every option looks the same: nothing on this screen hints at the answer. */
+.quiz-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.30);
+  border-radius: 13px;
+  color: var(--white);
+  font-size: 14px;
+  padding: 13px 14px;
+  margin-bottom: 9px;
+}
+
+.quiz-option:active { background: var(--blue-dark); border-color: var(--cyan); }
+
+/* ---------- results ---------- */
+
+.score-card {
+  margin: 14px 14px 12px;
+  padding: 16px 14px;
+  border-radius: 16px;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid rgba(154, 169, 194, 0.22);
+}
+
+.score-card.passed { border-color: rgba(39, 224, 168, 0.55); }
+.score-card.failed { border-color: rgba(255, 196, 107, 0.55); }
+
+.score-line { font-size: 12.5px; color: var(--gray); }
+
+.score-big {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 4px 0 2px;
+}
+
+.score-card.passed .score-big { color: var(--green); }
+.score-card.failed .score-big { color: var(--amber); }
+
+.score-sub { font-size: 12.5px; color: var(--gray); }
+
+.res-row {
+  margin: 0 14px 10px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  background: var(--card);
+  border: 1px solid rgba(154, 169, 194, 0.18);
+}
+
+.res-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.res-n {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+}
+
+.res-mark {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  padding: 2px 9px 3px;
+  border-radius: 999px;
+}
+
+.res-mark.ok { background: rgba(39, 224, 168, 0.14); color: var(--green); border: 1px solid rgba(39, 224, 168, 0.45); }
+.res-mark.bad { background: rgba(255, 92, 122, 0.14); color: var(--red); border: 1px solid rgba(255, 92, 122, 0.45); }
+.res-mark.skipped { background: rgba(154, 169, 194, 0.12); color: var(--gray); border: 1px solid rgba(154, 169, 194, 0.35); }
+
+.res-q { font-size: 13px; color: var(--white); }
+.res-answer { font-size: 13px; color: var(--green); margin-top: 7px; }

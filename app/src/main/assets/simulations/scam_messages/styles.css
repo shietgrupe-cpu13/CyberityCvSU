@@ -1,4 +1,4 @@
-/* Cyberity — Campus Security Review (level 303). Shares the phish desk base. */
+/* Cyberity — Your Phone, One Week (level 304). Shares the phish desk base. */
 
 :root {
   --navy: #010E45;
@@ -707,6 +707,172 @@ body { padding-bottom: 28px; }
 }
 .book-row span:first-child { flex: 0 0 46px; color: #5a5647; }
 .book-row.empty { height: 27px; }
+
+/* ==========================================================================
+   Level 304 — the phone: message list, threads, recorded call
+   ========================================================================== */
+
+/* ---------- message list ---------- */
+
+.sms-list { padding: 4px 0 0; }   /* .choice supplies the side gutter */
+
+.sms-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.18);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sms-row.unread { border-color: rgba(108, 184, 236, 0.5); }
+.sms-row.read .sms-name { color: var(--gray); font-weight: 600; }
+
+.sms-row.unread .mail-badge {
+  background: rgba(108, 184, 236, 0.16);
+  border: 1px solid rgba(108, 184, 236, 0.5);
+  color: var(--cyan);
+}
+.sms-row.read .mail-badge {
+  background: rgba(154, 169, 194, 0.10);
+  border: 1px solid rgba(154, 169, 194, 0.32);
+  color: var(--gray);
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--blue-dark);
+  border: 1px solid rgba(108, 184, 236, 0.35);
+  color: var(--cyan);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sms-body { flex: 1 1 auto; min-width: 0; display: block; }
+.sms-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.sms-name { font-size: 15px; font-weight: 700; }
+.sms-when { font-size: 11px; color: var(--gray); flex: 0 0 auto; }
+.sms-sub { display: block; font-size: 11px; color: var(--cyan); margin-top: 1px; }
+.sms-prev {
+  display: block;
+  font-size: 13px;
+  color: var(--gray);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- thread ---------- */
+
+.thread { padding: 12px 14px 0; }
+
+.sms-msg { margin-bottom: 16px; }
+.sms-time {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray);
+  margin-bottom: 4px;
+}
+
+.sms-bubble {
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.22);
+  border-radius: 4px 16px 16px 16px;
+  padding: 11px 13px;
+  font-size: 14px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.sms-link { color: var(--cyan); text-decoration: underline; }
+
+.sms-details-btn {
+  margin-top: 6px;
+  background: transparent;
+  border: 1px solid rgba(108, 184, 236, 0.4);
+  color: var(--cyan);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.sms-details:not(:empty) {
+  margin-top: 8px;
+  background: rgba(1, 26, 108, 0.55);
+  border: 1px solid rgba(108, 184, 236, 0.3);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.det-title {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 6px;
+}
+
+/* ---------- reply bar (a trap, on purpose) ---------- */
+
+.reply-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 14px 0;
+  padding: 8px 0 12px;
+  border-top: 1px solid rgba(154, 169, 194, 0.18);
+}
+
+.reply-box {
+  flex: 1 1 auto;
+  background: rgba(1, 26, 108, 0.6);
+  border: 1px solid rgba(154, 169, 194, 0.3);
+  border-radius: 999px;
+  padding: 9px 14px;
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.reply-send {
+  flex: 0 0 auto;
+  background: var(--blue);
+  color: var(--white);
+  border: 0;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+/* ---------- recorded call ---------- */
+
+.call-card {
+  margin: 14px 14px 10px;
+  background: var(--card);
+  border: 1px solid rgba(108, 184, 236, 0.22);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.call-who { font-size: 16px; font-weight: 700; }
+.call-num { font-size: 12px; color: var(--cyan); margin-top: 2px; }
+.call-note { font-size: 12px; color: var(--gray); margin-top: 8px; }
+
+.chat { padding: 0 14px; }
 
 /* ==========================================================================
    SCENARIO CONTENT FRAMES — shared block, identical in every simulation.

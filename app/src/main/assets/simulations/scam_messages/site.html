@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Sandbox browser</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Sandbox browser &middot; the real page, safely copied &middot; nothing is sent</div>
+
+  <div class="topbar">
+    <button class="back-btn" id="back-link">&#8592; Message</button>
+    <span class="topbar-title mono" id="site-owner"></span>
+  </div>
+
+  <div class="detail" id="detail"></div>
+
+  <script src="script.js"></script>
+  <script>
+    renderSite('detail');
+    window.addEventListener('hashchange', function () { renderSite('detail'); });
+  </script>
+</body>
+</html>

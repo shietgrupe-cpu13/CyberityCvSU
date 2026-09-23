@@ -194,12 +194,45 @@ var ORDER = ['a', 'b', 'c', 'd'];
 /* ---------------------------------------------------------------------------
  * Desk
  * ------------------------------------------------------------------------ */
+
+/* ---------------------------------------------------------------------------
+ * Returning to the list
+ *
+ * Shared block: identical in every simulation apart from KEY.
+ *
+ * Opening an item is a full page load, so coming back drops the student at the
+ * top of the list and they have to hunt for their place again. Remember which
+ * item was opened and put it back under their eyes instead.
+ *
+ * sessionStorage only, deliberately: this is a convenience, not state the
+ * level depends on, so if the WebView refuses it the list simply behaves as
+ * it did before.
+ * ------------------------------------------------------------------------ */
+var ReturnTo = {
+  KEY: 'social_eng_last',
+  remember: function (id) {
+    if (!id) return;
+    try { window.sessionStorage.setItem(ReturnTo.KEY, id); } catch (e) { /* ignored */ }
+  },
+  restore: function () {
+    var id = null;
+    try { id = window.sessionStorage.getItem(ReturnTo.KEY); } catch (e) { id = null; }
+    if (!id) return;
+    var row = document.getElementById('card-' + id) ||
+      document.querySelector('[href$="#' + id + '"]');
+    // Jumped, not smoothed: an animated scroll on arrival reads as the page
+    // sliding away by itself.
+    if (row) row.scrollIntoView({ block: 'center' });
+  }
+};
+
 function renderDesk(mountId) {
   var html = ORDER.map(function (key) {
     var i = INCIDENTS[key];
     var read = Store.has(key);
     return '' +
-      '<a class="ticket-row ' + (read ? 'read' : 'unread') + '" href="incident.html#' + i.id + '">' +
+      '<a class="choice has-rail ticket-row ' + (read ? 'read' : 'unread') +
+        '" href="incident.html#' + i.id + '">' +
         '<span class="sev-bar ' + (read ? 'seen' : 'new') + '"></span>' +
         '<span class="ticket-body">' +
           '<span class="ticket-meta">' +
@@ -222,6 +255,8 @@ function renderDesk(mountId) {
       ? 'All four reviewed — now look at them as one week'
       : left + ' of 4 still to review';
   }
+
+  ReturnTo.restore();
 }
 
 /* ---------------------------------------------------------------------------
@@ -249,6 +284,7 @@ function renderChat(ev) {
 }
 
 function renderIncident(mountId) {
+  ReturnTo.remember((window.location.hash || '').substring(1));
   var key = (window.location.hash || '#a').substring(1);
   var i = INCIDENTS[key] || INCIDENTS.a;
 
@@ -260,7 +296,10 @@ function renderIncident(mountId) {
       '<h2>' + escapeHtml(i.title) + '</h2>' +
       '<div class="detail-sub">' + escapeHtml(i.code) + ' · ' + escapeHtml(i.day) +
         ' · ' + escapeHtml(i.channel) + ' · reported by ' + escapeHtml(i.reporter) + '</div>' +
-      '<div class="report">' + escapeHtml(i.report) + '</div>' +
+      '<div class="artifact a-per">' +
+        '<span class="artifact-tag">PERSON &middot; ' + escapeHtml(i.reporter).toUpperCase() + '</span>' +
+        escapeHtml(i.report) +
+      '</div>' +
     '</div>';
 
   html += '<div class="section-label">Evidence</div>';

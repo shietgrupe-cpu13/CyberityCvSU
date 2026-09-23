@@ -194,6 +194,38 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;');
 }
 
+
+/* ---------------------------------------------------------------------------
+ * Returning to the list
+ *
+ * Shared block: identical in every simulation apart from KEY.
+ *
+ * Opening an item is a full page load, so coming back drops the student at the
+ * top of the list and they have to hunt for their place again. Remember which
+ * item was opened and put it back under their eyes instead.
+ *
+ * sessionStorage only, deliberately: this is a convenience, not state the
+ * level depends on, so if the WebView refuses it the list simply behaves as
+ * it did before.
+ * ------------------------------------------------------------------------ */
+var ReturnTo = {
+  KEY: 'inbox_triage_last',
+  remember: function (id) {
+    if (!id) return;
+    try { window.sessionStorage.setItem(ReturnTo.KEY, id); } catch (e) { /* ignored */ }
+  },
+  restore: function () {
+    var id = null;
+    try { id = window.sessionStorage.getItem(ReturnTo.KEY); } catch (e) { id = null; }
+    if (!id) return;
+    var row = document.getElementById('card-' + id) ||
+      document.querySelector('[href$="#' + id + '"]');
+    // Jumped, not smoothed: an animated scroll on arrival reads as the page
+    // sliding away by itself.
+    if (row) row.scrollIntoView({ block: 'center' });
+  }
+};
+
 function renderInbox(mountId) {
   var mount = document.getElementById(mountId);
   var html = '';
@@ -202,7 +234,7 @@ function renderInbox(mountId) {
     var isRead = ReadState.has(m.id);
 
     html +=
-      '<a class="mail-item ' + (isRead ? 'read' : 'unread') + '" href="email.html#' + m.id + '">' +
+      '<a class="choice mail-item ' + (isRead ? 'read' : 'unread') + '" href="email.html#' + m.id + '">' +
         '<span class="mail-dot"></span>' +
         '<span class="mail-body">' +
           '<span class="mail-row">' +
@@ -218,6 +250,8 @@ function renderInbox(mountId) {
   mount.innerHTML = html;
 
   updateUnreadCount('unread-count');
+
+  ReturnTo.restore();
 }
 
 /* Keeps the "N unread" line in the header honest. */
@@ -239,13 +273,18 @@ function toggleReveal(id, onFirstOpen) {
 }
 
 function renderMessage(mountId) {
+  ReturnTo.remember((window.location.hash || '').substring(1));
   var id = (window.location.hash || '#it').substring(1);
   var m = EMAILS[id] || EMAILS.it;
 
   ReadState.mark(m.id);
   Cyberity.emailOpened(m.id);
 
-  var html = '';
+  // The message itself is evidence: everything the sender controls goes
+  // inside one EMAIL frame. Tools that inspect it stay outside.
+  var html =
+    '<div class="artifact a-msg">' +
+      '<span class="artifact-tag">EMAIL</span>';
 
   html +=
     '<div class="field" onclick="onSenderInspect(\'' + m.id + '\')">' +
@@ -288,6 +327,8 @@ function renderMessage(mountId) {
       '</div>';
   }
 
+  html += '</div>';   // end of the EMAIL frame
+
   var rows = '';
   m.headers.forEach(function (h) {
     rows += '<tr><td>' + escapeHtml(h[0]) + '</td><td class="mono">' + escapeHtml(h[1]) + '</td></tr>';
@@ -296,7 +337,10 @@ function renderMessage(mountId) {
   html +=
     '<button class="link-btn" onclick="onHeadersToggle()">Show message headers</button>' +
     '<div class="reveal" id="rev-headers">' +
-      '<table class="headers-table">' + rows + '</table>' +
+      '<div class="artifact a-sys">' +
+        '<span class="artifact-tag">MESSAGE HEADERS</span>' +
+        '<table class="headers-table">' + rows + '</table>' +
+      '</div>' +
     '</div>';
 
   document.getElementById(mountId).innerHTML = html;

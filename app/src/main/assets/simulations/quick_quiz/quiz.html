@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Sixty seconds</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Quick quiz &middot; everything from unit 3 &middot; retries are free</div>
+
+  <div class="timer" id="timer">
+    <div class="timer-top">
+      <span class="timer-label">Time remaining</span>
+      <span class="timer-num" id="timer-num">60s</span>
+    </div>
+    <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+  </div>
+
+  <div id="stage"></div>
+
+  <script src="script.js"></script>
+  <script>renderStart('stage');</script>
+</body>
+</html>

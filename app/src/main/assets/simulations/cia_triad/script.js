@@ -179,12 +179,45 @@ var TICKETS = {
 
 var TICKET_ORDER = ['inc301', 'inc302', 'inc303'];
 
+
+/* ---------------------------------------------------------------------------
+ * Returning to the list
+ *
+ * Shared block: identical in every simulation apart from KEY.
+ *
+ * Opening an item is a full page load, so coming back drops the student at the
+ * top of the list and they have to hunt for their place again. Remember which
+ * item was opened and put it back under their eyes instead.
+ *
+ * sessionStorage only, deliberately: this is a convenience, not state the
+ * level depends on, so if the WebView refuses it the list simply behaves as
+ * it did before.
+ * ------------------------------------------------------------------------ */
+var ReturnTo = {
+  KEY: 'cia_triad_last',
+  remember: function (id) {
+    if (!id) return;
+    try { window.sessionStorage.setItem(ReturnTo.KEY, id); } catch (e) { /* ignored */ }
+  },
+  restore: function () {
+    var id = null;
+    try { id = window.sessionStorage.getItem(ReturnTo.KEY); } catch (e) { id = null; }
+    if (!id) return;
+    var row = document.getElementById('card-' + id) ||
+      document.querySelector('[href$="#' + id + '"]');
+    // Jumped, not smoothed: an animated scroll on arrival reads as the page
+    // sliding away by itself.
+    if (row) row.scrollIntoView({ block: 'center' });
+  }
+};
+
 function renderDesk(mountId) {
   var html = TICKET_ORDER.map(function (key) {
     var t = TICKETS[key];
     var seen = Store.get('seen_' + key) === '1';
     return '' +
-      '<a class="ticket-row" href="ticket.html#' + t.id + '">' +
+      '<a class="choice has-rail ticket-row ' + (seen ? 'read' : 'unread') +
+        '" href="ticket.html#' + t.id + '">' +
         '<span class="sev-bar ' + t.severity + '"></span>' +
         '<span class="ticket-body">' +
           '<span class="ticket-meta">' +
@@ -198,6 +231,8 @@ function renderDesk(mountId) {
       '</a>';
   }).join('');
   document.getElementById(mountId).innerHTML = html;
+
+  ReturnTo.restore();
 }
 
 function renderRows(ev) {
@@ -212,6 +247,7 @@ function renderRows(ev) {
 }
 
 function renderTicket(mountId) {
+  ReturnTo.remember((window.location.hash || '').substring(1));
   var key = (window.location.hash || '#inc301').substring(1);
   var t = TICKETS[key] || TICKETS.inc301;
 
@@ -222,7 +258,10 @@ function renderTicket(mountId) {
     '<h2>' + escapeHtml(t.title) + '</h2>' +
     '<div class="detail-sub">' + escapeHtml(t.code) + ' · ' + escapeHtml(t.time) +
     ' · ' + escapeHtml(t.from) + '</div>' +
-    '<div class="report">' + escapeHtml(t.report) + '</div>';
+    '<div class="artifact a-per">' +
+      '<span class="artifact-tag">PERSON &middot; ' + escapeHtml(t.from).toUpperCase() + '</span>' +
+      escapeHtml(t.report) +
+    '</div>';
 
   t.evidence.forEach(function (ev, index) {
     html +=

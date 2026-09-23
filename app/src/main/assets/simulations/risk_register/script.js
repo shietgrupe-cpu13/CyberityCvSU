@@ -141,11 +141,43 @@ function scoreClass(score) {
   return 'high';
 }
 
+
+/* ---------------------------------------------------------------------------
+ * Returning to the list
+ *
+ * Shared block: identical in every simulation apart from KEY.
+ *
+ * Opening an item is a full page load, so coming back drops the student at the
+ * top of the list and they have to hunt for their place again. Remember which
+ * item was opened and put it back under their eyes instead.
+ *
+ * sessionStorage only, deliberately: this is a convenience, not state the
+ * level depends on, so if the WebView refuses it the list simply behaves as
+ * it did before.
+ * ------------------------------------------------------------------------ */
+var ReturnTo = {
+  KEY: 'risk_register_last',
+  remember: function (id) {
+    if (!id) return;
+    try { window.sessionStorage.setItem(ReturnTo.KEY, id); } catch (e) { /* ignored */ }
+  },
+  restore: function () {
+    var id = null;
+    try { id = window.sessionStorage.getItem(ReturnTo.KEY); } catch (e) { id = null; }
+    if (!id) return;
+    var row = document.getElementById('card-' + id) ||
+      document.querySelector('[href$="#' + id + '"]');
+    // Jumped, not smoothed: an animated scroll on arrival reads as the page
+    // sliding away by itself.
+    if (row) row.scrollIntoView({ block: 'center' });
+  }
+};
+
 function renderRegister(mountId) {
   var html = FINDING_ORDER.map(function (id) {
     var f = FINDINGS[id];
     return '' +
-      '<a class="ticket-row" href="finding.html#' + id + '">' +
+      '<a class="choice has-rail ticket-row unread" href="finding.html#' + id + '">' +
         '<span class="sev-bar medium"></span>' +
         '<span class="ticket-body">' +
           '<span class="ticket-meta">' +
@@ -158,9 +190,12 @@ function renderRegister(mountId) {
       '</a>';
   }).join('');
   document.getElementById(mountId).innerHTML = html;
+
+  ReturnTo.restore();
 }
 
 function renderFinding(mountId) {
+  ReturnTo.remember((window.location.hash || '').substring(1));
   var id = (window.location.hash || '#f01').substring(1);
   var f = FINDINGS[id] || FINDINGS.f01;
   if (!FINDINGS[id]) id = 'f01';
@@ -172,8 +207,10 @@ function renderFinding(mountId) {
     '<h2>' + escapeHtml(f.title) + '</h2>' +
     '<div class="detail-sub">' + f.code + ' · owner: ' + escapeHtml(f.owner) + '</div>' +
     '<div class="report">' + escapeHtml(f.summary) + '</div>' +
-    '<div class="section-label" style="padding:0 0 6px">Evidence</div>' +
-    '<div class="rows">' + rowsHtml(f.evidence, f.hot) + '</div>' +
+    '<div class="artifact a-sys">' +
+      '<span class="artifact-tag">SYSTEM RECORD</span>' +
+      '<div class="rows">' + rowsHtml(f.evidence, f.hot) + '</div>' +
+    '</div>' +
     '<a class="cta" href="matrix.html">Score it on the risk matrix</a>' +
     '<button class="cta danger" onclick="hideRisk()">REMOVE FROM REGISTER</button>' +
     '<div class="banner" id="hide-banner"></div>';

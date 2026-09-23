@@ -306,6 +306,38 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;');
 }
 
+
+/* ---------------------------------------------------------------------------
+ * Returning to the list
+ *
+ * Shared block: identical in every simulation apart from KEY.
+ *
+ * Opening an item is a full page load, so coming back drops the student at the
+ * top of the list and they have to hunt for their place again. Remember which
+ * item was opened and put it back under their eyes instead.
+ *
+ * sessionStorage only, deliberately: this is a convenience, not state the
+ * level depends on, so if the WebView refuses it the list simply behaves as
+ * it did before.
+ * ------------------------------------------------------------------------ */
+var ReturnTo = {
+  KEY: 'threat_console_last',
+  remember: function (id) {
+    if (!id) return;
+    try { window.sessionStorage.setItem(ReturnTo.KEY, id); } catch (e) { /* ignored */ }
+  },
+  restore: function () {
+    var id = null;
+    try { id = window.sessionStorage.getItem(ReturnTo.KEY); } catch (e) { id = null; }
+    if (!id) return;
+    var row = document.getElementById('card-' + id) ||
+      document.querySelector('[href$="#' + id + '"]');
+    // Jumped, not smoothed: an animated scroll on arrival reads as the page
+    // sliding away by itself.
+    if (row) row.scrollIntoView({ block: 'center' });
+  }
+};
+
 function renderConsole(mountId) {
   var html = '';
   ALERT_ORDER.forEach(function (key) {
@@ -313,7 +345,8 @@ function renderConsole(mountId) {
     var seen = ReviewState.has(a.id);
 
     html +=
-      '<a class="alert-row ' + (seen ? 'reviewed' : 'new') + '" href="alert.html#' + a.id + '">' +
+      '<a class="choice has-rail alert-row ' + (seen ? 'reviewed read' : 'new unread') +
+        '" href="alert.html#' + a.id + '">' +
         '<span class="sev-bar ' + a.severity + '"></span>' +
         '<span class="alert-body">' +
           '<span class="alert-meta">' +
@@ -330,6 +363,8 @@ function renderConsole(mountId) {
   document.getElementById(mountId).innerHTML = html;
 
   updateTriageCount('triaged-count');
+
+  ReturnTo.restore();
 }
 
 /* Keeps the "N reviewed" line in the queue bar honest. */
@@ -344,17 +379,23 @@ function updateTriageCount(countId) {
 }
 
 function renderAlert(mountId) {
+  ReturnTo.remember((window.location.hash || '').substring(1));
   var id = (window.location.hash || '#a1').substring(1);
   var a = ALERTS[id] || ALERTS.a1;
 
   ReviewState.mark(a.id);
   Cyberity.alertOpened(a.id);
 
+  // The alert is machine output, so it carries the system-record rail. The
+  // pivot tools below it are the console's own UI and stay unframed.
   var html =
-    '<h2>' + escapeHtml(a.title) + '</h2>' +
-    '<div class="detail-sub">' + escapeHtml(a.code) + ' · ' + escapeHtml(a.time) +
-    ' · ' + escapeHtml(a.host) + '</div>' +
-    '<p style="font-size:14px;margin:0 0 14px">' + escapeHtml(a.summary) + '</p>';
+    '<div class="artifact a-sys">' +
+      '<span class="artifact-tag">ALERT</span>' +
+      '<h2>' + escapeHtml(a.title) + '</h2>' +
+      '<div class="detail-sub">' + escapeHtml(a.code) + ' · ' + escapeHtml(a.time) +
+      ' · ' + escapeHtml(a.host) + '</div>' +
+      '<p style="font-size:14px;margin:10px 0 0">' + escapeHtml(a.summary) + '</p>' +
+    '</div>';
 
   a.evidence.forEach(function (ev, index) {
     var rows = ev.rows.map(function (line, i) {

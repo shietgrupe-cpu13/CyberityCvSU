@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Thread</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated phone &middot; fictional senders &middot; nothing sends or dials</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='messages.html'">&#8592; Messages</button>
+    <span class="topbar-title" id="thread-name"></span>
+  </div>
+
+  <div class="detail" id="detail"></div>
+
+  <div class="foot">Long-press a message and choose DETAILS to see how it reached you.</div>
+
+  <script src="script.js"></script>
+  <script>
+    renderThread('detail');
+    window.addEventListener('hashchange', function () { renderThread('detail'); });
+  </script>
+</body>
+</html>

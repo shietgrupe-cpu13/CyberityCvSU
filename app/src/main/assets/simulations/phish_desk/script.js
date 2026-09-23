@@ -280,12 +280,45 @@ var REPORT_ORDER = ['r1', 'r2', 'r3', 'r4', 'r5'];
 /* ---------------------------------------------------------------------------
  * Queue
  * ------------------------------------------------------------------------ */
+
+/* ---------------------------------------------------------------------------
+ * Returning to the list
+ *
+ * Shared block: identical in every simulation apart from KEY.
+ *
+ * Opening an item is a full page load, so coming back drops the student at the
+ * top of the list and they have to hunt for their place again. Remember which
+ * item was opened and put it back under their eyes instead.
+ *
+ * sessionStorage only, deliberately: this is a convenience, not state the
+ * level depends on, so if the WebView refuses it the list simply behaves as
+ * it did before.
+ * ------------------------------------------------------------------------ */
+var ReturnTo = {
+  KEY: 'phish_desk_last',
+  remember: function (id) {
+    if (!id) return;
+    try { window.sessionStorage.setItem(ReturnTo.KEY, id); } catch (e) { /* ignored */ }
+  },
+  restore: function () {
+    var id = null;
+    try { id = window.sessionStorage.getItem(ReturnTo.KEY); } catch (e) { id = null; }
+    if (!id) return;
+    var row = document.getElementById('card-' + id) ||
+      document.querySelector('[href$="#' + id + '"]');
+    // Jumped, not smoothed: an animated scroll on arrival reads as the page
+    // sliding away by itself.
+    if (row) row.scrollIntoView({ block: 'center' });
+  }
+};
+
 function renderQueue(mountId) {
   var html = REPORT_ORDER.map(function (key) {
     var r = REPORTS[key];
     var read = Store.has(key);
     return '' +
-      '<a class="ticket-row ' + (read ? 'read' : 'unread') + '" href="report.html#' + r.id + '">' +
+      '<a class="choice has-rail ticket-row ' + (read ? 'read' : 'unread') +
+        '" href="report.html#' + r.id + '">' +
         '<span class="sev-bar ' + (read ? 'seen' : 'new') + '"></span>' +
         '<span class="ticket-body">' +
           '<span class="ticket-meta">' +
@@ -309,6 +342,8 @@ function renderQueue(mountId) {
       ? 'All five read — compare them before you decide'
       : left + ' of 5 still unread';
   }
+
+  ReturnTo.restore();
 }
 
 /* ---------------------------------------------------------------------------
@@ -362,13 +397,15 @@ function evidenceBox(boxId, name, sub, ev, clue) {
 }
 
 function renderReport(mountId) {
+  ReturnTo.remember((window.location.hash || '').substring(1));
   var r = currentReport();
 
   Store.mark(r.id);
   Cyberity.clueFound('report_opened_' + r.id);
 
   var html =
-    '<div class="mail-card">' +
+    '<div class="artifact a-msg mail-card">' +
+      '<span class="artifact-tag">EMAIL &middot; AS REPORTED</span>' +
       '<h2>' + escapeHtml(r.subject) + '</h2>' +
       '<div class="mail-field"><span class="mail-label">From</span>' +
         '<span><b>' + escapeHtml(r.fromName) + '</b><br>' +
@@ -522,7 +559,9 @@ function renderBrowser(mountId) {
       '<div class="mono url-text">' + escapeHtml(site.url) + '</div>' +
       '<div class="url-note">Site owner: <b>' + escapeHtml(site.realDomain) + '</b></div>' +
     '</div>' +
-    '<div class="fake-page">' +
+    '<div class="artifact a-web">' +
+      '<span class="artifact-tag">WEB PAGE &middot; SANDBOX</span>' +
+      '<div class="fake-page">' +
       '<div class="fake-bar" style="background:' + site.accent + ';color:#ffffff">' +
         escapeHtml(site.brand) + '</div>' +
       '<div class="fake-inner">' +
@@ -532,7 +571,7 @@ function renderBrowser(mountId) {
         '<button class="fake-btn" style="background:' + site.accent + '" ' +
           'onclick="fakeSignIn(\'' + key + '\')">' + escapeHtml(site.button) + '</button>' +
       '</div>' +
-    '</div>' +
+    '</div></div>' +
     '<div class="banner" id="signin-banner"></div>' +
     '<div class="note">A safe copy — nothing you type is sent anywhere. Look at what the page ' +
       'asks for, and at who is really asking.</div>';

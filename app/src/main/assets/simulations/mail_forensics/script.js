@@ -110,12 +110,45 @@ var MAIL_ORDER = ['e1', 'e2', 'e3', 'e4'];
 /* ---------------------------------------------------------------------------
  * Inbox
  * ------------------------------------------------------------------------ */
+
+/* ---------------------------------------------------------------------------
+ * Returning to the list
+ *
+ * Shared block: identical in every simulation apart from KEY.
+ *
+ * Opening an item is a full page load, so coming back drops the student at the
+ * top of the list and they have to hunt for their place again. Remember which
+ * item was opened and put it back under their eyes instead.
+ *
+ * sessionStorage only, deliberately: this is a convenience, not state the
+ * level depends on, so if the WebView refuses it the list simply behaves as
+ * it did before.
+ * ------------------------------------------------------------------------ */
+var ReturnTo = {
+  KEY: 'mail_forensics_last',
+  remember: function (id) {
+    if (!id) return;
+    try { window.sessionStorage.setItem(ReturnTo.KEY, id); } catch (e) { /* ignored */ }
+  },
+  restore: function () {
+    var id = null;
+    try { id = window.sessionStorage.getItem(ReturnTo.KEY); } catch (e) { id = null; }
+    if (!id) return;
+    var row = document.getElementById('card-' + id) ||
+      document.querySelector('[href$="#' + id + '"]');
+    // Jumped, not smoothed: an animated scroll on arrival reads as the page
+    // sliding away by itself.
+    if (row) row.scrollIntoView({ block: 'center' });
+  }
+};
+
 function renderInbox(mountId) {
   var html = MAIL_ORDER.map(function (key) {
     var m = MAILS[key];
     var seen = Store.get('seen_' + key) === '1';
     return '' +
-      '<a class="ticket-row" href="mail.html#' + m.id + '">' +
+      '<a class="choice has-rail ticket-row ' + (seen ? 'read' : 'unread') +
+        '" href="mail.html#' + m.id + '">' +
         '<span class="sev-bar ' + (seen ? 'seen' : 'new') + '"></span>' +
         '<span class="ticket-body">' +
           '<span class="ticket-meta">' +
@@ -129,6 +162,8 @@ function renderInbox(mountId) {
       '</a>';
   }).join('');
   document.getElementById(mountId).innerHTML = html;
+
+  ReturnTo.restore();
 }
 
 /* ---------------------------------------------------------------------------
@@ -143,6 +178,7 @@ function currentMail() {
 }
 
 function renderMail(mountId) {
+  ReturnTo.remember((window.location.hash || '').substring(1));
   var m = currentMail();
   Store.set('seen_' + m.id, '1');
   Cyberity.clueFound('mail_opened_' + m.id);
@@ -150,7 +186,8 @@ function renderMail(mountId) {
   foundTells = {};
 
   var html =
-    '<div class="mail-card">' +
+    '<div class="artifact a-msg mail-card">' +
+      '<span class="artifact-tag">EMAIL</span>' +
       '<h2 id="subject-line">' + escapeHtml(m.subject) + '</h2>' +
       '<div class="mail-field"><span class="mail-label">From</span>' +
         '<span><b>' + escapeHtml(m.fromName) + '</b><br>' +
@@ -431,7 +468,9 @@ function renderSite(mountId) {
       '<div class="url-note">Site owner: <b>' + escapeHtml(site.owner) + '</b><br>' +
         escapeHtml(site.ownerNote) + '</div>' +
     '</div>' +
-    '<div class="fake-page">' +
+    '<div class="artifact a-web">' +
+      '<span class="artifact-tag">WEB PAGE &middot; SANDBOX</span>' +
+      '<div class="fake-page">' +
       '<div class="fake-bar" style="background:' + site.accent + ';color:#ffffff">' +
         escapeHtml(site.brand) + '</div>' +
       '<div class="fake-inner">' +
@@ -441,7 +480,7 @@ function renderSite(mountId) {
         '<button class="fake-btn" style="background:' + site.accent + '" ' +
           'onclick="siteSignIn(\'' + key + '\')">' + escapeHtml(site.button) + '</button>' +
       '</div>' +
-    '</div>' +
+    '</div></div>' +
     '<div class="banner" id="site-banner"></div>' +
     '<div class="note">In this lab, opening a link is safe. On your own phone it is not: ' +
       'long-press a link to preview where it goes, or type the site\'s address yourself ' +

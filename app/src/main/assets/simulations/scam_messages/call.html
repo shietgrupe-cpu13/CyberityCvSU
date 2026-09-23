@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Recorded call</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated recording &middot; fictional caller &middot; nothing dials out</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='messages.html'">&#8592; Messages</button>
+    <span class="topbar-title">Recent call</span>
+  </div>
+
+  <div class="detail" id="detail"></div>
+
+  <div class="foot">Play every line. The turn from &ldquo;I am protecting you&rdquo; to &ldquo;read me the code&rdquo; is the whole attack.</div>
+
+  <script src="script.js"></script>
+  <script>renderCall('detail');</script>
+</body>
+</html>
