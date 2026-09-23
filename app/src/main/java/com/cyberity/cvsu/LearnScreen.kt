@@ -1,11 +1,16 @@
 package com.cyberity.cvsu
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -48,6 +53,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -794,28 +800,116 @@ fun LearningPath(
 ) {
     val rows = remember(units) { buildPathRows(units) }
 
+    // Which unit owns the top of the screen right now. Null while a unit's own
+    // banner is still in view — the card is already saying the name, so the bar
+    // would only repeat it. The moment the banner scrolls off, the bar takes
+    // over, and it swaps the instant the next unit's levels reach the top.
+    val scrolledUnit by remember(rows, listState) {
+        derivedStateOf {
+            (rows.getOrNull(listState.firstVisibleItemIndex) as? PathRow.Level)?.unit
+        }
+    }
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier.fillMaxSize().background(AppNavy),
-        contentPadding = contentPadding
-    ) {
-        items(
-            items = rows,
-            key = { row ->
+    // Held separately so the bar has something to draw while it slides out.
+    var barUnit by remember { mutableStateOf<LearningUnit?>(null) }
+    LaunchedEffect(scrolledUnit) {
+        if (scrolledUnit != null) barUnit = scrolledUnit
+    }
+
+    Box(modifier = modifier.fillMaxSize().background(AppNavy)) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding
+        ) {
+            items(
+                items = rows,
+                key = { row ->
+                    when (row) {
+                        is PathRow.UnitBanner -> "unit_${row.unit.id}"
+                        is PathRow.Level -> "level_${row.level.id}"
+                    }
+                }
+            ) { row ->
                 when (row) {
-                    is PathRow.UnitBanner -> "unit_${row.unit.id}"
-                    is PathRow.Level -> "level_${row.level.id}"
+                    is PathRow.UnitBanner -> UnitHeader(row)
+                    is PathRow.Level -> LevelRow(
+                        row = row,
+                        onClick = { onLevelClick(row.unit, row.level) }
+                    )
                 }
             }
-        ) { row ->
-            when (row) {
-                is PathRow.UnitBanner -> UnitHeader(row)
-                is PathRow.Level -> LevelRow(
-                    row = row,
-                    onClick = { onLevelClick(row.unit, row.level) }
+        }
+
+        AnimatedVisibility(
+            visible = scrolledUnit != null,
+            enter = slideInVertically { -it } + fadeIn(tween(160)),
+            exit = slideOutVertically { -it } + fadeOut(tween(160)),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            barUnit?.let { UnitStickyBar(unit = it) }
+        }
+    }
+}
+
+/**
+ * The condensed unit card, pinned while the student scrolls that unit's levels.
+ *
+ * Deliberately short: it exists to answer "which unit am I in" without taking
+ * the room the full card needs. Same colours as the card, so it reads as the
+ * same object rather than a new one.
+ */
+@Composable
+private fun UnitStickyBar(unit: LearningUnit) {
+    val locked = unit.isLocked
+    val progress = if (unit.totalCount == 0) 0f
+        else unit.completedCount.toFloat() / unit.totalCount
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (locked) AppCard else AppBlue)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "UNIT ${unit.id}",
+                    color = if (locked) AppGray else AppCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = unit.title,
+                    color = if (locked) AppGray else AppWhite,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
             }
+
+            Spacer(Modifier.width(12.dp))
+
+            Text(
+                text = if (locked) "Locked" else "${unit.completedCount} / ${unit.totalCount}",
+                color = if (locked) AppGray else AppWhite.copy(alpha = 0.85f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (!locked) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(2.dp),
+                color = AppCyan,
+                trackColor = AppNavy.copy(alpha = 0.5f)
+            )
         }
     }
 }
