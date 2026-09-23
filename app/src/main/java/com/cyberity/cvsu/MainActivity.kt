@@ -52,6 +52,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthMultiFactorException
 import com.google.firebase.auth.MultiFactorResolver
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.IconButton
@@ -60,6 +61,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.OutlinedButton
+import android.util.Log
+
+// Debug force option for onboarding tutorial testing
+const val DEBUG_FORCE_ONBOARDING = false
 
 // Shared colors so every screen stays consistent
 val AppBlue = Color(0xFF005CEB)
@@ -86,25 +93,26 @@ fun AppNavigator() {
     val auth = remember { FirebaseAuth.getInstance() }
     val context = LocalContext.current
 
-    // Every signed-in session passes through "profileCheck" first, so accounts
-    // without a student ID are sent to CompleteProfileScreen before Home.
     var mfaResolver by remember { mutableStateOf<MultiFactorResolver?>(null) }
     var currentScreen by remember {
         mutableStateOf(
-            // Unverified accounts (e.g. just registered) must log in again after verifying.
             if (auth.currentUser?.isEmailVerified == true)
                 "profileCheck"
             else
-                "login"
+                "entry"
         )
     }
 
     val signOut = {
         auth.signOut()
-        currentScreen = "login"
+        currentScreen = "entry"
     }
 
     when (currentScreen) {
+        "entry" -> WelcomeEntryScreen(
+            onNewUserSelected = { currentScreen = "register" },
+            onExistingUserSelected = { currentScreen = "login" }
+        )
         "home" -> Greeting(
             name = "-CYBERITY-",
             onLoginClick = { currentScreen = "login" }
@@ -127,7 +135,7 @@ fun AppNavigator() {
             }
         )
         "register" -> RegisterScreen(
-            onBackClick = { currentScreen = "login" },
+            onBackClick = { currentScreen = "entry" },
             onRegisterSuccess = { currentScreen = "checkEmail" }
         )
         "checkEmail" -> CheckEmailScreen(
@@ -140,23 +148,40 @@ fun AppNavigator() {
 
             LaunchedEffect(attempt) {
                 val uid = auth.currentUser?.uid
+                Log.d("CYBERITY_ONBOARDING", "LOGIN SUCCESS")
+                Log.d("CYBERITY_ONBOARDING", "AUTH UID: $uid")
+
                 when {
-                    uid == null -> currentScreen = "login"
-                    // Already completed on this device: don't block on the network.
-                    ProfileCache.isComplete(context, uid) -> currentScreen = "loggedIn"
+                    uid == null -> {
+                        Log.d("CYBERITY_ONBOARDING", "NO AUTHENTICATED USER - SHOWING ENTRY CHOICE")
+                        currentScreen = "entry"
+                    }
+                    DEBUG_FORCE_ONBOARDING -> {
+                        Log.d("CYBERITY_ONBOARDING", "DEBUG_FORCE_ONBOARDING IS TRUE - FORCING TUTORIAL")
+                        currentScreen = "onboarding"
+                    }
                     else -> {
                         failed = false
+                        Log.d("CYBERITY_ONBOARDING", "LOOKING FOR STUDENT DOCUMENT")
                         UserProfileRepository.load(
                             uid,
                             onResult = { profile ->
                                 if (profile?.isComplete == true) {
                                     ProfileCache.markComplete(context, uid)
-                                    currentScreen = "loggedIn"
+                                    if (profile.hasCompletedOnboarding) {
+                                        Log.d("CYBERITY_ONBOARDING", "DECISION: GO TO HOME")
+                                        currentScreen = "loggedIn"
+                                    } else {
+                                        Log.d("CYBERITY_ONBOARDING", "DECISION: SHOW TUTORIAL")
+                                        currentScreen = "onboarding"
+                                    }
                                 } else {
+                                    Log.d("CYBERITY_ONBOARDING", "PROFILE INCOMPLETE - GOING TO COMPLETE PROFILE")
                                     currentScreen = "completeProfile"
                                 }
                             },
                             onError = { message ->
+                                Log.e("CYBERITY_ONBOARDING", "FIRESTORE ERROR: $message")
                                 errorDetail = message
                                 failed = true
                             }
@@ -173,14 +198,153 @@ fun AppNavigator() {
             )
         }
         "completeProfile" -> CompleteProfileScreen(
-            onProfileSaved = { currentScreen = "loggedIn" },
+            onProfileSaved = { currentScreen = "profileCheck" },
             onSignOut = signOut
         )
-        "loggedIn" -> HomeScreen(
+        "onboarding" -> HomeScreen(
+            isTutorialMode = true,
+            onFinishTutorial = {
+                val uid = auth.currentUser?.uid
+                Log.d("CYBERITY_ONBOARDING", "ONBOARDING COMPLETED")
+                Log.d("CYBERITY_ONBOARDING", "UPDATING FIRESTORE")
+
+                if (uid != null) {
+                    UserProfileRepository.load(
+                        uid,
+                        onResult = { profile ->
+                            UserProfileRepository.setOnboardingCompleted(uid, profile?.studentId) { success, exception ->
+                                if (success) {
+                                    Log.d("CYBERITY_ONBOARDING", "FIRESTORE UPDATE SUCCESS")
+                                    Log.d("CYBERITY_ONBOARDING", "OPENING HOME")
+                                } else {
+                                    Log.e("CYBERITY_ONBOARDING", "FIRESTORE UPDATE FAILED", exception)
+                                }
+                                currentScreen = "loggedIn"
+                            }
+                        },
+                        onError = {
+                            UserProfileRepository.setOnboardingCompleted(uid) { success, exception ->
+                                if (success) {
+                                    Log.d("CYBERITY_ONBOARDING", "FIRESTORE UPDATE SUCCESS")
+                                    Log.d("CYBERITY_ONBOARDING", "OPENING HOME")
+                                } else {
+                                    Log.e("CYBERITY_ONBOARDING", "FIRESTORE UPDATE FAILED", exception)
+                                }
+                                currentScreen = "loggedIn"
+                            }
+                        }
+                    )
+                } else {
+                    currentScreen = "loggedIn"
+                }
+            },
             onLogout = {
-                currentScreen = "login"
+                currentScreen = "entry"
             }
         )
+        "loggedIn" -> HomeScreen(
+            isTutorialMode = false,
+            onLogout = {
+                currentScreen = "entry"
+            }
+        )
+    }
+}
+
+@Composable
+fun WelcomeEntryScreen(
+    onNewUserSelected: () -> Unit,
+    onExistingUserSelected: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppNavy)
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = AppCard),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "CYBERITY",
+                    color = AppCyan,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 2.sp
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Cybersecurity Awareness Learning",
+                    color = AppGray,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(36.dp))
+
+                Text(
+                    text = "Welcome!",
+                    color = AppWhite,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Are you new to CYBERITY?",
+                    color = AppGray,
+                    fontSize = 15.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = onNewUserSelected,
+                    colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                ) {
+                    Text(
+                        text = "I'm a New User",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                OutlinedButton(
+                    onClick = onExistingUserSelected,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    border = BorderStroke(1.dp, AppCyan)
+                ) {
+                    Text(
+                        text = "I Already Have an Account",
+                        color = AppWhite,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
     }
 }
 

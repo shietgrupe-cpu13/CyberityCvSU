@@ -3,6 +3,7 @@ package com.cyberity.cvsu
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,9 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -110,21 +113,27 @@ private fun sampleModules(): List<ModuleData> = listOf(
 
 @Composable
 fun HomeScreen(
+    isTutorialMode: Boolean = false,
+    onFinishTutorial: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var levelRunning by remember { mutableStateOf(false) }
 
+    LaunchedEffect(isTutorialMode) {
+        if (isTutorialMode) {
+            TutorialManager.startTutorial()
+        } else {
+            TutorialManager.finishTutorial()
+        }
+    }
+
+    val currentStep = TutorialManager.currentStep
+    val isTutorial = isTutorialMode && TutorialManager.isTutorialActive
+
     Scaffold(
         containerColor = AppNavy,
         bottomBar = {
-            // Scaffold's bottom inset comes from the bar's MEASURED height, and a
-            // slide/fade doesn't change that — the slot stays full height for the
-            // whole animation, then collapses in one frame at the end. That late
-            // collapse is what moved ENTER LAB and snapped it back. Removing the
-            // bar outright is safe because setRunningLevel() flips levelRunning in
-            // the same event handler that mounts the level, so Scaffold measures
-            // the empty slot and lays the level out at its final size in one pass.
             if (!levelRunning) {
                 NavigationBar(containerColor = AppCard) {
                     NavigationBarItem(
@@ -152,13 +161,152 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             when (selectedTab) {
                 0 -> LearnScreen(onLevelRunningChanged = { levelRunning = it })
                 1 -> LeaderboardTab()
-                2 -> ProfileTab(
-                    onLogout = onLogout
-                )
+                2 -> ProfileTab(onLogout = onLogout)
+            }
+
+            if (isTutorial) {
+                when (currentStep) {
+                    TutorialStep.STEP1_HOME -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Start Your Journey",
+                            description = "This is where you can access your cybersecurity lessons and challenges. Tap the highlighted level node to continue.",
+                            stepNumber = 1,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP2_LEVEL_PREVIEW
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP2_LEVEL_PREVIEW -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Your First Level",
+                            description = "Start here to learn the fundamentals of cybersecurity. Tap START LEVEL to continue.",
+                            stepNumber = 2,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP3_SCENARIO
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP3_SCENARIO -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Read Carefully",
+                            description = "CYBERITY presents realistic cybersecurity situations. Read the scenario carefully before choosing your answer.",
+                            stepNumber = 3,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP4_CHOICE
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP4_CHOICE -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Choose Your Answer",
+                            description = "Select the option you think is the safest response. Tap an answer to continue.",
+                            stepNumber = 4,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP5_HINT
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP5_HINT -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Need Help?",
+                            description = "You can use a hint when you're unsure. Tap Hint to see how assistance works.",
+                            stepNumber = 5,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP6_SUBMIT
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP6_SUBMIT -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Submit Your Answer",
+                            description = "Once you've chosen your answer, tap Submit to check your response.",
+                            stepNumber = 6,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP7_FEEDBACK
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP7_FEEDBACK -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Learn From Your Result",
+                            description = "CYBERITY gives you feedback after each challenge so you can understand why an answer is correct or incorrect.",
+                            stepNumber = 7,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP8_PROGRESS
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP8_PROGRESS -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "Track Your Progress",
+                            description = "You can monitor your completed levels, streak, and performance here.",
+                            stepNumber = 8,
+                            onTargetTapped = {
+                                TutorialManager.currentStep = TutorialStep.STEP9_FINISH
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                    TutorialStep.STEP9_FINISH -> {
+                        TutorialSpotlightOverlay(
+                            targetBounds = TutorialManager.targetBounds,
+                            title = "You're Ready!",
+                            description = "You've learned how to navigate CYBERITY. Now you're ready to start your cybersecurity training.",
+                            stepNumber = 9,
+                            onTargetTapped = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            },
+                            onSkipTutorial = {
+                                TutorialManager.finishTutorial()
+                                onFinishTutorial()
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -346,9 +494,8 @@ fun LeaderboardTab() {
 fun ProfileTab(
     onLogout: () -> Unit
 ) {
-
     val auth = FirebaseAuth.getInstance()
-    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showSettings by remember { mutableStateOf(false) }
     val user = auth.currentUser
     val email = user?.email ?: "No email"
 
@@ -373,15 +520,37 @@ fun ProfileTab(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            text = "Profile Dashboard",
-            color = AppWhite,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Profile Dashboard",
+                color = AppWhite,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(AppCard, RoundedCornerShape(12.dp))
+                    .clickable { showSettings = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = AppCyan,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
 
         Box(
             modifier = Modifier
@@ -425,7 +594,7 @@ fun ProfileTab(
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 ProfileInfoRow(icon = Icons.Filled.Email, label = "CvSU Email", value = email)
-                
+
                 profile?.studentId?.let { id ->
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 16.dp),
@@ -436,53 +605,15 @@ fun ProfileTab(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Security Section
-        TotpMfaCard()
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Sign Out Button
-        Button(
-            onClick = { showLogoutDialog = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Red.copy(alpha = 0.1f),
-                contentColor = Color.Red
-            ),
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.2f))
-        ) {
-            Text("Sign Out", fontWeight = FontWeight.Bold)
-        }
-        
-        Spacer(modifier = Modifier.height(12.dp))
     }
 
-    if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { showLogoutDialog = false },
-            title = { Text("Sign Out") },
-            text = { Text("Are you sure you want to sign out?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                        auth.signOut()
-                        onLogout()
-                    }
-                ) {
-                    Text("Sign Out", color = Color.Red)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) {
-                    Text("Cancel")
-                }
+    if (showSettings) {
+        SettingsDialog(
+            onDismiss = { showSettings = false },
+            onSignOut = {
+                showSettings = false
+                auth.signOut()
+                onLogout()
             }
         )
     }

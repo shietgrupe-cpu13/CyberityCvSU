@@ -43,10 +43,19 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -139,7 +148,8 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Cybersecurity Fundamentals",
         description = "Start here — the language and mindset of security",
         levels = listOf(
-            LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.CURRENT, durationMinutes = 12),
+            LearningLevel(100, "Level 0: CYBERITY Tutorial", "Learn how CYBERITY works before starting your cybersecurity training.", 25, LevelType.LESSON, LevelStatus.CURRENT, durationMinutes = 3),
+            LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(102, "Cybersecurity Threats", "Security lab: triage a night's worth of SOC alerts, classify the real threat, and pivot on the indicator.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 10),
             LearningLevel(103, "CIA Triad", "Security lab: work three registrar incidents — one per pillar — then prove, contain, and restore.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(104, "Security Principles", "Security lab: audit roles, fix a fail-open lock, and stack defences until the attack replay fails.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
@@ -536,121 +546,172 @@ fun LearnScreen(
     if (running != null) {
         val requestExit = { showExitConfirm = true }
 
-        // Hardware/gesture back always asks for confirmation too. LabScreen has its
-        // own BackHandler for stepping back inside its WebView first — that one takes
-        // priority while active; this one is the fallback for every other level type
-        // and for LabScreen whenever its own handler is disabled.
-        BackHandler(enabled = true) { requestExit() }
-
-        // Out of hearts mid-level: the attempt ends here and progress is lost.
-        if (hearts < MIN_HEARTS_TO_START) {
-            OutOfHeartsLevel(
-                level = running,
-                refillIn = heartRefillIn,
-                modifier = modifier,
-                onBack = { setRunningLevel(null) }
-            )
+        val levelPrefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
+        var fontSizeChoice by remember {
+            mutableStateOf(levelPrefs.getString("font_size", "medium") ?: "medium")
         }
-        // Replaying an already-completed level pays out no further XP — that
-        // happened on the first clear — so the screens below need to know not
-        // to show XP as still up for grabs.
-        else {
-            val isReplay = running.status == LevelStatus.COMPLETED
-            // Remembered per level: building a lab allocates its whole definition
-            // — every task, hint and guide string — and a fresh instance each
-            // recomposition would also stop the level screen below from skipping.
-            val content = remember(running.id) { contentFor(running.id) }
-            when (content) {
-                is LevelContent.Inbox -> InboxSimulationScreen(
-                    simulation = content.simulation,
-                    xpReward = MAX_LEVEL_XP,
-                    modifier = modifier,
-                    onExit = requestExit,
-                    onComplete = { _, _, _ ->
-                        units = units.withLevelCompleted(running.id)
+
+        DisposableEffect(levelPrefs) {
+            val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+                if (key == "font_size") {
+                    fontSizeChoice = p.getString("font_size", "medium") ?: "medium"
+                }
+            }
+            levelPrefs.registerOnSharedPreferenceChangeListener(listener)
+            onDispose {
+                levelPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+            }
+        }
+
+        val fontScaleFactor = when (fontSizeChoice.lowercase()) {
+            "small" -> 0.85f
+            "large" -> 1.25f
+            else -> 1.0f
+        }
+        val currentDensity = LocalDensity.current
+        val levelDensity = remember(currentDensity, fontScaleFactor) {
+            Density(density = currentDensity.density, fontScale = currentDensity.fontScale * fontScaleFactor)
+        }
+
+        CompositionLocalProvider(LocalDensity provides levelDensity) {
+            // Hardware/gesture back always asks for confirmation too. LabScreen has its
+            // own BackHandler for stepping back inside its WebView first — that one takes
+            // priority while active; this one is the fallback for every other level type
+            // and for LabScreen whenever its own handler is disabled.
+            BackHandler(enabled = true) { requestExit() }
+
+            // Out of hearts mid-level: the attempt ends here and progress is lost.
+            if (running.id == 100) {
+                LevelZeroTutorialScreen(
+                    onCompleteTutorial = {
+                        units = units.withLevelCompleted(100)
                         uid?.let {
-                            ProgressRepository.markLevelCompleted(it, running.id)
+                            ProgressRepository.markLevelCompleted(it, 100)
                             ProgressCache.save(context, it, completedIdsOf(units))
+                            UserProfileRepository.setOnboardingCompleted(it) { _, _ -> }
                         }
                         setRunningLevel(null)
-                    }
+                    },
+                    onExit = { setRunningLevel(null) }
                 )
-
-                is LevelContent.Scenarios -> ScenarioQuizScreen(
-                    quiz = content.quiz,
-                    xpReward = MAX_LEVEL_XP,
-                    modifier = modifier,
-                    onExit = requestExit,
-                    onMistake = { spendHeart() },
-                    hearts = hearts,
-                    xpBalance = totalXp,
-                    isReplay = isReplay,
-                    onComplete = { earned, _, _ ->
-                        val firstClear = running.status != LevelStatus.COMPLETED
-                        units = units.withLevelCompleted(running.id)
-                        uid?.let {
-                            ProgressRepository.markLevelCompleted(it, running.id)
-                            ProgressCache.save(context, it, completedIdsOf(units))
-                            if (firstClear) {
-                                val updated = levelXp + (running.id to earned)
-                                levelXp = updated
-                                ProgressCache.saveLevelXp(context, it, updated)
-                                ProgressRepository.saveLevelXp(it, running.id, earned)
-                            }
-                        }
-                        setRunningLevel(null)
-                    }
-                )
-
-                is LevelContent.Lab -> LabScreen(
-                    lab = content.lab,
-                    xpReward = MAX_LEVEL_XP,
-                    modifier = modifier,
-                    clueLabels = content.clueLabels,
-                    onExit = requestExit,
-                    onMistake = { spendHeart() },
-                    hearts = hearts,
-                    xpBalance = totalXp,
-                    onSpendXp = { spendXp(it) },
-                    isReplay = isReplay,
-                    onComplete = { earned, _, _ ->
-                        val firstClear = running.status != LevelStatus.COMPLETED
-                        units = units.withLevelCompleted(running.id)
-                        uid?.let {
-                            ProgressRepository.markLevelCompleted(it, running.id)
-                            ProgressCache.save(context, it, completedIdsOf(units))
-                            if (firstClear) {
-                                val updated = levelXp + (running.id to earned)
-                                levelXp = updated
-                                ProgressCache.saveLevelXp(context, it, updated)
-                                ProgressRepository.saveLevelXp(it, running.id, earned)
-                            }
-                        }
-                        setRunningLevel(null)
-                    }
-
-                )
-
-                null -> ComingSoonLevel(
+            } else if (hearts < MIN_HEARTS_TO_START) {
+                OutOfHeartsLevel(
                     level = running,
+                    refillIn = heartRefillIn,
                     modifier = modifier,
                     onBack = { setRunningLevel(null) }
                 )
             }
-        }
+            // Replaying an already-completed level pays out no further XP — that
+            // happened on the first clear — so the screens below need to know not
+            // to show XP as still up for grabs.
+            else {
+                val isReplay = running.status == LevelStatus.COMPLETED
+                // Remembered per level: building a lab allocates its whole definition
+                // — every task, hint and guide string — and a fresh instance each
+                // recomposition would also stop the level screen below from skipping.
+                val content = remember(running.id) { contentFor(running.id) }
+                when (content) {
+                    is LevelContent.Inbox -> InboxSimulationScreen(
+                        simulation = content.simulation,
+                        xpReward = MAX_LEVEL_XP,
+                        modifier = modifier,
+                        onExit = requestExit,
+                        onComplete = { _, _, _ ->
+                            units = units.withLevelCompleted(running.id)
+                            uid?.let {
+                                ProgressRepository.markLevelCompleted(it, running.id)
+                                ProgressCache.save(context, it, completedIdsOf(units))
+                            }
+                            setRunningLevel(null)
+                        }
+                    )
 
-        if (showExitConfirm) {
-            ExitLevelDialog(
-                onDismiss = { showExitConfirm = false },
-                onConfirm = {
-                    showExitConfirm = false
-                    setRunningLevel(null)
+                    is LevelContent.Scenarios -> ScenarioQuizScreen(
+                        quiz = content.quiz,
+                        xpReward = MAX_LEVEL_XP,
+                        modifier = modifier,
+                        onExit = requestExit,
+                        onMistake = { spendHeart() },
+                        hearts = hearts,
+                        xpBalance = totalXp,
+                        isReplay = isReplay,
+                        onComplete = { earned, _, _ ->
+                            val firstClear = running.status != LevelStatus.COMPLETED
+                            units = units.withLevelCompleted(running.id)
+                            uid?.let {
+                                ProgressRepository.markLevelCompleted(it, running.id)
+                                ProgressCache.save(context, it, completedIdsOf(units))
+                                if (firstClear) {
+                                    val updated = levelXp + (running.id to earned)
+                                    levelXp = updated
+                                    ProgressCache.saveLevelXp(context, it, updated)
+                                    ProgressRepository.saveLevelXp(it, running.id, earned)
+                                }
+                            }
+                            setRunningLevel(null)
+                        }
+                    )
+
+                    is LevelContent.Lab -> LabScreen(
+                        lab = content.lab,
+                        xpReward = MAX_LEVEL_XP,
+                        modifier = modifier,
+                        clueLabels = content.clueLabels,
+                        onExit = requestExit,
+                        onMistake = { spendHeart() },
+                        hearts = hearts,
+                        xpBalance = totalXp,
+                        onSpendXp = { spendXp(it) },
+                        isReplay = isReplay,
+                        onComplete = { earned, _, _ ->
+                            val firstClear = running.status != LevelStatus.COMPLETED
+                            units = units.withLevelCompleted(running.id)
+                            uid?.let {
+                                ProgressRepository.markLevelCompleted(it, running.id)
+                                ProgressCache.save(context, it, completedIdsOf(units))
+                                if (firstClear) {
+                                    val updated = levelXp + (running.id to earned)
+                                    levelXp = updated
+                                    ProgressCache.saveLevelXp(context, it, updated)
+                                    ProgressRepository.saveLevelXp(it, running.id, earned)
+                                }
+                            }
+                            setRunningLevel(null)
+                        }
+
+                    )
+
+                    null -> ComingSoonLevel(
+                        level = running,
+                        modifier = modifier,
+                        onBack = { setRunningLevel(null) }
+                    )
                 }
-            )
+            }
+
+            if (showExitConfirm) {
+                ExitLevelDialog(
+                    onDismiss = { showExitConfirm = false },
+                    onConfirm = {
+                        showExitConfirm = false
+                        setRunningLevel(null)
+                    }
+                )
+            }
         }
     } else {
         Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
-            LearnHeader(streak = 0, xp = totalXp, hearts = hearts, heartRefillIn = heartRefillIn)
+            LearnHeader(
+                streak = 0,
+                xp = totalXp,
+                hearts = hearts,
+                heartRefillIn = heartRefillIn,
+                onReplayTutorial = {
+                    val levelZero = LearningLevel(100, "Level 0: CYBERITY Tutorial", "Learn how CYBERITY works before starting your cybersecurity training.", 25, LevelType.LESSON, LevelStatus.CURRENT, durationMinutes = 3)
+                    setRunningLevel(levelZero)
+                }
+            )
 
             if (devUnlockAll) {
                 Text(
@@ -749,25 +810,65 @@ fun LearnHeader(
     xp: Int,
     hearts: Int,
     heartRefillIn: String?,
+    onReplayTutorial: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var showSettings by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val authInst = FirebaseAuth.getInstance()
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(AppCard)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        StatPill(Icons.Filled.DateRange, streak.toString(), AppCyan, "Day streak")
-        XpIndicator(xp = xp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StatPill(Icons.Filled.DateRange, streak.toString(), AppCyan, "Day streak")
+            XpIndicator(xp = xp)
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatPill(Icons.Filled.Favorite, hearts.toString(), AccentReward, "Hearts")
-            if (heartRefillIn != null) {
-                Spacer(Modifier.width(6.dp))
-                Text(heartRefillIn, color = AppGray, fontSize = 12.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatPill(Icons.Filled.Favorite, hearts.toString(), AccentReward, "Hearts")
+                if (heartRefillIn != null) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(heartRefillIn, color = AppGray, fontSize = 11.sp)
+                }
             }
+        }
+
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .background(AppNavy, RoundedCornerShape(10.dp))
+                .clickable { showSettings = true },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = AppCyan,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        if (showSettings) {
+            SettingsDialog(
+                onDismiss = { showSettings = false },
+                onSignOut = {
+                    showSettings = false
+                    authInst.signOut()
+                    (context as? android.app.Activity)?.recreate()
+                },
+                onReplayTutorial = {
+                    showSettings = false
+                    onReplayTutorial()
+                }
+            )
         }
     }
 }
@@ -1151,7 +1252,14 @@ fun LevelNode(
     }
 
     Box(
-        modifier = modifier.size(size + 14.dp).scale(pulse),
+        modifier = modifier
+            .size(size + 14.dp)
+            .scale(pulse)
+            .onGloballyPositioned { coordinates ->
+                if (level.id == 101 && TutorialManager.isTutorialActive) {
+                    TutorialManager.targetBounds = coordinates.boundsInWindow()
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -1404,7 +1512,14 @@ fun LevelPreviewBottomSheet(
                     Button(
                         onClick = onStart,
                         enabled = !outOfHearts,
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .onGloballyPositioned { coordinates ->
+                                if (TutorialManager.isTutorialActive) {
+                                    TutorialManager.targetBounds = coordinates.boundsInWindow()
+                                }
+                            },
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppCyan,
