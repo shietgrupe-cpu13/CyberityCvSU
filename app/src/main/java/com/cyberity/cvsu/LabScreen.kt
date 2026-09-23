@@ -789,7 +789,13 @@ private fun TaskPanel(
                 )
 
                 Spacer(Modifier.height(18.dp))
-                SectionLabel("ANSWER THE QUESTION BELOW")
+                SectionLabel(
+                    when (task.answer) {
+                        is LabAnswer.Choice -> "CHOOSE THE ANSWER BELOW"
+                        is LabAnswer.Text -> "TYPE YOUR ANSWER BELOW"
+                        is LabAnswer.Flag -> "SUBMIT THE FLAG BELOW"
+                    }
+                )
                 Spacer(Modifier.height(10.dp))
 
                 // The objective IS the question, but it's drawn up in the objective
