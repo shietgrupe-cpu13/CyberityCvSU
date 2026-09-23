@@ -2,6 +2,7 @@
 package com.cyberity.cvsu
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
@@ -44,6 +45,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Settings
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -77,6 +82,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalContext
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 // ===========================================================================
 // 1. PALETTE (file-scoped)
@@ -366,10 +375,39 @@ private fun SimulationWebView(
     onCreated: (WebView) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val fontPrefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
+    var fontSizeChoice by remember {
+        mutableStateOf(fontPrefs.getString("font_size", "medium") ?: "medium")
+    }
+
+    DisposableEffect(fontPrefs) {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "font_size") {
+                fontSizeChoice = p.getString("font_size", "medium") ?: "medium"
+            }
+        }
+        fontPrefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            fontPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+        }
+    }
+
+    var webViewInstance by remember { mutableStateOf<WebView?>(null) }
+
+    LaunchedEffect(fontSizeChoice, webViewInstance) {
+        val textZoomLevel = when (fontSizeChoice.lowercase()) {
+            "small" -> 85
+            "large" -> 125
+            else -> 100
+        }
+        webViewInstance?.settings?.textZoom = textZoomLevel
+    }
+
     AndroidView(
         modifier = modifier,
-        factory = { context ->
-            WebView(context).apply {
+        factory = { ctx ->
+            WebView(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
@@ -385,6 +423,13 @@ private fun SimulationWebView(
                 isVerticalScrollBarEnabled = true
                 setBackgroundColor(android.graphics.Color.TRANSPARENT)
 
+                val textZoomLevel = when (fontSizeChoice.lowercase()) {
+                    "small" -> 85
+                    "large" -> 125
+                    else -> 100
+                }
+                settings.textZoom = textZoomLevel
+
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(
                         view: WebView,
@@ -397,6 +442,7 @@ private fun SimulationWebView(
 
                 addJavascriptInterface(bridge, "AndroidLab")
                 loadUrl(lab.baseUrl + lab.startPage)
+                webViewInstance = this
                 onCreated(this)
             }
         },
@@ -624,6 +670,10 @@ private fun LabTopBar(
     isReplay: Boolean,
     onExit: () -> Unit
 ) {
+    var showSettings by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val authInst = FirebaseAuth.getInstance()
+
     Column(modifier = Modifier.fillMaxWidth().background(AppCard)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
@@ -640,7 +690,33 @@ private fun LabTopBar(
                 "$solved/$total", color = AppCyan, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(38.dp)
+                    .background(AppNavy, RoundedCornerShape(10.dp))
+                    .clickable { showSettings = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = AppCyan,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            if (showSettings) {
+                SettingsDialog(
+                    onDismiss = { showSettings = false },
+                    onSignOut = {
+                        showSettings = false
+                        authInst.signOut()
+                        (context as? Activity)?.recreate()
+                    }
+                )
+            }
         }
 
         Row(
