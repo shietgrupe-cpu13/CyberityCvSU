@@ -8,7 +8,10 @@ package com.cyberity.cvsu
 
 /** Clue ids reported by the simulation through the JS bridge. */
 object InboxClues {
+    const val EMAIL_OPENED_IT = "email_opened_it"
+    const val EMAIL_OPENED_HR = "email_opened_hr"
     const val EMAIL_OPENED_M365 = "email_opened_m365"
+    const val EMAIL_OPENED_FIN = "email_opened_fin"
     const val SENDER_INSPECTED = "sender_inspected"
     const val HEADERS_EXPANDED = "headers_expanded"
     const val LINK_FOLLOWED = "link_followed"
@@ -20,7 +23,10 @@ object InboxClues {
 
 /** Labels for the evidence log. Unknown ids fall back to the raw id. */
 val inboxClueLabels: Map<String, String> = mapOf(
+    InboxClues.EMAIL_OPENED_IT to "Opened the IT Support message",
+    InboxClues.EMAIL_OPENED_HR to "Opened the HR message",
     InboxClues.EMAIL_OPENED_M365 to "Opened the suspension notice",
+    InboxClues.EMAIL_OPENED_FIN to "Opened the Finance message",
     InboxClues.SENDER_INSPECTED to "Inspected the sender address",
     InboxClues.HEADERS_EXPANDED to "Expanded the message headers",
     InboxClues.LINK_FOLLOWED to "Followed the verification link",
@@ -71,8 +77,15 @@ fun inboxTriageLab(): LabDefinition = LabDefinition(
                 "Swipe the bar at the top of the simulation down, and name that sender below."
             ),
             entryPage = "inbox.html",
-            requiredClues = listOf(InboxClues.EMAIL_OPENED_M365),
-            lockedMessage = "Open the messages first — you can't call a verdict on a subject line.",
+            // All four, not just the hostile one — otherwise the choices unlocking
+            // the moment the suspension notice is opened gives the answer away.
+            requiredClues = listOf(
+                InboxClues.EMAIL_OPENED_IT,
+                InboxClues.EMAIL_OPENED_HR,
+                InboxClues.EMAIL_OPENED_M365,
+                InboxClues.EMAIL_OPENED_FIN
+            ),
+            lockedMessage = "Open all four messages first — you can't call a verdict on a subject line.",
             answer = LabAnswer.Choice(
                 options = listOf(
                     "IT Support",

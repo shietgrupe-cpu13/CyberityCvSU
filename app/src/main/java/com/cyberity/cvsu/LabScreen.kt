@@ -24,6 +24,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.exclude
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -780,6 +785,11 @@ private fun TaskPanel(
     Column(
         modifier = modifier
             .background(AppNavy)
+            // The activity is edge-to-edge, so adjustResize alone doesn't shrink
+            // this panel when the keyboard opens. Pad by the keyboard's height
+            // (minus the nav bar, which the Scaffold already pads) so the focused
+            // answer field is scrolled into view above the keyboard.
+            .windowInsetsPadding(WindowInsets.ime.exclude(WindowInsets.navigationBars))
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp, vertical = 14.dp)
     ) {
