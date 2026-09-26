@@ -29,7 +29,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -83,12 +82,12 @@ fun CompleteProfileScreen(
         )
 
         isSaving = true
-        UserProfileRepository.save(uid, user?.email, profile) { result ->
+        UserProfileRepository.save(uid, user.email, profile) { result ->
             isSaving = false
             when (result) {
                 ProfileSaveResult.Saved -> {
                     if (registeredName == null) {
-                        user?.updateProfile(userProfileChangeRequest { this.displayName = profile.displayName })
+                        user.updateProfile(userProfileChangeRequest { this.displayName = profile.displayName })
                     }
                     ProfileCache.markComplete(context, uid)
                     onProfileSaved()
@@ -179,7 +178,7 @@ fun CompleteProfileScreen(
 
                 if (errorMessage.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(errorMessage, color = Color.Red, fontSize = 13.sp)
+                    Text(errorMessage, color = AppDanger, fontSize = 13.sp)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -243,7 +242,7 @@ fun ProfileCheckScreen(
                 // The real reason, shown only in debug builds to help development.
                 if (errorDetail != null && LocalContext.current.isDebugBuild()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(errorDetail, color = Color.Red, fontSize = 12.sp)
+                    Text(errorDetail, color = AppDanger, fontSize = 12.sp)
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Button(

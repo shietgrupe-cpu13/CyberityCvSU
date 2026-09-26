@@ -37,11 +37,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cyberity.cvsu.ui.theme.CyberityThemeState
 
 /**
  * Modern, styled Settings Dialog matching Cyberity CvSU app theme.
@@ -110,6 +110,62 @@ fun SettingsDialog(
                     .verticalScroll(rememberScrollState())
                     .padding(top = 4.dp)
             ) {
+                // Section 0: Appearance (Light / Dark mode)
+                Text(
+                    text = "APPEARANCE",
+                    color = AppCyan,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "System follows your phone's light or dark setting",
+                    color = AppGray,
+                    fontSize = 12.sp
+                )
+                Spacer(Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val themeOptions = listOf(
+                        CyberityThemeState.DARK to "Dark",
+                        CyberityThemeState.LIGHT to "Light",
+                        CyberityThemeState.SYSTEM to "System"
+                    )
+                    themeOptions.forEach { (key, label) ->
+                        val isSelected = CyberityThemeState.mode == key
+
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp)
+                                .clickable {
+                                    CyberityThemeState.mode = key
+                                    saveString(CyberityThemeState.PREF_KEY, key)
+                                },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) AppBlue else AppNavy,
+                            border = if (isSelected) BorderStroke(1.dp, AppCyan) else BorderStroke(1.dp, AppNavy)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = label,
+                                    color = if (isSelected) AppOnBlue else AppGray,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider(color = AppNavy, thickness = 1.dp)
+                Spacer(Modifier.height(16.dp))
+
                 // Section 1: Level Font Size
                 Text(
                     text = "LEVEL FONT SIZE",
@@ -150,7 +206,7 @@ fun SettingsDialog(
                             Box(contentAlignment = Alignment.Center) {
                                 Text(
                                     text = label,
-                                    color = if (isSelected) AppWhite else AppGray,
+                                    color = if (isSelected) AppOnBlue else AppGray,
                                     fontSize = when (key) {
                                         "small" -> 12.sp
                                         "medium" -> 14.sp
@@ -208,7 +264,7 @@ fun SettingsDialog(
                             saveBool("notifications", it)
                         },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = AppWhite,
+                            checkedThumbColor = AppOnBlue,
                             checkedTrackColor = AppBlue,
                             uncheckedThumbColor = AppGray,
                             uncheckedTrackColor = AppNavy
@@ -248,11 +304,11 @@ fun SettingsDialog(
                         .fillMaxWidth()
                         .height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red.copy(alpha = 0.12f),
-                        contentColor = Color(0xFFFF5C7A)
+                        containerColor = AppDanger.copy(alpha = 0.12f),
+                        contentColor = AppDanger
                     ),
                     shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, Color.Red.copy(alpha = 0.25f))
+                    border = BorderStroke(1.dp, AppDanger.copy(alpha = 0.25f))
                 ) {
                     Text("Sign Out", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 }
@@ -275,7 +331,7 @@ fun SettingsDialog(
                         onSignOut()
                     }
                 ) {
-                    Text("Sign Out", color = Color(0xFFFF5C7A), fontWeight = FontWeight.Bold)
+                    Text("Sign Out", color = AppDanger, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {

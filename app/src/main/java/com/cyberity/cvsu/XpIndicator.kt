@@ -48,8 +48,8 @@ import kotlinx.coroutines.delay
 // value is what the student would earn if they finished right now, so opening
 // a hint shows the cost land immediately rather than as a surprise at the end.
 
-private val XpGain = Color(0xFF27E0A8)
-private val XpLoss = Color(0xFFFF5C7A)
+private val XpGain: Color get() = AppSuccess
+private val XpLoss: Color get() = AppDanger
 
 /**
  * A lightning bolt, drawn here rather than pulled from the extended icon set
@@ -101,7 +101,7 @@ fun XpIndicator(
         targetValue = when (direction) {
             1 -> XpGain
             -1 -> XpLoss
-            else -> AppCyan
+            else -> AppXp
         },
         animationSpec = tween(220),
         label = "xpTint"

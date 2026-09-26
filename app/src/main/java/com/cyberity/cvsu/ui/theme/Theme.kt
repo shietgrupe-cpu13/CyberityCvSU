@@ -1,53 +1,93 @@
 package com.cyberity.cvsu.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
+import android.content.Context
+import android.content.res.Configuration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.cyberity.cvsu.AppBlue
+import com.cyberity.cvsu.AppCard
+import com.cyberity.cvsu.AppCyan
+import com.cyberity.cvsu.AppDanger
+import com.cyberity.cvsu.AppGray
+import com.cyberity.cvsu.AppNavy
+import com.cyberity.cvsu.AppOnBlue
+import com.cyberity.cvsu.AppWhite
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+/**
+ * App-wide Light / Dark mode.
+ *
+ * [mode] is "dark", "light" or "system" and is saved in the "app_settings"
+ * SharedPreferences under "theme_mode". Because it is Compose state, every
+ * screen that reads an App* color redraws as soon as it changes.
+ */
+object CyberityThemeState {
+    const val PREF_KEY = "theme_mode"
+    const val DARK = "dark"
+    const val LIGHT = "light"
+    const val SYSTEM = "system"
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    var mode by mutableStateOf(DARK)
+    var systemIsDark by mutableStateOf(true)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+    val isDark: Boolean
+        get() = when (mode) {
+            LIGHT -> false
+            SYSTEM -> systemIsDark
+            else -> true
+        }
+
+    /** Restores the saved Light / Dark / System choice. Call before the first frame. */
+    fun load(context: Context) {
+        val prefs = context.getSharedPreferences("app_settings", Context.MODE_PRIVATE)
+        mode = prefs.getString(PREF_KEY, DARK) ?: DARK
+        systemIsDark = (context.resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    }
+}
 
 @Composable
 fun MyFirstTryTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
+    // Built from the Cyberity colors so default Material parts (dialogs, sheets,
+    // switches, button text) match the app instead of the device wallpaper.
+    val colorScheme = if (CyberityThemeState.isDark) {
+        darkColorScheme(
+            primary = AppBlue,
+            onPrimary = AppOnBlue,
+            secondary = AppCyan,
+            onSecondary = AppNavy,
+            background = AppNavy,
+            onBackground = AppWhite,
+            surface = AppCard,
+            onSurface = AppWhite,
+            surfaceVariant = AppCard,
+            onSurfaceVariant = AppGray,
+            surfaceContainerHigh = AppCard,
+            outline = AppGray,
+            error = AppDanger
+        )
+    } else {
+        lightColorScheme(
+            primary = AppBlue,
+            onPrimary = AppOnBlue,
+            secondary = AppCyan,
+            onSecondary = AppOnBlue,
+            background = AppNavy,
+            onBackground = AppWhite,
+            surface = AppCard,
+            onSurface = AppWhite,
+            surfaceVariant = AppNavy,
+            onSurfaceVariant = AppGray,
+            surfaceContainerHigh = AppCard,
+            outline = AppGray,
+            error = AppDanger
+        )
     }
 
     MaterialTheme(

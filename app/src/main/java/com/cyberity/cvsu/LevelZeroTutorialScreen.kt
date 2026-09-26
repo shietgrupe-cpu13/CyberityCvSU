@@ -167,10 +167,10 @@ fun LevelZeroTutorialScreen(
         choices.forEachIndexed { index, text ->
             val isSelected = selectedChoice == index
             val borderColor = when {
-                submitted && index == correctChoice -> Color(0xFF27E0A8)
-                submitted && isSelected -> Color(0xFFFF5C7A)
+                submitted && index == correctChoice -> AppSuccess
+                submitted && isSelected -> AppDanger
                 isSelected -> AppCyan
-                else -> AppCard
+                else -> AppBorder
             }
             val backgroundColor = if (isSelected) AppBlue.copy(alpha = 0.3f) else AppCard
 
@@ -210,15 +210,15 @@ fun LevelZeroTutorialScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isCorrect) Color(0xFF27E0A8).copy(alpha = 0.15f) else Color(0xFFFF5C7A).copy(alpha = 0.15f)
+                    containerColor = if (isCorrect) AppSuccess.copy(alpha = 0.15f) else AppDanger.copy(alpha = 0.15f)
                 ),
                 shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, if (isCorrect) Color(0xFF27E0A8) else Color(0xFFFF5C7A))
+                border = BorderStroke(1.dp, if (isCorrect) AppSuccess else AppDanger)
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
                     Text(
                         text = if (isCorrect) "✓ Correct Triage Decision!" else "✗ Incorrect Response",
-                        color = if (isCorrect) Color(0xFF27E0A8) else Color(0xFFFF5C7A),
+                        color = if (isCorrect) AppSuccess else AppDanger,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -239,7 +239,7 @@ fun LevelZeroTutorialScreen(
 
             Button(
                 onClick = onCompleteTutorial,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF27E0A8)),
+                colors = ButtonDefaults.buttonColors(containerColor = AppSuccess),
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier
                     .fillMaxWidth()

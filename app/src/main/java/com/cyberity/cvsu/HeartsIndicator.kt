@@ -27,8 +27,8 @@ import androidx.compose.ui.unit.dp
 // Shown inside a running level so a mistake reads as a cost the moment it
 // happens, rather than something noticed later on the path screen.
 
-/** Matches AccentReward in LearnScreen.kt, which the Learn header already uses for hearts. */
-private val HeartFilled = Color(0xFF7FD4FF)
+/** Same heart color the Learn header uses. */
+private val HeartFilled: Color get() = AppHeart
 
 @Composable
 fun HeartsRow(

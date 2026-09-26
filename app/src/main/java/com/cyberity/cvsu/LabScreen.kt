@@ -65,6 +65,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.cyberity.cvsu.ui.theme.CyberityThemeState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -96,8 +97,8 @@ import androidx.compose.material3.TextButton
 // 1. PALETTE (file-scoped)
 // ===========================================================================
 
-private val LabGreen = Color(0xFF27E0A8)
-private val LabRed = Color(0xFFFF5C7A)
+private val LabGreen: Color get() = AppSuccess
+private val LabRed: Color get() = AppDanger
 
 private enum class LabStage { BRIEFING, RUNNING, RESULT }
 
@@ -138,6 +139,10 @@ class LabBridge(private val onClue: (String) -> Unit) {
     fun notifyFlagDiscovered(token: String) {
         main.post { onClue("flag_seen") }
     }
+
+    /** Lets each simulation page match the app's Light / Dark mode before it draws. */
+    @JavascriptInterface
+    fun theme(): String = if (CyberityThemeState.isDark) "dark" else "light"
 }
 
 // ===========================================================================
@@ -400,6 +405,14 @@ private fun SimulationWebView(
 
     var webViewInstance by remember { mutableStateOf<WebView?>(null) }
 
+    // If the mode changes while a simulation page is open, restyle it in place.
+    val simTheme = if (CyberityThemeState.isDark) "dark" else "light"
+    LaunchedEffect(simTheme, webViewInstance) {
+        webViewInstance?.evaluateJavascript(
+            "document.documentElement.setAttribute('data-theme','$simTheme')", null
+        )
+    }
+
     LaunchedEffect(fontSizeChoice, webViewInstance) {
         val textZoomLevel = when (fontSizeChoice.lowercase()) {
             "small" -> 85
@@ -608,7 +621,7 @@ private fun LabBriefing(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Filled.Email, contentDescription = null, tint = AppWhite,
+                    Icons.Filled.Email, contentDescription = null, tint = AppOnBlue,
                     modifier = Modifier.size(38.dp)
                 )
             }
@@ -995,7 +1008,7 @@ private fun OpenSimulationButton(onClick: () -> Unit) {
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().height(50.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+        colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue)
     ) {
         Icon(
             Icons.Filled.PlayArrow, contentDescription = null,

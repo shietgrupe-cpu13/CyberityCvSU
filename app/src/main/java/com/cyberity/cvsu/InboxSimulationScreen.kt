@@ -296,8 +296,8 @@ fun inboxTriageSimulation(): InboxSimulation = InboxSimulation(
 // 3. PALETTE (file-scoped)
 // ===========================================================================
 
-private val OkGreen = Color(0xFF27E0A8)
-private val FlagRed = Color(0xFFFF5C7A)
+private val OkGreen: Color get() = AppSuccess
+private val FlagRed: Color get() = AppDanger
 
 // ===========================================================================
 // 4. SCREEN
@@ -445,7 +445,7 @@ private fun InboxBriefing(
             modifier = Modifier.size(84.dp).background(AppBlue, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Filled.Email, contentDescription = null, tint = AppWhite,
+            Icon(Icons.Filled.Email, contentDescription = null, tint = AppOnBlue,
                 modifier = Modifier.size(38.dp))
         }
 

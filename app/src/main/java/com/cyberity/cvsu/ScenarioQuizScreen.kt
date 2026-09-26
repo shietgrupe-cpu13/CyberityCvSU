@@ -252,8 +252,8 @@ fun spotTheThreatQuiz(): ScenarioQuiz = ScenarioQuiz(
 // 3. PALETTE (file-scoped)
 // ===========================================================================
 
-private val SimSuccess = Color(0xFF27E0A8)
-private val SimDanger = Color(0xFFFF5C7A)
+private val SimSuccess: Color get() = AppSuccess
+private val SimDanger: Color get() = AppDanger
 
 // ===========================================================================
 // 4. SIMULATION SCREEN
@@ -394,7 +394,7 @@ private fun BriefingStage(
                 Icon(
                     Icons.Filled.Warning,
                     contentDescription = null,
-                    tint = AppWhite,
+                    tint = AppOnBlue,
                     modifier = Modifier.size(38.dp)
                 )
             }

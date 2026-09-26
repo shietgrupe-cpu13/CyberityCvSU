@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import com.cyberity.cvsu.ui.theme.CyberityThemeState
 import com.cyberity.cvsu.ui.theme.MyFirstTryTheme
 import kotlinx.coroutines.delay
 import androidx.compose.runtime.LaunchedEffect
@@ -20,6 +21,11 @@ class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Same Light / Dark / System choice as the rest of the app.
+        CyberityThemeState.load(this)
+        val splashImage =
+            if (CyberityThemeState.isDark) R.drawable.splash_screen_dark else R.drawable.splash_screen
+
         setContent {
             MyFirstTryTheme {
                 Box(
@@ -27,7 +33,7 @@ class SplashActivity : ComponentActivity() {
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.splash_screen),
+                        painter = painterResource(id = splashImage),
                         contentDescription = "Cyberity Splash Screen",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
