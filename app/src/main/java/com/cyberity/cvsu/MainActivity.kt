@@ -67,6 +67,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.OutlinedButton
 import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material.icons.outlined.Computer
+import androidx.compose.material.icons.outlined.Flag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 
 // Debug force option for onboarding tutorial testing
 const val DEBUG_FORCE_ONBOARDING = false
@@ -235,94 +247,139 @@ fun WelcomeEntryScreen(
     onNewUserSelected: () -> Unit,
     onExistingUserSelected: () -> Unit
 ) {
-    Box(
+    val logo = if (CyberityThemeState.isDark) R.drawable.welcome_logo_dark else R.drawable.welcome_logo_light
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(AppNavy)
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
+            .systemBarsPadding()
+            .padding(horizontal = 24.dp)
     ) {
-        Card(
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = AppCard),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            modifier = Modifier.fillMaxWidth()
+        // Top part scrolls on small phones; the buttons below always stay in reach.
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
         ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "CYBERITY",
-                    color = AppCyan,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = 2.sp
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Brand
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(id = logo),
+                    contentDescription = null,
+                    modifier = Modifier.size(44.dp)
                 )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "Cybersecurity Awareness Learning",
-                    color = AppGray,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(36.dp))
-
-                Text(
-                    text = "Welcome!",
+                    text = buildAnnotatedString {
+                        append("Cyber")
+                        withStyle(SpanStyle(color = AppCyan)) { append("ity") }
+                    },
                     color = AppWhite,
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.ExtraBold
                 )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Are you new to CYBERITY?",
-                    color = AppGray,
-                    fontSize = 15.sp,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = onNewUserSelected,
-                    colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                ) {
-                    Text(
-                        text = "I'm a New User",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                OutlinedButton(
-                    onClick = onExistingUserSelected,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp),
-                    border = BorderStroke(1.dp, AppCyan)
-                ) {
-                    Text(
-                        text = "I Already Have an Account",
-                        color = AppWhite,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Headline
+            Text(
+                text = "Learn cybersecurity\nby doing it.",
+                color = AppWhite,
+                fontSize = 30.sp,
+                lineHeight = 36.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = "Hands-on labs and challenges built for CvSU students.",
+                color = AppGray,
+                fontSize = 15.sp,
+                lineHeight = 22.sp
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // What students get
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                WelcomeFeature(
+                    icon = Icons.Outlined.Computer,
+                    title = "Interactive simulations",
+                    subtitle = "Investigate real-looking inboxes and consoles"
+                )
+                WelcomeFeature(
+                    icon = Icons.Outlined.Flag,
+                    title = "Capture-the-flag challenges",
+                    subtitle = "Find the clue, capture the flag"
+                )
+                WelcomeFeature(
+                    icon = XpBolt,
+                    title = "Earn XP and keep your streak",
+                    subtitle = "Climb the leaderboard with your class"
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Actions (same destinations as before)
+        Button(
+            onClick = onNewUserSelected,
+            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue),
+            shape = RoundedCornerShape(14.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp)
+        ) {
+            Text(text = "Get Started", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        TextButton(
+            onClick = onExistingUserSelected,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        ) {
+            Text(
+                text = "I already have an account",
+                color = AppCyan,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+/** One row on the Welcome screen describing what Cyberity offers. */
+@Composable
+private fun WelcomeFeature(icon: ImageVector, title: String, subtitle: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppCard, RoundedCornerShape(16.dp))
+            .border(1.dp, AppBorder, RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(AppBlue.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = AppCyan, modifier = Modifier.size(22.dp))
+        }
+        Spacer(modifier = Modifier.width(14.dp))
+        Column {
+            Text(text = title, color = AppWhite, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+            Text(text = subtitle, color = AppGray, fontSize = 13.sp, lineHeight = 17.sp)
         }
     }
 }
