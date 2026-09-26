@@ -281,6 +281,9 @@ isReplay: Boolean = false
 
     var stage by remember { mutableStateOf(SimStage.BRIEFING) }
     var stepIndex by remember { mutableIntStateOf(0) }
+    // Tapping an option only selects it; SUBMIT ANSWER commits it, so a
+    // misclick can still be changed before it counts.
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var chosenIndex by remember { mutableStateOf<Int?>(null) }
     var correctCount by remember { mutableIntStateOf(0) }
     var heartsLost by remember { mutableIntStateOf(0) }
@@ -306,9 +309,14 @@ isReplay: Boolean = false
                 liveXp = scoreLevelXp(true, heartsLost, 0, true),
                 xpBalance = xpBalance,
                 isReplay = isReplay,
+                selectedIndex = selectedIndex,
                 chosenIndex = chosenIndex,
-                onChoose = { index ->
-                    if (chosenIndex == null) {
+                onSelect = { index ->
+                    if (chosenIndex == null) selectedIndex = index
+                },
+                onSubmit = {
+                    val index = selectedIndex
+                    if (chosenIndex == null && index != null) {
                         chosenIndex = index
                         if (quiz.scenarios[stepIndex].choices[index].isSafe) {
                             correctCount++
@@ -323,6 +331,7 @@ isReplay: Boolean = false
                         stage = SimStage.RESULT
                     } else {
                         stepIndex++
+                        selectedIndex = null
                         chosenIndex = null
                     }
                 },
@@ -368,42 +377,51 @@ private fun BriefingStage(
             Icon(Icons.Filled.Close, contentDescription = "Exit quiz", tint = AppGray)
         }
 
-        Spacer(Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier.size(84.dp).background(AppBlue, CircleShape),
-            contentAlignment = Alignment.Center
+        // Starts at the top and scrolls when it overflows — briefings vary in
+        // length and small screens shouldn't push the start button off.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
         ) {
-            Icon(
-                Icons.Filled.Warning,
-                contentDescription = null,
-                tint = AppWhite,
-                modifier = Modifier.size(38.dp)
-            )
-        }
+            Spacer(Modifier.height(12.dp))
 
-        Spacer(Modifier.height(20.dp))
+            Box(
+                modifier = Modifier.size(84.dp).background(AppBlue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = AppWhite,
+                    modifier = Modifier.size(38.dp)
+                )
+            }
 
-        Text("SCENARIO QUIZ", color = AppCyan, fontSize = 12.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        Spacer(Modifier.height(6.dp))
-        Text(quiz.title, color = AppWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-        Text(quiz.briefing, color = AppGray, fontSize = 15.sp)
+            Spacer(Modifier.height(20.dp))
 
-        Spacer(Modifier.height(20.dp))
+            Text("SCENARIO QUIZ", color = AppCyan, fontSize = 12.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Spacer(Modifier.height(6.dp))
+            Text(quiz.title, color = AppWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
+            Text(quiz.briefing, color = AppGray, fontSize = 15.sp, lineHeight = 22.sp)
 
-        Row {
-            SimChip("${quiz.scenarios.size} scenarios")
-            Spacer(Modifier.width(10.dp))
-            if (isReplay) {
-                SimChip("Review · already completed")
-            } else {
-                SimChip("up to +$xpReward XP")
+            Spacer(Modifier.height(20.dp))
+
+            Row {
+                SimChip("${quiz.scenarios.size} scenarios")
+                Spacer(Modifier.width(10.dp))
+                if (isReplay) {
+                    SimChip("Review · already completed")
+                } else {
+                    SimChip("up to +$xpReward XP")
+                }
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(20.dp))
 
         Button(
             onClick = onBegin,
@@ -425,8 +443,10 @@ private fun ScenarioStage(
     liveXp: Int,
     xpBalance: Int,
     isReplay: Boolean,
+    selectedIndex: Int?,
     chosenIndex: Int?,
-    onChoose: (Int) -> Unit,
+    onSelect: (Int) -> Unit,
+    onSubmit: () -> Unit,
     onContinue: () -> Unit,
     onExit: () -> Unit
 ) {
@@ -526,8 +546,9 @@ private fun ScenarioStage(
                 ChoiceRow(
                     choice = choice,
                     answered = answered,
+                    isSelected = selectedIndex == index,
                     isChosen = chosenIndex == index,
-                    onClick = { onChoose(index) }
+                    onClick = { onSelect(index) }
                 )
                 Spacer(Modifier.height(10.dp))
             }
@@ -549,23 +570,28 @@ private fun ScenarioStage(
             Spacer(Modifier.height(20.dp))
         }
 
-        // Continue bar
-        AnimatedVisibility(visible = answered, enter = fadeIn(tween(200))) {
-            Box(modifier = Modifier.fillMaxWidth().background(AppCard).padding(16.dp)) {
-                Button(
-                    onClick = onContinue,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppCyan,
-                        contentColor = AppNavy
-                    )
-                ) {
-                    Text(
-                        text = if (stepIndex == total - 1) "SEE RESULTS" else "CONTINUE",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+        // Submit / continue bar
+        Box(modifier = Modifier.fillMaxWidth().background(AppCard).padding(16.dp)) {
+            Button(
+                onClick = if (answered) onContinue else onSubmit,
+                enabled = answered || selectedIndex != null,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppCyan,
+                    contentColor = AppNavy,
+                    disabledContainerColor = AppNavy,
+                    disabledContentColor = AppGray
+                )
+            ) {
+                Text(
+                    text = when {
+                        !answered -> "SUBMIT ANSWER"
+                        stepIndex == total - 1 -> "SEE RESULTS"
+                        else -> "CONTINUE"
+                    },
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -575,12 +601,15 @@ private fun ScenarioStage(
 private fun ChoiceRow(
     choice: SimChoice,
     answered: Boolean,
+    isSelected: Boolean,
     isChosen: Boolean,
     onClick: () -> Unit
 ) {
-    // Before answering every option looks neutral. After answering, the safe
-    // option is always revealed — not just the one the user picked.
+    // Before answering only the pending selection is highlighted. After
+    // answering, the safe option is always revealed — not just the one the
+    // user picked.
     val borderColor = when {
+        !answered && isSelected -> AppCyan
         !answered -> AppGray.copy(alpha = 0.3f)
         choice.isSafe -> SimSuccess
         isChosen -> SimDanger
@@ -598,7 +627,11 @@ private fun ChoiceRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = if (answered && choice.isSafe) SimSuccess.copy(alpha = 0.10f) else AppCard,
+                color = when {
+                    answered && choice.isSafe -> SimSuccess.copy(alpha = 0.10f)
+                    !answered && isSelected -> AppCyan.copy(alpha = 0.14f)
+                    else -> AppCard
+                },
                 shape = RoundedCornerShape(14.dp)
             )
             .border(1.5.dp, borderColor, RoundedCornerShape(14.dp))
