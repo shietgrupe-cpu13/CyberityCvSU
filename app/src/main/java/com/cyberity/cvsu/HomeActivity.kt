@@ -18,6 +18,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -206,7 +211,7 @@ private fun ModuleHeaderRow(
             modifier = Modifier
                 .size(44.dp)
                 .background(
-                    color = if (module.completed) Color(0xFF00C853) else AppCyan,
+                    color = if (module.completed) AppSuccess else AppCyan,
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -353,6 +358,34 @@ fun ProfileTab(
         UserProfileRepository.load(uid, onResult = { profile = it }, onError = {})
     }
 
+    // Progress stats. Read from the on-device cache first (the same numbers the
+    // Learn header shows), then refreshed from Firestore.
+    val context = LocalContext.current
+    val uid = user?.uid
+    var completedIds by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.load(context, it) } ?: emptySet())
+    }
+    var levelXp by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadLevelXp(context, it) } ?: emptyMap())
+    }
+    var xpSpent by remember(uid) {
+        mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
+    }
+    LaunchedEffect(uid) {
+        if (uid == null) return@LaunchedEffect
+        ProgressRepository.loadCompletedLevels(uid) { completedIds = it }
+        ProgressRepository.loadLevelXp(uid) { levelXp = it }
+        ProgressRepository.loadXpSpent(uid) { xpSpent = it }
+    }
+    val totalXp = xpBalance(earned = levelXp.values.sum(), spent = xpSpent)
+    // Counted like the Learn path: current curriculum levels only, no REWARD
+    // nodes, and saved ids for levels that no longer exist are ignored.
+    val levelsCompleted = remember(completedIds) {
+        sampleLearningUnits().withLevelsCompleted(completedIds).sumOf { it.completedCount }
+    }
+    // Day streak isn't tracked yet; the Learn header also shows 0.
+    val dayStreak = 0
+
     val username = profile?.displayName
         ?: user?.displayName?.takeIf { it.isNotBlank() }
         ?: email.substringBefore("@")
@@ -363,6 +396,7 @@ fun ProfileTab(
         modifier = Modifier
             .fillMaxSize()
             .background(AppNavy)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -408,7 +442,7 @@ fun ProfileTab(
         ) {
             Text(
                 text = initial,
-                color = AppWhite,
+                color = AppOnBlue,
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -429,7 +463,19 @@ fun ProfileTab(
             fontSize = 14.sp
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Progress stats
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ProfileStatCard(XpBolt, totalXp.toString(), "Total XP", AppXp, Modifier.weight(1f))
+            ProfileStatCard(Icons.Filled.DateRange, dayStreak.toString(), "Day streak", AppStreak, Modifier.weight(1f))
+            ProfileStatCard(Icons.Filled.Check, levelsCompleted.toString(), "Levels", AppSuccess, Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Personal Information Card
         Card(
@@ -462,6 +508,35 @@ fun ProfileTab(
                 onLogout()
             }
         )
+    }
+}
+
+@Composable
+private fun ProfileStatCard(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = AppCard,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, AppBorder)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(value, color = AppWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(label, color = AppGray, fontSize = 12.sp)
+        }
     }
 }
 

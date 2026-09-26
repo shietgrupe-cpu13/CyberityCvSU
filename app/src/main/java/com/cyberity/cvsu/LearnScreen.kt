@@ -386,8 +386,8 @@ private val NodeSizeCurrent: Dp = 78.dp
 private val NodeSizeReward: Dp = 58.dp
 private val TrailWidth: Dp = 11.dp
 
-private val AccentSuccess = Color(0xFF27E0A8)
-private val AccentReward = Color(0xFF7FD4FF)
+private val AccentSuccess: Color get() = AppSuccess
+private val AccentReward: Color get() = AppReward
 
 private fun nodeSizeFor(level: LearningLevel): Dp = when {
     level.status == LevelStatus.CURRENT -> NodeSizeCurrent
@@ -812,7 +812,7 @@ private fun ExitLevelDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("EXIT", color = AccentReward, fontWeight = FontWeight.Bold)
+                Text("EXIT", color = AppDanger, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -860,11 +860,11 @@ fun LearnHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatPill(Icons.Filled.DateRange, streak.toString(), AppCyan, "Day streak")
+            StatPill(Icons.Filled.DateRange, streak.toString(), AppStreak, "Day streak")
             XpIndicator(xp = xp)
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StatPill(Icons.Filled.Favorite, hearts.toString(), AccentReward, "Hearts")
+                StatPill(Icons.Filled.Favorite, hearts.toString(), AppHeart, "Hearts")
                 if (heartRefillIn != null) {
                     Spacer(Modifier.width(4.dp))
                     Text(heartRefillIn, color = AppGray, fontSize = 11.sp)
@@ -1060,14 +1060,14 @@ private fun UnitStickyBar(unit: LearningUnit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "UNIT ${unit.id}",
-                    color = if (locked) AppGray else AppCyan,
+                    color = if (locked) AppGray else AppOnBlueAccent,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
                 Text(
                     text = unit.title,
-                    color = if (locked) AppGray else AppWhite,
+                    color = if (locked) AppGray else AppOnBlue,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1
@@ -1078,7 +1078,7 @@ private fun UnitStickyBar(unit: LearningUnit) {
 
             Text(
                 text = if (locked) "Locked" else "${unit.completedCount} / ${unit.totalCount}",
-                color = if (locked) AppGray else AppWhite.copy(alpha = 0.85f),
+                color = if (locked) AppGray else AppOnBlue.copy(alpha = 0.85f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -1088,7 +1088,7 @@ private fun UnitStickyBar(unit: LearningUnit) {
             LinearProgressIndicator(
                 progress = { progress },
                 modifier = Modifier.fillMaxWidth().height(2.dp),
-                color = AppCyan,
+                color = AppOnBlueAccent,
                 trackColor = AppNavy.copy(alpha = 0.5f)
             )
         }
@@ -1136,7 +1136,7 @@ fun UnitBanner(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "UNIT ${unit.id}",
-                    color = if (locked) AppGray else AppCyan,
+                    color = if (locked) AppGray else AppOnBlueAccent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -1144,14 +1144,14 @@ fun UnitBanner(
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = unit.title,
-                    color = if (locked) AppGray else AppWhite,
+                    color = if (locked) AppGray else AppOnBlue,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = if (locked) "Locked" else "${unit.completedCount} / ${unit.totalCount} levels completed",
-                    color = if (locked) AppGray.copy(alpha = 0.7f) else AppWhite.copy(alpha = 0.75f),
+                    color = if (locked) AppGray.copy(alpha = 0.7f) else AppOnBlue.copy(alpha = 0.75f),
                     fontSize = 12.sp
                 )
 
@@ -1163,7 +1163,7 @@ fun UnitBanner(
                             else unit.completedCount.toFloat() / unit.totalCount
                         },
                         modifier = Modifier.fillMaxWidth().height(5.dp),
-                        color = AppCyan,
+                        color = AppOnBlueAccent,
                         trackColor = AppNavy.copy(alpha = 0.5f)
                     )
                 }
@@ -1327,7 +1327,7 @@ fun LevelNode(
 
     val fill = when (level.status) {
         LevelStatus.CURRENT -> AppCyan
-        LevelStatus.COMPLETED -> AppBlue
+        LevelStatus.COMPLETED -> AppSuccess
         LevelStatus.LOCKED -> AppCard
     }
 
@@ -1353,7 +1353,7 @@ fun LevelNode(
                             drawCircle(AppCyan.copy(alpha = 0.30f), radius = r, style = Stroke(ringStrokePx))
                         }
                         LevelStatus.COMPLETED -> {
-                            drawCircle(AppCyan.copy(alpha = 0.55f), radius = r, style = Stroke(ringStrokePx))
+                            drawCircle(AppSuccess.copy(alpha = 0.55f), radius = r, style = Stroke(ringStrokePx))
                         }
                         LevelStatus.LOCKED -> {
                             drawCircle(AppGray.copy(alpha = 0.14f), radius = r, style = Stroke(ringStrokePx * 0.6f))
@@ -1382,7 +1382,7 @@ fun LevelNode(
                 contentDescription = "${typeLabel(level.type)}: ${level.title}",
                 tint = when (level.status) {
                     LevelStatus.CURRENT -> AppNavy
-                    LevelStatus.COMPLETED -> AppWhite
+                    LevelStatus.COMPLETED -> AppNavy
                     LevelStatus.LOCKED -> AppGray
                 },
                 modifier = Modifier.size(if (level.status == LevelStatus.CURRENT) 30.dp else 26.dp)
@@ -1579,7 +1579,7 @@ fun LevelPreviewBottomSheet(
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppBlue,
-                            contentColor = AppWhite,
+                            contentColor = AppOnBlue,
                             disabledContainerColor = AppNavy,
                             disabledContentColor = AppGray
                         )
@@ -1702,7 +1702,7 @@ fun ComingSoonLevel(
         Button(
             onClick = onBack,
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue)
         ) {
             Text("BACK TO PATH", fontWeight = FontWeight.Bold)
         }
@@ -1725,7 +1725,7 @@ fun OutOfHeartsLevel(
         Icon(
             imageVector = Icons.Filled.Favorite,
             contentDescription = null,
-            tint = AccentReward,
+            tint = AppHeart,
             modifier = Modifier.size(48.dp)
         )
         Spacer(Modifier.height(16.dp))
@@ -1743,7 +1743,7 @@ fun OutOfHeartsLevel(
         Button(
             onClick = onBack,
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue)
         ) {
             Text("BACK TO PATH", fontWeight = FontWeight.Bold)
         }

@@ -87,7 +87,7 @@ fun TotpMfaCard() {
                 modifier = Modifier
                     .size(48.dp)
                     .background(
-                        if (isEnabled) Color(0xFF00C853).copy(alpha = 0.15f)
+                        if (isEnabled) AppSuccess.copy(alpha = 0.15f)
                         else AppCyan.copy(alpha = 0.15f),
                         CircleShape
                     ),
@@ -96,7 +96,7 @@ fun TotpMfaCard() {
                 Icon(
                     Icons.Filled.Security,
                     contentDescription = null,
-                    tint = if (isEnabled) Color(0xFF00C853) else AppCyan,
+                    tint = if (isEnabled) AppSuccess else AppCyan,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -132,7 +132,7 @@ fun TotpMfaCard() {
                 Icon(
                     imageVector = Icons.Filled.CheckCircle,
                     contentDescription = "Enabled",
-                    tint = Color(0xFF00C853),
+                    tint = AppSuccess,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -178,7 +178,7 @@ private fun TotpEnrollmentScreen(onDone: () -> Unit) {
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
-                error?.let { Text(it, color = androidx.compose.ui.graphics.Color.Red, fontSize = 13.sp) }
+                error?.let { Text(it, color = AppDanger, fontSize = 13.sp) }
             }
         },
         confirmButton = {
@@ -217,7 +217,7 @@ fun TotpSignInScreen(resolver: MultiFactorResolver?, onSuccess: () -> Unit, onCa
         Spacer(Modifier.height(8.dp)); Text("Enter the current 6-digit code from your authenticator app.", color = AppGray, textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
         OutlinedTextField(value = code, onValueChange = { code = it.filter(Char::isDigit).take(6) }, label = { Text("6-digit code") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-        error?.let { Text(it, color = androidx.compose.ui.graphics.Color.Red, modifier = Modifier.padding(top = 12.dp)) }
+        error?.let { Text(it, color = AppDanger, modifier = Modifier.padding(top = 12.dp)) }
         Spacer(Modifier.height(20.dp))
         if (loading) CircularProgressIndicator(color = AppCyan) else Button(
             enabled = code.length == 6 && factor != null,

@@ -1,16 +1,66 @@
-/* Cyberity simulation shell — palette matches the Android app. */
-
+/* Cyberity simulation palette: Terminal Teal.
+   Dark values below are the default. The app sets data-theme="light" on <html>
+   when Light Mode is on (see the first <script> in each page and LabBridge.theme()).
+   --on-blue / --on-accent: text on solid teal or accent fills. */
+/* Dark Mode (default) */
 :root {
-  --navy: #010E45;
-  --card: #021A50;
-  --blue: #005CEB;
-  --blue-dark: #011A6C;
-  --cyan: #6CB8EC;
-  --white: #F5F8FC;
-  --gray: #9AA9C2;
-  --red: #FF5C7A;
-  --green: #27E0A8;
-  --amber: #FFC46B;
+  --navy: #0A1016;
+  --card: #17222E;
+  --blue: #14B8A6;
+  --blue-dark: #0F2D2E;
+  --cyan: #5EEAD4;
+  --white: #E8EEF3;
+  --gray: #8FA0B2;
+  --red: #F2606C;
+  --green: #3FD68A;
+  --amber: #F2B84B;
+  --violet: #B49BF7;
+  --surface: #1C2A38;
+  --code-bg: #05090D;
+  --on-blue: #04211E;
+  --on-accent: #04211E;
+  --navy-rgb: 10, 16, 22;
+  --card-rgb: 23, 34, 46;
+  --blue-rgb: 20, 184, 166;
+  --blue-dark-rgb: 15, 45, 46;
+  --cyan-rgb: 94, 234, 212;
+  --white-rgb: 232, 238, 243;
+  --gray-rgb: 143, 160, 178;
+  --red-rgb: 242, 96, 108;
+  --green-rgb: 63, 214, 138;
+  --amber-rgb: 242, 184, 75;
+  --violet-rgb: 180, 155, 247;
+  --surface-rgb: 28, 42, 56;
+}
+/* Light Mode */
+:root[data-theme="light"] {
+  --navy: #D8E3E2;
+  --card: #F1F6F5;
+  --blue: #0F766E;
+  --blue-dark: #C6DAD8;
+  --cyan: #0B6560;
+  --white: #0A1A1E;
+  --gray: #455A61;
+  --red: #BF2A47;
+  --green: #146A34;
+  --amber: #8C5C00;
+  --violet: #6647C2;
+  --surface: #E7EFEE;
+  --code-bg: #E9F0EF;
+  --on-blue: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --navy-rgb: 216, 227, 226;
+  --card-rgb: 241, 246, 245;
+  --blue-rgb: 15, 118, 110;
+  --blue-dark-rgb: 198, 218, 216;
+  --cyan-rgb: 11, 101, 96;
+  --white-rgb: 10, 26, 30;
+  --gray-rgb: 69, 90, 97;
+  --red-rgb: 191, 42, 71;
+  --green-rgb: 20, 106, 52;
+  --amber-rgb: 140, 92, 0;
+  --violet-rgb: 102, 71, 194;
+  --surface-rgb: 231, 239, 238;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -37,14 +87,14 @@ body { padding-bottom: 28px; }
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 5px 12px;
-  border-bottom: 1px solid rgba(108, 184, 236, 0.25);
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.25);
 }
 
 /* ---------- mail client ---------- */
 
 .mail-head {
   padding: 14px 16px 10px;
-  border-bottom: 1px solid rgba(154, 169, 194, 0.18);
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
 }
 
 .mail-head h1 { margin: 0; font-size: 18px; }
@@ -56,7 +106,7 @@ body { padding-bottom: 28px; }
   display: flex;
   gap: 12px;
   padding: 13px 16px;
-  border-bottom: 1px solid rgba(154, 169, 194, 0.12);
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.12);
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -73,7 +123,7 @@ body { padding-bottom: 28px; }
   flex: 0 0 auto;
 }
 
-.mail-item.read .mail-dot { background: rgba(154, 169, 194, 0.4); }
+.mail-item.read .mail-dot { background: rgba(var(--gray-rgb), 0.4); }
 
 .mail-body { flex: 1 1 auto; min-width: 0; }
 
@@ -90,14 +140,14 @@ body { padding-bottom: 28px; }
 }
 
 .mail-item.unread .mail-badge {
-  background: rgba(108, 184, 236, 0.16);
-  border: 1px solid rgba(108, 184, 236, 0.5);
+  background: rgba(var(--cyan-rgb), 0.16);
+  border: 1px solid rgba(var(--cyan-rgb), 0.5);
   color: var(--cyan);
 }
 
 .mail-item.read .mail-badge {
-  background: rgba(154, 169, 194, 0.10);
-  border: 1px solid rgba(154, 169, 194, 0.32);
+  background: rgba(var(--gray-rgb), 0.10);
+  border: 1px solid rgba(var(--gray-rgb), 0.32);
   color: var(--gray);
 }
 
@@ -134,12 +184,12 @@ body { padding-bottom: 28px; }
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-bottom: 1px solid rgba(154, 169, 194, 0.18);
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
 }
 
 .back-btn {
   background: var(--card);
-  border: 1px solid rgba(154, 169, 194, 0.25);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
   color: var(--white);
   border-radius: 9px;
   padding: 5px 11px;
@@ -155,7 +205,7 @@ body { padding-bottom: 28px; }
 
 .field {
   background: var(--card);
-  border: 1px solid rgba(154, 169, 194, 0.22);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
   border-radius: 12px;
   padding: 11px 12px;
   margin-bottom: 9px;
@@ -177,7 +227,7 @@ body { padding-bottom: 28px; }
 .reveal.open { display: block; }
 
 .reveal-box {
-  background: rgba(1, 14, 69, 0.75);
+  background: rgba(var(--navy-rgb), 0.75);
   border-left: 3px solid var(--red);
   border-radius: 8px;
   padding: 9px 10px;
@@ -198,8 +248,8 @@ body { padding-bottom: 28px; }
   margin-top: 6px;
 }
 
-.tag.bad { background: rgba(255, 92, 122, 0.16); color: var(--red); }
-.tag.good { background: rgba(39, 224, 168, 0.16); color: var(--green); }
+.tag.bad { background: rgba(var(--red-rgb), 0.16); color: var(--red); }
+.tag.good { background: rgba(var(--green-rgb), 0.16); color: var(--green); }
 
 .cta {
   display: block;
@@ -207,7 +257,7 @@ body { padding-bottom: 28px; }
   border: none;
   border-radius: 10px;
   background: var(--blue);
-  color: var(--white);
+  color: var(--on-blue);
   font-size: 14px;
   font-weight: 700;
   padding: 13px;
@@ -216,7 +266,7 @@ body { padding-bottom: 28px; }
 }
 
 .headers-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.headers-table td { padding: 5px 0; vertical-align: top; border-bottom: 1px solid rgba(154, 169, 194, 0.12); }
+.headers-table td { padding: 5px 0; vertical-align: top; border-bottom: 1px solid rgba(var(--gray-rgb), 0.12); }
 .headers-table td:first-child { color: var(--cyan); width: 38%; padding-right: 8px; }
 
 .link-btn {
@@ -236,7 +286,7 @@ body { padding-bottom: 28px; }
   gap: 8px;
   padding: 8px 10px;
   background: var(--card);
-  border-bottom: 1px solid rgba(154, 169, 194, 0.2);
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.2);
   position: sticky;
   top: 22px;
   z-index: 9;
@@ -259,7 +309,7 @@ body { padding-bottom: 28px; }
   align-items: center;
   gap: 6px;
   background: var(--navy);
-  border: 1px solid rgba(154, 169, 194, 0.25);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
   border-radius: 999px;
   padding: 6px 12px;
   font-size: 12px;
@@ -274,7 +324,7 @@ body { padding-bottom: 28px; }
   display: none;
   margin: 10px 12px 0;
   background: var(--card);
-  border: 1px solid rgba(108, 184, 236, 0.35);
+  border: 1px solid rgba(var(--cyan-rgb), 0.35);
   border-radius: 12px;
   padding: 12px;
 }
@@ -294,7 +344,7 @@ body { padding-bottom: 28px; }
 .kv span:last-child { flex: 1 1 auto; word-break: break-all; }
 
 .source {
-  background: #000a2a;
+  background: var(--code-bg);
   border-radius: 8px;
   padding: 10px;
   font-family: "Roboto Mono", monospace;
@@ -313,7 +363,7 @@ body { padding-bottom: 28px; }
 
 /* ---------- fake login page ---------- */
 
-.site { background: var(--white); color: #1b1b1f; margin: 12px; border-radius: 12px; padding: 22px 18px; }
+.site { background: #ffffff; color: #1b1b1f; margin: 12px; border-radius: 12px; padding: 22px 18px; }
 .site h2 { margin: 0 0 4px; font-size: 19px; color: #1b1b1f; }
 .site p { font-size: 13px; color: #555a66; margin: 0 0 16px; }
 .site label { display: block; font-size: 12px; color: #555a66; margin-bottom: 4px; }
@@ -348,7 +398,7 @@ body { padding-bottom: 28px; }
   margin: 12px;
   border-radius: 12px;
   border: 1px solid var(--red);
-  background: rgba(255, 92, 122, 0.12);
+  background: rgba(var(--red-rgb), 0.12);
   padding: 14px;
   font-size: 13px;
 }
@@ -370,15 +420,10 @@ body { padding-bottom: 28px; }
    student only sees after answering.
    ========================================================================== */
 
-:root {
-  --violet: #B49BF7;
-  --surface: #04216B;
-}
-
 .artifact {
   position: relative;
   background: var(--surface);
-  border: 1px solid rgba(108, 184, 236, 0.30);
+  border: 1px solid rgba(var(--cyan-rgb), 0.30);
   border-left: 4px solid var(--cyan);
   border-radius: 3px 14px 14px 3px;
   padding: 26px 14px 13px;
@@ -390,7 +435,7 @@ body { padding-bottom: 28px; }
   top: 0;
   left: 0;
   background: var(--cyan);
-  color: #01123F;
+  color: var(--on-accent);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -399,26 +444,26 @@ body { padding-bottom: 28px; }
 }
 
 /* Message — email, SMS, chat, a forwarded report. */
-.artifact.a-msg { border-color: rgba(108, 184, 236, 0.30); border-left-color: var(--cyan); }
+.artifact.a-msg { border-color: rgba(var(--cyan-rgb), 0.30); border-left-color: var(--cyan); }
 .artifact.a-msg > .artifact-tag { background: var(--cyan); }
 
 /* Web page — anything rendered as a site in the sandbox browser. */
-.artifact.a-web { border-color: rgba(245, 248, 252, 0.28); border-left-color: var(--white); }
+.artifact.a-web { border-color: rgba(var(--white-rgb), 0.28); border-left-color: var(--white); }
 .artifact.a-web > .artifact-tag { background: var(--white); }
 
 /* Person — what a human said: a report, an interview, a recorded call. */
-.artifact.a-per { border-color: rgba(180, 155, 247, 0.32); border-left-color: var(--violet); }
+.artifact.a-per { border-color: rgba(var(--violet-rgb), 0.32); border-left-color: var(--violet); }
 .artifact.a-per > .artifact-tag { background: var(--violet); }
 
 /* System record — logs, headers, page code, badge swipes. Always monospaced. */
-.artifact.a-sys { border-color: rgba(154, 169, 194, 0.30); border-left-color: var(--gray); }
+.artifact.a-sys { border-color: rgba(var(--gray-rgb), 0.30); border-left-color: var(--gray); }
 .artifact.a-sys > .artifact-tag { background: var(--gray); }
 
 /* The simulation's own UI: a tool or an instruction, never evidence. */
 .appui {
-  border: 1px dashed rgba(154, 169, 194, 0.40);
+  border: 1px dashed rgba(var(--gray-rgb), 0.40);
   border-radius: 12px;
-  background: rgba(1, 26, 108, 0.40);
+  background: rgba(var(--blue-dark-rgb), 0.40);
   padding: 12px 14px;
   margin: 12px 0;
   color: var(--gray);
@@ -456,7 +501,7 @@ body { padding-bottom: 28px; }
   gap: 12px;
   align-items: flex-start;
   background: var(--card);
-  border: 1px solid rgba(108, 184, 236, 0.18);
+  border: 1px solid rgba(var(--cyan-rgb), 0.18);
   border-radius: 14px;
   margin: 0 12px 10px;
   padding: 12px 14px;
@@ -467,10 +512,10 @@ body { padding-bottom: 28px; }
 }
 
 /* Still waiting for the student. */
-.choice.unread { border-color: rgba(108, 184, 236, 0.50); }
+.choice.unread { border-color: rgba(var(--cyan-rgb), 0.50); }
 
 /* Dealt with: the card recedes so the remaining work stands out. */
-.choice.read { border-color: rgba(154, 169, 194, 0.20); }
+.choice.read { border-color: rgba(var(--gray-rgb), 0.20); }
 
 .choice:active { background: var(--blue-dark); }
 
