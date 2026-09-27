@@ -196,7 +196,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
             LearningLevel(403, "Ransomware", "Encryption extortion and why backups matter most.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(404, "Malware Prevention", "Patching, allowlisting, and endpoint hardening.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(450, "Bonus XP Cache", "Reward for surviving the malware unit.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 1),
-            LearningLevel(405, "Malware Identification Simulation", "Triage suspicious processes on a compromised host.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
+            LearningLevel(405, "Malware Identification Simulation", "Security lab: four hostile processes on one lab PC — classify each by what it does, not by what it is called.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -1668,6 +1668,7 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     304 -> LevelContent.Lab(scamMessagesLab(), scamMsgClueLabels)
     305 -> LevelContent.Lab(phishingSimLab(), phishSimClueLabels)
     350 -> LevelContent.Lab(quickQuizLab(), quickQuizClueLabels)
+    405 -> LevelContent.Lab(malwareTriageLab(), malwareClueLabels)
     else -> null
 }
 
