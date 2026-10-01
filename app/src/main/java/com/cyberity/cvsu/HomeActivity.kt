@@ -122,6 +122,7 @@ fun HomeScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var levelRunning by remember { mutableStateOf(false) }
+    var tutorialRequest by remember { mutableIntStateOf(0) }
 
     Scaffold(
         containerColor = AppNavy,
@@ -155,9 +156,16 @@ fun HomeScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             when (selectedTab) {
-                0 -> LearnScreen(onLevelRunningChanged = { levelRunning = it })
+                0 -> LearnScreen(
+                    onLevelRunningChanged = { levelRunning = it },
+                    tutorialRequest = tutorialRequest,
+                    onTutorialRequestHandled = { tutorialRequest = 0 }
+                )
                 1 -> LeaderboardTab()
-                2 -> ProfileTab(onLogout = onLogout)
+                2 -> ProfileTab(onLogout = onLogout, onReplayTutorial = {
+                    tutorialRequest++
+                    selectedTab = 0
+                })
             }
         }
     }
@@ -343,7 +351,8 @@ fun LeaderboardTab() {
 
 @Composable
 fun ProfileTab(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onReplayTutorial: () -> Unit
 ) {
     val auth = FirebaseAuth.getInstance()
     var showSettings by remember { mutableStateOf(false) }
@@ -502,6 +511,10 @@ fun ProfileTab(
     if (showSettings) {
         SettingsDialog(
             onDismiss = { showSettings = false },
+            onReplayTutorial = {
+                showSettings = false
+                onReplayTutorial()
+            },
             onSignOut = {
                 showSettings = false
                 auth.signOut()
