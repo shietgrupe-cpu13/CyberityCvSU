@@ -13,10 +13,12 @@ import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
@@ -77,7 +79,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -104,6 +113,38 @@ private val LabRed: Color get() = AppDanger
 private enum class LabStage { BRIEFING, RUNNING, RESULT }
 
 private enum class Verdict { CORRECT, INCORRECT }
+
+/** Where each guided-tour target currently is on screen, in window coordinates. */
+private class CoachBounds {
+    val map = mutableStateMapOf<CoachTarget, Rect>()
+}
+
+private fun Modifier.coachTarget(bounds: CoachBounds?, target: CoachTarget): Modifier =
+    if (bounds == null) this
+    else onGloballyPositioned { bounds.map[target] = it.boundsInWindow() }
+
+/** Marks a block of the screen as a tour target without changing how it lays out. */
+@Composable
+private fun CoachSlot(bounds: CoachBounds?, target: CoachTarget, content: @Composable () -> Unit) {
+    Box(modifier = Modifier.fillMaxWidth().coachTarget(bounds, target)) { content() }
+}
+
+/**
+ * Task text may wrap the words that matter in **double asterisks**. They come out
+ * bold and bright so a skimming reader's eye lands on them. Text with no markers
+ * is returned as it was, so existing levels are unaffected.
+ */
+private fun emphasised(text: String): AnnotatedString = buildAnnotatedString {
+    val bold = SpanStyle(fontWeight = FontWeight.Bold, color = AppWhite)
+    text.split("**").forEachIndexed { index, part ->
+        if (index % 2 == 1) pushStyle(bold)
+        append(part)
+        if (index % 2 == 1) pop()
+    }
+}
+
+/** Targets in the top bar never need the task panel scrolled to reach them. */
+private val TOP_BAR_TARGETS = setOf(CoachTarget.HEARTS, CoachTarget.XP, CoachTarget.PROGRESS)
 
 // ===========================================================================
 // 2. JS BRIDGE
@@ -174,7 +215,11 @@ fun LabScreen(
     clueLabels: Map<String, String> = emptyMap(),
     /** True when this level was already completed — XP was paid out on the
      *  first clear, so nothing here should look like it's still up for grabs. */
-    isReplay: Boolean = false
+    isReplay: Boolean = false,
+    /** The Level 0 tutorial: a real run with nothing at stake — no XP is paid out. */
+    practice: Boolean = false,
+    /** Spotlight tips shown at set moments. Empty for every ordinary level. */
+    coach: Map<CoachMoment, List<CoachStep>> = emptyMap()
 ) {
     var stage by remember { mutableStateOf(LabStage.BRIEFING) }
     var taskIndex by remember { mutableIntStateOf(0) }
@@ -279,6 +324,45 @@ fun LabScreen(
         if (taskIndex == total - 1) stage = LabStage.RESULT else taskIndex++
     }
 
+    // ---- Guided tour (the tutorial only; `coach` is empty everywhere else) ----
+    val coachBounds = remember(coach) { if (coach.isEmpty()) null else CoachBounds() }
+    val taskScroll = rememberScrollState()
+    var panelBounds by remember { mutableStateOf<Rect?>(null) }
+    var coachMoment by remember { mutableStateOf<CoachMoment?>(null) }
+    var coachIndex by remember { mutableIntStateOf(0) }
+    val coachSeen = remember { mutableStateListOf<CoachMoment>() }
+    val coachSteps = coachMoment?.let { coach[it] }
+    val coachStep = coachSteps?.getOrNull(coachIndex)
+    val density = LocalDensity.current
+
+    val dueMoment = when {
+        stage == LabStage.RUNNING && taskIndex == 0 -> CoachMoment.INTRO
+        stage == LabStage.RUNNING && task.answer is LabAnswer.Flag -> CoachMoment.FLAG
+        stage == LabStage.RESULT -> CoachMoment.RESULT
+        else -> null
+    }
+    LaunchedEffect(dueMoment) {
+        if (dueMoment != null && dueMoment in coach && dueMoment !in coachSeen) {
+            // Let the screen lay out first so every target has a position to point at.
+            delay(400)
+            coachSeen.add(dueMoment)
+            coachIndex = 0
+            coachMoment = dueMoment
+        }
+    }
+
+    // Bring the highlighted part of the task into view before pointing at it.
+    LaunchedEffect(coachMoment, coachIndex) {
+        val target = coachStep?.target ?: return@LaunchedEffect
+        if (stage != LabStage.RUNNING || target in TOP_BAR_TARGETS) return@LaunchedEffect
+        delay(60)
+        val t = coachBounds?.map?.get(target)
+        val p = panelBounds
+        if (t != null && p != null) {
+            taskScroll.animateScrollBy(t.top - p.top - with(density) { 12.dp.toPx() })
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize().background(AppNavy)) {
         when (stage) {
 
@@ -286,6 +370,7 @@ fun LabScreen(
                 lab = lab,
                 xpReward = xpReward,
                 isReplay = isReplay,
+                practice = practice,
                 onExit = onExit,
                 onBegin = { stage = LabStage.RUNNING }
             )
@@ -300,7 +385,8 @@ fun LabScreen(
                     hearts = hearts,
                     liveXp = liveXp,
                     xpBalance = xpBalance,
-                    isReplay = isReplay,
+                    isReplay = isReplay || practice,
+                    coach = coachBounds,
                     onExit = onExit
                 )
 
@@ -330,7 +416,12 @@ fun LabScreen(
                     onNext = { nextTask() },
                     onOpenSimulation = { simulationOpen = true },
                     isLast = taskIndex == total - 1,
-                    modifier = Modifier.fillMaxWidth().weight(1f)
+                    coach = coachBounds,
+                    scrollState = taskScroll,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .onGloballyPositioned { panelBounds = it.boundsInWindow() }
                 )
             }
 
@@ -351,6 +442,8 @@ fun LabScreen(
                     hintsPaid = hintsPaid,
                     award = award,
                     isReplay = isReplay,
+                    practice = practice,
+                    coach = coachBounds,
                     onFinish = { onComplete(award.total, solved, total) }
                 )
             }
@@ -372,6 +465,27 @@ fun LabScreen(
                 bridge = bridge,
                 onCreated = { webView = it },
                 onClose = { simulationOpen = false }
+            )
+        }
+
+        // Drawn last, so it sits over everything including the simulation sheet.
+        if (coachStep != null && coachSteps != null) {
+            // Declared after the lab's own handler, so Back dismisses the tips first.
+            BackHandler { coachMoment = null }
+            TutorialSpotlightOverlay(
+                targetBounds = coachBounds?.map?.get(coachStep.target),
+                title = coachStep.title,
+                description = coachStep.text,
+                stepNumber = coachIndex + 1,
+                totalSteps = coachSteps.size,
+                onTargetTapped = {
+                    if (coachIndex >= coachSteps.lastIndex) coachMoment = null else coachIndex++
+                },
+                onSkipTutorial = { coachMoment = null },
+                showHand = false,
+                skipLabel = "Skip tips",
+                nextLabel = "Next",
+                lastLabel = "Got it"
             )
         }
     }
@@ -610,6 +724,7 @@ private fun LabBriefing(
     lab: LabDefinition,
     xpReward: Int,
     isReplay: Boolean,
+    practice: Boolean,
     onExit: () -> Unit,
     onBegin: () -> Unit
 ) {
@@ -652,7 +767,9 @@ private fun LabBriefing(
             Row {
                 LabChip("${lab.tasks.size} tasks")
                 Spacer(Modifier.width(10.dp))
-                if (isReplay) {
+                if (practice) {
+                    LabChip("Practice · nothing at stake")
+                } else if (isReplay) {
                     LabChip("Review · already completed")
                 } else {
                     LabChip("up to +$xpReward XP")
@@ -698,6 +815,7 @@ private fun LabTopBar(
     liveXp: Int,
     xpBalance: Int,
     isReplay: Boolean,
+    coach: CoachBounds?,
     onExit: () -> Unit
 ) {
     var showSettings by remember { mutableStateOf(false) }
@@ -718,7 +836,8 @@ private fun LabTopBar(
             }
             Text(
                 "$solved/$total", color = AppCyan, fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.coachTarget(coach, CoachTarget.PROGRESS)
             )
             Spacer(Modifier.width(8.dp))
 
@@ -753,12 +872,16 @@ private fun LabTopBar(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HeartsRow(hearts = hearts)
+            Box(modifier = Modifier.coachTarget(coach, CoachTarget.HEARTS)) {
+                HeartsRow(hearts = hearts)
+            }
             Spacer(Modifier.weight(1f))
             // Balance first — it moves when a hint is bought — then, on a first
             // attempt only, what this level would add to it. A replay can't pay
             // out again, so there is nothing to show beside the balance.
-            XpIndicator(xp = xpBalance, iconSize = 16.dp, fontSize = 14.sp)
+            Box(modifier = Modifier.coachTarget(coach, CoachTarget.XP)) {
+                XpIndicator(xp = xpBalance, iconSize = 16.dp, fontSize = 14.sp)
+            }
             if (!isReplay) {
                 Spacer(Modifier.width(8.dp))
                 Text(
@@ -803,6 +926,8 @@ private fun TaskPanel(
     onNext: () -> Unit,
     onOpenSimulation: () -> Unit,
     isLast: Boolean,
+    coach: CoachBounds?,
+    scrollState: ScrollState,
     modifier: Modifier = Modifier
 ) {
     val unlocked = task.requiredClues.all { it in clues }
@@ -815,7 +940,7 @@ private fun TaskPanel(
             // (minus the nav bar, which the Scaffold already pads) so the focused
             // answer field is scrolled into view above the keyboard.
             .windowInsetsPadding(WindowInsets.ime.exclude(WindowInsets.navigationBars))
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 18.dp, vertical = 14.dp)
     ) {
         Text(
@@ -826,24 +951,30 @@ private fun TaskPanel(
         Text(task.title, color = AppWhite, fontSize = 21.sp, fontWeight = FontWeight.Bold)
 
         // What this task is teaching, before what it is asking.
-        task.guide.forEach { paragraph ->
-            Spacer(Modifier.height(11.dp))
-            Text(paragraph, color = AppGray, fontSize = 13.sp, lineHeight = 20.sp)
+        CoachSlot(coach, CoachTarget.GUIDE) {
+            Column {
+                task.guide.forEach { paragraph ->
+                    Spacer(Modifier.height(11.dp))
+                    Text(emphasised(paragraph), color = AppGray, fontSize = 13.sp, lineHeight = 20.sp)
+                }
+            }
         }
 
         Spacer(Modifier.height(16.dp))
-        ObjectiveCard(task.objective)
+        CoachSlot(coach, CoachTarget.OBJECTIVE) { ObjectiveCard(task.objective) }
 
         if (task.steps.isNotEmpty()) {
             Spacer(Modifier.height(16.dp))
-            StepList(task.steps)
+            CoachSlot(coach, CoachTarget.STEPS) { StepList(task.steps) }
         }
 
         Spacer(Modifier.height(16.dp))
-        OpenSimulationButton(onClick = onOpenSimulation)
+        CoachSlot(coach, CoachTarget.OPEN_SIM) { OpenSimulationButton(onClick = onOpenSimulation) }
 
         Spacer(Modifier.height(12.dp))
-        EvidenceStrip(clues = clues, clueLabels = clueLabels)
+        CoachSlot(coach, CoachTarget.EVIDENCE) {
+            EvidenceStrip(clues = clues, clueLabels = clueLabels)
+        }
 
         when (verdict) {
             Verdict.CORRECT -> {
@@ -891,45 +1022,51 @@ private fun TaskPanel(
 
             null -> {
                 Spacer(Modifier.height(12.dp))
-                HintSection(
-                    hints = task.hints,
-                    opened = hintsOpened,
-                    cost = hintCost,
-                    affordable = canAffordHint,
-                    onOpenHint = onOpenHint
-                )
+                CoachSlot(coach, CoachTarget.HINT) {
+                    HintSection(
+                        hints = task.hints,
+                        opened = hintsOpened,
+                        cost = hintCost,
+                        affordable = canAffordHint,
+                        onOpenHint = onOpenHint
+                    )
+                }
 
                 Spacer(Modifier.height(18.dp))
-                SectionLabel(
-                    when (task.answer) {
-                        is LabAnswer.Choice -> "CHOOSE THE ANSWER BELOW"
-                        is LabAnswer.Text -> "TYPE YOUR ANSWER BELOW"
-                        is LabAnswer.Flag -> "SUBMIT THE FLAG BELOW"
+                CoachSlot(coach, CoachTarget.ANSWER) {
+                    Column {
+                        SectionLabel(
+                            when (task.answer) {
+                                is LabAnswer.Choice -> "CHOOSE THE ANSWER BELOW"
+                                is LabAnswer.Text -> "TYPE YOUR ANSWER BELOW"
+                                is LabAnswer.Flag -> "SUBMIT THE FLAG BELOW"
+                            }
+                        )
+                        Spacer(Modifier.height(10.dp))
+
+                        // The objective IS the question, but it's drawn up in the objective
+                        // card — above the guide, the steps, the simulation button and the
+                        // evidence strip, so it has long scrolled off by the time the answer
+                        // is on screen. Restating it here is what makes the label above true.
+                        Text(
+                            emphasised(task.objective),
+                            color = AppWhite, fontSize = 14.sp, lineHeight = 20.sp
+                        )
+                        Spacer(Modifier.height(12.dp))
+
+                        if (!unlocked) {
+                            LockedNotice(task.lockedMessage)
+                        } else {
+                            AnswerArea(
+                                answer = task.answer,
+                                answerText = answerText,
+                                onAnswerChange = onAnswerChange,
+                                choiceIndex = choiceIndex,
+                                onChoose = onChoose,
+                                onSubmit = onSubmit
+                            )
+                        }
                     }
-                )
-                Spacer(Modifier.height(10.dp))
-
-                // The objective IS the question, but it's drawn up in the objective
-                // card — above the guide, the steps, the simulation button and the
-                // evidence strip, so it has long scrolled off by the time the answer
-                // is on screen. Restating it here is what makes the label above true.
-                Text(
-                    task.objective,
-                    color = AppWhite, fontSize = 14.sp, lineHeight = 20.sp
-                )
-                Spacer(Modifier.height(12.dp))
-
-                if (!unlocked) {
-                    LockedNotice(task.lockedMessage)
-                } else {
-                    AnswerArea(
-                        answer = task.answer,
-                        answerText = answerText,
-                        onAnswerChange = onAnswerChange,
-                        choiceIndex = choiceIndex,
-                        onChoose = onChoose,
-                        onSubmit = onSubmit
-                    )
                 }
             }
         }
@@ -977,7 +1114,7 @@ private fun ObjectiveCard(objective: String) {
                 fontWeight = FontWeight.Bold, letterSpacing = 1.sp
             )
             Spacer(Modifier.height(5.dp))
-            Text(objective, color = AppWhite, fontSize = 13.sp, lineHeight = 19.sp)
+            Text(emphasised(objective), color = AppWhite, fontSize = 13.sp, lineHeight = 19.sp)
         }
     }
 }
@@ -1005,7 +1142,7 @@ private fun StepList(steps: List<String>) {
                 }
                 Spacer(Modifier.width(11.dp))
                 Text(
-                    step, color = AppGray, fontSize = 13.sp, lineHeight = 19.sp,
+                    emphasised(step), color = AppGray, fontSize = 13.sp, lineHeight = 19.sp,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -1301,6 +1438,8 @@ private fun LabResult(
     hintsPaid: Int,
     award: XpAward,
     isReplay: Boolean,
+    practice: Boolean,
+    coach: CoachBounds?,
     onFinish: () -> Unit
 ) {
     val passed = solved == total
@@ -1347,19 +1486,38 @@ private fun LabResult(
         if (isReplay) {
             ReplayNotice()
         } else {
-            XpBreakdown(
-                award = award,
-                heartsLost = heartsLost,
-                hintsUsed = hintsUsed,
-                hintsPaid = hintsPaid
-            )
+            CoachSlot(coach, CoachTarget.XP_BREAKDOWN) {
+                Column {
+                    XpBreakdown(
+                        award = award,
+                        heartsLost = heartsLost,
+                        hintsUsed = hintsUsed,
+                        hintsPaid = hintsPaid,
+                        practice = practice
+                    )
+                    if (practice) {
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "This is how a real level pays out: a base reward plus bonuses for " +
+                                    "losing no hearts, finding all the evidence and using no hints. " +
+                                    "Practice runs award nothing — your XP is unchanged.",
+                            color = AppGray, fontSize = 12.sp, lineHeight = 17.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
         }
 
         Spacer(Modifier.weight(1f))
 
         Button(
             onClick = onFinish,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .coachTarget(coach, CoachTarget.FINISH),
             shape = RoundedCornerShape(14.dp),
             colors = ButtonDefaults.buttonColors(containerColor = AppCyan, contentColor = AppNavy)
         ) {

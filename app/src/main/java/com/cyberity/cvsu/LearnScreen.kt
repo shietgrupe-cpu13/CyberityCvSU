@@ -630,7 +630,7 @@ fun LearnScreen(
                         }
                         setRunningLevel(null)
                     },
-                    onExit = { setRunningLevel(null) }
+                    onExit = requestExit
                 )
             } else if (running.id == 200) {
                 UnitTwoWalkthroughScreen(
