@@ -88,6 +88,30 @@ data class LabDefinition(
 }
 
 
+// ===========================================================================
+// GUIDED TOUR — optional on-screen tips, used by the Level 0 tutorial
+// ===========================================================================
+
+/** Parts of the lab screen a tip can point at. */
+enum class CoachTarget {
+    HEARTS, XP, PROGRESS, GUIDE, OBJECTIVE, STEPS, OPEN_SIM, EVIDENCE, HINT, ANSWER,
+    XP_BREAKDOWN, FINISH
+}
+
+/** When a tour plays. Each one plays once per lab run. */
+enum class CoachMoment {
+    /** The first time the task screen is shown. */
+    INTRO,
+    /** The first task that asks for a flag. */
+    FLAG,
+    /** The result screen. */
+    RESULT
+}
+
+/** One tip: a spotlight on [target] with a title and a short explanation. */
+@Immutable
+data class CoachStep(val target: CoachTarget, val title: String, val text: String)
+
 /** Human-readable label for a clue id, shown in the evidence log. */
 @Immutable
 data class LabClue(val id: String, val label: String)

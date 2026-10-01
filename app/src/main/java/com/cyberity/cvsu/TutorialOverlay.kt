@@ -65,7 +65,12 @@ fun TutorialSpotlightOverlay(
     totalSteps: Int = 9,
     onTargetTapped: () -> Unit,
     onSkipTutorial: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** The hand says "tap here", so turn it off when the highlighted part isn't tappable. */
+    showHand: Boolean = true,
+    skipLabel: String = "Skip Tutorial",
+    nextLabel: String = "Tap Here / Next Step",
+    lastLabel: String = "Start Learning"
 ) {
     val density = LocalDensity.current
     var overlayBoundsInWindow by remember { mutableStateOf<Rect?>(null) }
@@ -140,7 +145,7 @@ fun TutorialSpotlightOverlay(
         }
 
         // Animated Hand Pointer
-        localTargetBounds?.let { rect ->
+        localTargetBounds?.takeIf { showHand }?.let { rect ->
             val handX = with(density) { (rect.center.x - 20.dp.toPx()).roundToInt() }
             val handY = with(density) { (rect.bottom + (10 + handBounce).dp.toPx()).roundToInt() }
 
@@ -161,7 +166,9 @@ fun TutorialSpotlightOverlay(
         }
 
         // Tooltip Card
-        val isTargetInBottomHalf = localTargetBounds?.let { it.center.y > 1000 } ?: false
+        // The tip goes on whichever half of the screen the highlighted part isn't in.
+        val halfHeight = (overlayBoundsInWindow?.height ?: 2000f) / 2f
+        val isTargetInBottomHalf = localTargetBounds?.let { it.center.y > halfHeight } ?: false
         val cardAlignment = if (isTargetInBottomHalf) Alignment.TopCenter else Alignment.BottomCenter
 
         Card(
@@ -187,7 +194,7 @@ fun TutorialSpotlightOverlay(
                         letterSpacing = 1.sp
                     )
                     TextButton(onClick = onSkipTutorial) {
-                        Text("Skip Tutorial", color = AppGray, fontSize = 13.sp)
+                        Text(skipLabel, color = AppGray, fontSize = 13.sp)
                     }
                 }
 
@@ -220,7 +227,7 @@ fun TutorialSpotlightOverlay(
                         .height(48.dp)
                 ) {
                     Text(
-                        text = if (stepNumber == totalSteps) "Start Learning" else "Tap Here / Next Step",
+                        text = if (stepNumber == totalSteps) lastLabel else nextLabel,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp
                     )

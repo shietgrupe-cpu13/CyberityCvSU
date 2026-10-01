@@ -1,0 +1,524 @@
+/* Cyberity simulation palette: Terminal Teal.
+   Dark values below are the default. The app sets data-theme="light" on <html>
+   when Light Mode is on (see the first <script> in each page and LabBridge.theme()).
+   --on-blue / --on-accent: text on solid teal or accent fills. */
+/* Dark Mode (default) */
+:root {
+  --navy: #0A1016;
+  --card: #17222E;
+  --blue: #14B8A6;
+  --blue-dark: #0F2D2E;
+  --cyan: #5EEAD4;
+  --white: #E8EEF3;
+  --gray: #8FA0B2;
+  --red: #F2606C;
+  --green: #3FD68A;
+  --amber: #F2B84B;
+  --violet: #B49BF7;
+  --surface: #1C2A38;
+  --code-bg: #05090D;
+  --on-blue: #04211E;
+  --on-accent: #04211E;
+  --navy-rgb: 10, 16, 22;
+  --card-rgb: 23, 34, 46;
+  --blue-rgb: 20, 184, 166;
+  --blue-dark-rgb: 15, 45, 46;
+  --cyan-rgb: 94, 234, 212;
+  --white-rgb: 232, 238, 243;
+  --gray-rgb: 143, 160, 178;
+  --red-rgb: 242, 96, 108;
+  --green-rgb: 63, 214, 138;
+  --amber-rgb: 242, 184, 75;
+  --violet-rgb: 180, 155, 247;
+  --surface-rgb: 28, 42, 56;
+}
+/* Light Mode */
+:root[data-theme="light"] {
+  --navy: #D8E3E2;
+  --card: #F1F6F5;
+  --blue: #0F766E;
+  --blue-dark: #C6DAD8;
+  --cyan: #0B6560;
+  --white: #0A1A1E;
+  --gray: #455A61;
+  --red: #BF2A47;
+  --green: #146A34;
+  --amber: #8C5C00;
+  --violet: #6647C2;
+  --surface: #E7EFEE;
+  --code-bg: #E9F0EF;
+  --on-blue: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --navy-rgb: 216, 227, 226;
+  --card-rgb: 241, 246, 245;
+  --blue-rgb: 15, 118, 110;
+  --blue-dark-rgb: 198, 218, 216;
+  --cyan-rgb: 11, 101, 96;
+  --white-rgb: 10, 26, 30;
+  --gray-rgb: 69, 90, 97;
+  --red-rgb: 191, 42, 71;
+  --green-rgb: 20, 106, 52;
+  --amber-rgb: 140, 92, 0;
+  --violet-rgb: 102, 71, 194;
+  --surface-rgb: 231, 239, 238;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--navy);
+  color: var(--white);
+  font-family: -apple-system, "Roboto", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body { padding-bottom: 28px; }
+
+.sim-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--blue-dark);
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.25);
+}
+
+/* ---------- mail client ---------- */
+
+.mail-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
+}
+
+.mail-head h1 { margin: 0; font-size: 18px; }
+.mail-head p { margin: 2px 0 0; font-size: 12px; color: var(--gray); }
+
+.mail-list { list-style: none; margin: 0; padding: 0; }
+
+.mail-item {
+  display: flex;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.12);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.mail-item:active { background: var(--card); }
+
+.mail-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  margin-top: 7px;
+  flex: 0 0 auto;
+}
+
+.mail-item.read .mail-dot { background: rgba(var(--gray-rgb), 0.4); }
+
+.mail-body { flex: 1 1 auto; min-width: 0; }
+
+/* Read / unread label. Spelled out, so the state never has to be guessed
+   from the colour of a dot. */
+.mail-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.mail-item.unread .mail-badge {
+  background: rgba(var(--cyan-rgb), 0.16);
+  border: 1px solid rgba(var(--cyan-rgb), 0.5);
+  color: var(--cyan);
+}
+
+.mail-item.read .mail-badge {
+  background: rgba(var(--gray-rgb), 0.10);
+  border: 1px solid rgba(var(--gray-rgb), 0.32);
+  color: var(--gray);
+}
+
+/* An opened message sits back: the unread ones should be what catches the eye. */
+.mail-item.read .mail-sender { font-weight: 500; color: var(--gray); }
+.mail-item.read .mail-subject { color: var(--gray); }
+
+.mail-row { display: flex; justify-content: space-between; gap: 10px; }
+.mail-sender { font-weight: 700; font-size: 14px; }
+.mail-time { font-size: 11px; color: var(--gray); flex: 0 0 auto; }
+
+.mail-subject {
+  display: block;
+  font-size: 13px;
+  color: var(--white);
+  margin-top: 1px;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.mail-preview {
+  display: block;
+  font-size: 12px;
+  color: var(--gray);
+  margin-top: 2px;
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+/* ---------- message view ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
+}
+
+.back-btn {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
+  color: var(--white);
+  border-radius: 9px;
+  padding: 5px 11px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.topbar-title { font-size: 13px; color: var(--gray); }
+
+.message { padding: 14px 16px; }
+.message h2 { margin: 0 0 12px; font-size: 17px; line-height: 1.35; }
+.message p { margin: 0 0 12px; font-size: 14px; }
+
+.field {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-bottom: 9px;
+  cursor: pointer;
+}
+
+.field-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.field-value { font-size: 13px; margin-top: 2px; word-break: break-all; }
+
+.field-hint { font-size: 11px; color: var(--gray); margin-top: 4px; }
+
+.reveal { display: none; margin-top: 9px; }
+.reveal.open { display: block; }
+
+.reveal-box {
+  background: rgba(var(--navy-rgb), 0.75);
+  border-left: 3px solid var(--red);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 12px;
+}
+
+.reveal-box.ok { border-left-color: var(--green); }
+
+.mono { font-family: "Roboto Mono", monospace; word-break: break-all; }
+
+.tag {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+.tag.bad { background: rgba(var(--red-rgb), 0.16); color: var(--red); }
+.tag.good { background: rgba(var(--green-rgb), 0.16); color: var(--green); }
+
+.cta {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 13px;
+  margin: 14px 0 6px;
+  cursor: pointer;
+}
+
+.headers-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.headers-table td { padding: 5px 0; vertical-align: top; border-bottom: 1px solid rgba(var(--gray-rgb), 0.12); }
+.headers-table td:first-child { color: var(--cyan); width: 38%; padding-right: 8px; }
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--cyan);
+  font-size: 12px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+/* ---------- simulated browser ---------- */
+
+.browser-chrome {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--card);
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.2);
+  position: sticky;
+  top: 22px;
+  z-index: 9;
+}
+
+.chrome-btn {
+  background: none;
+  border: none;
+  color: var(--gray);
+  font-size: 16px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.chrome-btn.disabled { opacity: 0.35; }
+
+.url-bar {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--navy);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.url-bar .lock { color: var(--green); font-size: 11px; }
+.url-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.panel {
+  display: none;
+  margin: 10px 12px 0;
+  background: var(--card);
+  border: 1px solid rgba(var(--cyan-rgb), 0.35);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.panel.open { display: block; }
+
+.panel h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.kv { display: flex; gap: 10px; font-size: 12px; padding: 4px 0; }
+.kv span:first-child { color: var(--gray); flex: 0 0 38%; }
+.kv span:last-child { flex: 1 1 auto; word-break: break-all; }
+
+.source {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--gray);
+  margin-top: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.source .cmt { color: var(--amber); }
+.source .tagname { color: var(--cyan); }
+
+/* ---------- fake login page ---------- */
+
+.site { background: #ffffff; color: #1b1b1f; margin: 12px; border-radius: 12px; padding: 22px 18px; }
+.site h2 { margin: 0 0 4px; font-size: 19px; color: #1b1b1f; }
+.site p { font-size: 13px; color: #555a66; margin: 0 0 16px; }
+.site label { display: block; font-size: 12px; color: #555a66; margin-bottom: 4px; }
+
+.site input {
+  width: 100%;
+  padding: 11px;
+  font-size: 14px;
+  border: 1px solid #c7ccd6;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  background: #fff;
+  color: #1b1b1f;
+}
+
+.site button {
+  width: 100%;
+  border: none;
+  background: #0067b8;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.site .brandline { font-size: 12px; color: #767b87; margin-bottom: 18px; }
+
+.caught {
+  display: none;
+  margin: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--red);
+  background: rgba(var(--red-rgb), 0.12);
+  padding: 14px;
+  font-size: 13px;
+}
+
+.caught.open { display: block; }
+.caught strong { color: var(--red); display: block; margin-bottom: 5px; font-size: 13px; }
+
+.foot { padding: 14px 16px; font-size: 11px; color: var(--gray); }
+
+/* ==========================================================================
+   SCENARIO CONTENT FRAMES — shared block, identical in every simulation.
+   Paste this unchanged into each styles.css; never edit one copy alone.
+
+   A frame means "judge this". Anything the app says ABOUT the simulation —
+   a tool, an instruction, a button — takes .appui instead and is never framed.
+
+   The rail colour says what KIND of thing it is, never whether it is safe.
+   Green, amber and red stay reserved for verdicts and severity, which the
+   student only sees after answering.
+   ========================================================================== */
+
+.artifact {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid rgba(var(--cyan-rgb), 0.30);
+  border-left: 4px solid var(--cyan);
+  border-radius: 3px 14px 14px 3px;
+  padding: 26px 14px 13px;
+  margin: 12px 0;
+}
+
+.artifact-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--cyan);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  padding: 2px 11px 3px;
+  border-radius: 0 0 11px 0;
+}
+
+/* Message — email, SMS, chat, a forwarded report. */
+.artifact.a-msg { border-color: rgba(var(--cyan-rgb), 0.30); border-left-color: var(--cyan); }
+.artifact.a-msg > .artifact-tag { background: var(--cyan); }
+
+/* Web page — anything rendered as a site in the sandbox browser. */
+.artifact.a-web { border-color: rgba(var(--white-rgb), 0.28); border-left-color: var(--white); }
+.artifact.a-web > .artifact-tag { background: var(--white); }
+
+/* Person — what a human said: a report, an interview, a recorded call. */
+.artifact.a-per { border-color: rgba(var(--violet-rgb), 0.32); border-left-color: var(--violet); }
+.artifact.a-per > .artifact-tag { background: var(--violet); }
+
+/* System record — logs, headers, page code, badge swipes. Always monospaced. */
+.artifact.a-sys { border-color: rgba(var(--gray-rgb), 0.30); border-left-color: var(--gray); }
+.artifact.a-sys > .artifact-tag { background: var(--gray); }
+
+/* The simulation's own UI: a tool or an instruction, never evidence. */
+.appui {
+  border: 1px dashed rgba(var(--gray-rgb), 0.40);
+  border-radius: 12px;
+  background: rgba(var(--blue-dark-rgb), 0.40);
+  padding: 12px 14px;
+  margin: 12px 0;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.appui b {
+  display: block;
+  color: var(--white);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+/* Content sitting directly inside a frame shouldn't add an outer gap. */
+.artifact > h2 { margin-top: 0; }
+.artifact > *:last-child { margin-bottom: 0; }
+
+/* ==========================================================================
+   CHOICE CARDS — the list a simulation opens on, the items the student picks.
+   Shared block: keep it identical in every styles.css.
+
+   One outlined card per choice with a gap between them, instead of rows
+   divided by hairlines, so a list of five can be counted at a glance and
+   each item is obviously its own tappable thing.
+
+   The OUTLINE carries progress, not danger: bright while an item is still
+   waiting for the student, faint once it has been opened. The optional left
+   rail carries whatever that desk genuinely sorts by — severity on a SOC
+   queue, kind of contact on a review desk — and is left off where there is
+   nothing to sort by.
+   ========================================================================== */
+
+.choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid rgba(var(--cyan-rgb), 0.18);
+  border-radius: 14px;
+  margin: 0 12px 10px;
+  padding: 12px 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Still waiting for the student. */
+.choice.unread { border-color: rgba(var(--cyan-rgb), 0.50); }
+
+/* Dealt with: the card recedes so the remaining work stands out. */
+.choice.read { border-color: rgba(var(--gray-rgb), 0.20); }
+
+.choice:active { background: var(--blue-dark); }
+
+/* A rail sits flush against the card's left edge, so the card gives up its
+   own padding and lets the body carry it. */
+.choice.has-rail { align-items: stretch; padding: 0; gap: 0; }

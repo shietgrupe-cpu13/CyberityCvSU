@@ -176,7 +176,9 @@ fun XpBreakdown(
     modifier: Modifier = Modifier,
     /** A quiz has no evidence to find and no hints to buy, so those two bonuses
      *  are granted by default — say so rather than claiming credit for them. */
-    quiz: Boolean = false
+    quiz: Boolean = false,
+    /** The tutorial pays nothing, so the total is labelled as an example, not a reward. */
+    practice: Boolean = false
 ) {
     Column(
         modifier = modifier
@@ -214,7 +216,10 @@ fun XpBreakdown(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Earned this level", color = AppWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text(
+                if (practice) "A real level would pay" else "Earned this level",
+                color = AppWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.weight(1f))
             Text("+${award.total} XP", color = XpGain, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Message</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Practice simulation · nothing here reaches the internet</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='mailbox.html'">&#8592; Inbox</button>
+    <span class="topbar-title" id="msg-title"></span>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script src="script.js"></script>
+  <script>
+    renderMessage('message');
+    window.addEventListener('hashchange', function () { renderMessage('message'); });
+  </script>
+</body>
+</html>
