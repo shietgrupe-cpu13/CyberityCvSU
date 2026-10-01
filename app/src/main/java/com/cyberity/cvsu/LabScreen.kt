@@ -88,6 +88,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material3.AlertDialog
@@ -143,6 +144,11 @@ class LabBridge(private val onClue: (String) -> Unit) {
     /** Lets each simulation page match the app's Light / Dark mode before it draws. */
     @JavascriptInterface
     fun theme(): String = if (CyberityThemeState.isDark) "dark" else "light"
+
+    /** Digest only: lets bundled lessons compare fictional guesses offline. */
+    @JavascriptInterface
+    fun hashCandidate(value: String): String =
+        if (value.length <= 512) LabValidator.sha256(value) else ""
 }
 
 // ===========================================================================
@@ -248,6 +254,9 @@ fun LabScreen(
     BackHandler(enabled = stage == LabStage.RUNNING) {
         val view = webView
         when {
+            // Unit 2 tasks are separate account stages, not browser navigation.
+            // Reopening a previous stage would reset the connected incident.
+            simulationOpen && lab.levelId in 200..299 -> simulationOpen = false
             simulationOpen && view != null && view.canGoBack() -> view.goBack()
             simulationOpen -> simulationOpen = false
             else -> onExit()
@@ -413,13 +422,14 @@ private fun SimulationWebView(
         )
     }
 
-    LaunchedEffect(fontSizeChoice, webViewInstance) {
+    val systemFontScale = LocalConfiguration.current.fontScale
+    LaunchedEffect(fontSizeChoice, systemFontScale, webViewInstance) {
         val textZoomLevel = when (fontSizeChoice.lowercase()) {
             "small" -> 85
             "large" -> 125
             else -> 100
         }
-        webViewInstance?.settings?.textZoom = textZoomLevel
+        webViewInstance?.settings?.textZoom = (textZoomLevel * systemFontScale).roundToInt()
     }
 
     AndroidView(
@@ -446,7 +456,7 @@ private fun SimulationWebView(
                     "large" -> 125
                     else -> 100
                 }
-                settings.textZoom = textZoomLevel
+                settings.textZoom = (textZoomLevel * systemFontScale).roundToInt()
 
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(
@@ -459,7 +469,9 @@ private fun SimulationWebView(
                 }
 
                 addJavascriptInterface(bridge, "AndroidLab")
-                loadUrl(lab.baseUrl + lab.startPage)
+                // Unit 2's task effect loads the page once after onCreated.
+                // Loading it here too would start/reset its case twice.
+                if (lab.levelId !in 200..299) loadUrl(lab.baseUrl + lab.startPage)
                 webViewInstance = this
                 onCreated(this)
             }

@@ -165,12 +165,13 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Password & Account Security",
         description = "Credentials are the front door — learn to lock it",
         levels = listOf(
-            LearningLevel(201, "Strong Passwords", "What actually makes a password hard to crack.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(202, "Password Attacks", "Brute force, dictionary attacks, and credential stuffing.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(203, "Multi-Factor Authentication", "Why a second factor defeats most credential theft.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(250, "Cyber Challenge", "Crack a weak password set against the clock.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 10),
-            LearningLevel(204, "Account Protection", "Recovery options, session hygiene, and breach response.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(205, "Password Security Challenge", "Audit a set of real-world account configurations.", 50, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12)
+            LearningLevel(200, "Level 0: Unit 2 Walkthrough", "Learn the investigation, repair, and proof-code workflow before starting Level 1. You can skip the walkthrough.", 0, LevelType.LESSON, LevelStatus.LOCKED, durationMinutes = 3),
+            LearningLevel(201, "Strong Passwords", "Repair predictable passwords, credential reuse, and a weak password policy.", 20, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 8),
+            LearningLevel(202, "Password Attacks", "Investigate attacks and learn hash comparisons with two classroom examples.", 20, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(203, "Multi-Factor Authentication", "Choose a second factor, deny suspicious prompts, and understand passkeys.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 8),
+            LearningLevel(204, "Account Protection", "Secure recovery, revoke a shared-device session, and contain a breach.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 10),
+            LearningLevel(250, "Hash Cracking Practice", "Recover fresh fictional passwords using dictionary, pattern, and brute-force hash comparisons.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 8),
+            LearningLevel(205, "Password Security Challenge", "Recover a registrar credential, strengthen sign-in, and contain the same incident.", 50, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -420,7 +421,9 @@ private fun typeLabel(type: LevelType): String = when (type) {
 fun LearnScreen(
     modifier: Modifier = Modifier,
     onStartLevel: (LearningLevel) -> Unit = {},
-    onLevelRunningChanged: (Boolean) -> Unit = {}
+    onLevelRunningChanged: (Boolean) -> Unit = {},
+    tutorialRequest: Int = 0,
+    onTutorialRequestHandled: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -505,6 +508,19 @@ fun LearnScreen(
     fun setRunningLevel(level: LearningLevel?) {
         runningLevel = level
         onLevelRunningChanged(level != null)
+    }
+
+    fun startTutorial() {
+        selected = null
+        showExitConfirm = false
+        setRunningLevel(tutorialLevel())
+    }
+
+    LaunchedEffect(tutorialRequest) {
+        if (tutorialRequest > 0) {
+            startTutorial()
+            onTutorialRequestHandled()
+        }
     }
 
     // Refill is measured against server time, so it only needs to tick while a heart is missing.
@@ -615,6 +631,18 @@ fun LearnScreen(
                         setRunningLevel(null)
                     },
                     onExit = { setRunningLevel(null) }
+                )
+            } else if (running.id == 200) {
+                UnitTwoWalkthroughScreen(
+                    onExit = { setRunningLevel(null) },
+                    onComplete = {
+                        units = units.withLevelCompleted(running.id)
+                        uid?.let {
+                            ProgressRepository.markLevelCompleted(it, running.id)
+                            ProgressCache.save(context, it, completedIdsOf(units))
+                        }
+                        setRunningLevel(null)
+                    }
                 )
             } else if (hearts < MIN_HEARTS_TO_START) {
                 OutOfHeartsLevel(
@@ -730,16 +758,14 @@ fun LearnScreen(
                 hearts = hearts,
                 heartRefillIn = heartRefillIn,
                 onReplayTutorial = {
-                    val levelZero = LearningLevel(100, "Level 0: CYBERITY Tutorial", "Learn how CYBERITY works before starting your cybersecurity training.", 25, LevelType.LESSON, LevelStatus.CURRENT, durationMinutes = 3)
-                    setRunningLevel(levelZero)
+                    startTutorial()
                 }
             )
 
             if (!hasCompletedOnboarding) {
                 NewToCyberityBanner(
                     onStartTutorial = {
-                        val levelZero = LearningLevel(100, "Level 0: CYBERITY Tutorial", "Learn how CYBERITY works before starting your cybersecurity training.", 25, LevelType.LESSON, LevelStatus.CURRENT, durationMinutes = 3)
-                        setRunningLevel(levelZero)
+                        startTutorial()
                     }
                 )
             }
@@ -1531,7 +1557,7 @@ fun LevelPreviewBottomSheet(
             Spacer(Modifier.height(24.dp))
 
             // Bonus nodes have no mistakes to make, so they never need hearts.
-            val outOfHearts = level.type != LevelType.REWARD && hearts < MIN_HEARTS_TO_START
+            val outOfHearts = level.id != 200 && level.type != LevelType.REWARD && hearts < MIN_HEARTS_TO_START
             if (outOfHearts && level.status != LevelStatus.LOCKED) {
                 Row(
                     modifier = Modifier
@@ -1656,6 +1682,7 @@ sealed interface LevelContent {
 
 
 fun contentFor(levelId: Int): LevelContent? = when (levelId) {
+    201, 202, 203, 204, 205, 250 -> LevelContent.Lab(passwordSecurityLab(levelId), passwordSecurityClueLabels(levelId))
     101 -> LevelContent.Lab(inboxTriageLab(), inboxClueLabels)
     102 -> LevelContent.Lab(threatConsoleLab(), threatClueLabels)
     103 -> LevelContent.Lab(ciaTriadLab(), ciaClueLabels)
