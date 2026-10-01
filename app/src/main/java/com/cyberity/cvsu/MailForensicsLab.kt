@@ -69,8 +69,8 @@ fun mailForensicsLab(): LabDefinition = LabDefinition(
             id = "t1",
             title = "Read the domain right to left",
             objective = "E1's link starts with ched.gov.ph, but that isn't the site it opens. " +
-                    "Tap the link to reveal the full address and submit the domain it really " +
-                    "belongs to.",
+                    "**Tap the link** to reveal the **full address** and submit the **domain it really " +
+                    "belongs to**.",
             entryPage = "mail.html#e1",
             requiredClues = listOf(MailForensicsClues.LINK_INSPECTED_E1),
             lockedMessage = "Open E1 and tap its link to see the full address.",
@@ -94,8 +94,8 @@ fun mailForensicsLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t2",
             title = "Spot the swapped letter",
-            objective = "E2's sender domain looks exactly like the bank's. Open the domain " +
-                    "lookup tool, compare it with the real one, and identify what was changed.",
+            objective = "E2's sender domain looks exactly like the bank's. **Open the domain " +
+                    "lookup tool**, compare it with the real one, and **identify what was changed**.",
             entryPage = "lookup.html",
             requiredClues = listOf(MailForensicsClues.DOMAIN_LOOKUP_E2),
             lockedMessage = "Look up E2's sender domain in the domain lookup tool.",
@@ -123,8 +123,8 @@ fun mailForensicsLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t3",
             title = "Where does it really go?",
-            objective = "E3's link shows the real CvSU portal address as its text. Tap it to " +
-                    "see the actual destination and submit where it really leads.",
+            objective = "E3's link shows the real CvSU portal address as its text. **Tap it** to " +
+                    "see the **actual destination** and submit where it really leads.",
             entryPage = "mail.html#e3",
             requiredClues = listOf(MailForensicsClues.LINK_INSPECTED_E3),
             lockedMessage = "Open E3 and tap its link to see the real destination.",
@@ -147,8 +147,8 @@ fun mailForensicsLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t4",
             title = "Forged sender",
-            objective = "E4's From line says registrar@cvsu.edu.ph, exactly. Run the header " +
-                    "analyzer on it. What proves CvSU didn't send it?",
+            objective = "E4's From line says registrar@cvsu.edu.ph, exactly. **Run the header " +
+                    "analyzer** on it. What **proves CvSU didn't send it**?",
             entryPage = "mail.html#e4",
             requiredClues = listOf(MailForensicsClues.HEADERS_ANALYZED_E4),
             lockedMessage = "Run the header analyzer on E4.",
@@ -176,9 +176,9 @@ fun mailForensicsLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t5",
             title = "Tag every tell",
-            objective = "Turn on Tag mode in E4 and tap every warning sign in the message, " +
-                    "headers included. There are six. When you've found them all, the bench " +
-                    "generates a report code. Submit it.",
+            objective = "**Turn on Tag mode** in E4 and **tap every warning sign** in the message, " +
+                    "headers included. There are **six**. When you've found them all, the bench " +
+                    "generates a **report code**. Submit it.",
             entryPage = "mail.html#e4",
             requiredClues = listOf(MailForensicsClues.ALL_TELLS_E4),
             lockedMessage = "Find all six tells in E4 using Tag mode.",

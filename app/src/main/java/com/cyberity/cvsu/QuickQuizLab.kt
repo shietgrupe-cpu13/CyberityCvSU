@@ -46,32 +46,32 @@ fun quickQuizLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t1",
             title = "Beat the clock",
-            objective = "Run the quiz and score at least 5 of 6 before the sixty seconds are " +
-                    "up. Submit the pass code it gives you.",
+            objective = "**Run the quiz** and score **at least 5 of 6** before the **sixty seconds** are " +
+                    "up. Submit the **pass code** it gives you.",
             guide = listOf(
-                "Speed changes what you are actually testing. Given a minute per question you " +
+                "**Speed** changes what you are actually testing. Given a minute per question you " +
                         "would reason each one out from first principles, which is a useful " +
                         "skill and not the one that saves you in real life. Given ten, you have " +
                         "to recognise the pattern — and recognition is what you build by " +
                         "meeting the same shapes repeatedly, which is exactly what Unit 3 was.",
-                "There are four shapes worth holding on to. Where a link really goes is " +
+                "There are **four shapes** worth holding on to. Where a link really goes is " +
                         "decided at the right-hand end of the address, just before the first " +
                         "single slash. A name on a message — sender ID, display name, From " +
                         "line — is typed by the sender and verifies nothing. Any request to " +
                         "send value or secrets first is the scam itself, whatever the story " +
                         "around it. And nobody legitimate will ever ask you for an OTP.",
-                "If you run out of time, look at what the results screen shows you before you " +
+                "If you run out of time, look at what the **results screen** shows you before you " +
                         "restart: it marks every question and names the answer you missed. Two " +
                         "runs with the results read in between is worth more than six runs " +
                         "guessing faster."
             ),
             steps = listOf(
-                "Open the quiz and tap START when you are ready — the clock begins on that tap.",
-                "Answer each question by tapping an option. There is no confirm step, so read " +
+                "Open the quiz and tap **START** when you are ready — the **clock begins on that tap**.",
+                "Answer each question by tapping an option. There is **no confirm step**, so read " +
                         "before you tap.",
-                "Do not wait for feedback between questions; it all comes at the end.",
-                "Read the results screen, including the answers you missed.",
-                "At 5 or better the pass code appears. Swipe down and type it in with the braces."
+                "Do not wait for feedback between questions; it all comes **at the end**.",
+                "Read the **results screen**, including the answers you missed.",
+                "At **5 or better** the **pass code** appears. Swipe down and type it in with the braces."
             ),
             entryPage = "quiz.html",
             requiredClues = listOf(QuickQuizClues.QUIZ_PASSED),
