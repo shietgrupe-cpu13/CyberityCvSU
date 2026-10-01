@@ -67,38 +67,38 @@ fun phishDeskLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t1",
             title = "Find the genuine one",
-            objective = "Read all five reported messages, then pick the one that is NOT " +
-                    "phishing.",
+            objective = "**Read all five** reported messages, then pick the one that is **NOT " +
+                    "phishing**.",
             guide = listOf(
-                "Before you can spot a fake, you need to know what the real thing looks like. " +
+                "Before you can spot a fake, you need to know **what the real thing looks like**. " +
                         "Genuine messages from an office you already deal with — the registrar, " +
                         "the library, your department — tell you something and then leave the " +
-                        "next move to you. They inform. Read the schedule, come to the counter, " +
+                        "next move to you. They **inform**. Read the schedule, come to the counter, " +
                         "check the portal you already use.",
-                "Phishing always wants an action, and it wants it from you now: sign in here, " +
+                "Phishing **always wants an action**, and it wants it from you **now**: sign in here, " +
                         "open this file, send this payment, reply to confirm. That request is " +
                         "the whole point of the message, so it is the fastest thing to look for.",
-                "You can also open the links. Each one opens in the sandbox browser, where " +
+                "You can also **open the links**. Each one opens in the **sandbox browser**, where " +
                         "the page is a safe copy: look at what it asks for and at the address " +
-                        "above it. Just don't type a password into any of them — in this lab " +
-                        "that costs you a heart, and in real life it costs the account.",
-                "The second thing to check is the address the message came from. Everything " +
-                        "before the @ is decoration anyone can type. The part after the @ is the " +
-                        "domain, and only its owner can send from it. Two of these reports look " +
+                        "above it. Just **don't type a password** into any of them — in this lab " +
+                        "that **costs you a heart**, and in real life it costs the account.",
+                "The second thing to check is **the address the message came from**. Everything " +
+                        "before the @ is decoration anyone can type. The part **after the @** is the " +
+                        "**domain**, and only its owner can send from it. Two of these reports look " +
                         "like the same registrar announcement — reading their domains slowly, " +
-                        "one character at a time, is what separates them."
+                        "**one character at a time**, is what separates them."
             ),
             steps = listOf(
-                "Open the report desk. Five reports are listed, R1 to R5.",
-                "Tap each one, read it, then use ← Reports to come back. Read all five before " +
+                "Open the report desk. **Five reports** are listed, R1 to R5.",
+                "Tap each one, read it, then use **← Reports** to come back. **Read all five** before " +
                         "you decide anything.",
-                "For each message ask: what is it asking me to DO? Sign in, pay, reply, open " +
+                "For each message ask: what is it asking me to **DO**? Sign in, pay, reply, open " +
                         "a file — or nothing at all?",
-                "Where a message has a blue link, tap it. The sandbox browser shows the page " +
-                        "it opens, and the address bar above it shows who really owns that page.",
-                "Compare R4 and R5 carefully. They say almost the same thing, but their " +
+                "Where a message has a **blue link**, tap it. The sandbox browser shows the page " +
+                        "it opens, and the **address bar** above it shows who really owns that page.",
+                "**Compare R4 and R5** carefully. They say almost the same thing, but their " +
                         "sender addresses are not the same.",
-                "Swipe the bar at the top down and pick the message that asks you for nothing."
+                "**Swipe the bar** at the top down and pick the message that **asks you for nothing**."
             ),
             entryPage = "queue.html",
             requiredClues = listOf(
@@ -137,33 +137,33 @@ fun phishDeskLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t2",
             title = "How well did they know her?",
-            objective = "R2 was written for one specific student. Read it again, look at who " +
-                    "it was sent to, and name the kind of phishing it is.",
+            objective = "R2 was written for one specific student. **Read it again**, look at **who " +
+                    "it was sent to**, and **name the kind of phishing** it is.",
             guide = listOf(
-                "Phishing comes in four common shapes, and they differ by how much homework " +
+                "Phishing comes in **four common shapes**, and they differ by how much homework " +
                         "the attacker did.",
-                "MASS phishing is the same message sent to thousands of strangers at once. It " +
+                "**MASS** phishing is the same message sent to thousands of strangers at once. It " +
                         "has to stay generic — \"Dear Customer\" — because the sender has no idea " +
-                        "who is reading. SPEAR phishing is the opposite: one target, researched " +
+                        "who is reading. **SPEAR** phishing is the opposite: one target, researched " +
                         "first, so the message can mention real names, real deadlines and real " +
                         "work. It is far more convincing, because everything in it checks out.",
-                "WHALING is spear phishing aimed at someone senior — a dean, a president, an " +
+                "**WHALING** is spear phishing aimed at someone senior — a dean, a president, an " +
                         "administrator — usually to move money, because those people can " +
-                        "authorise it. CLONE phishing takes a real message the target already " +
+                        "authorise it. **CLONE** phishing takes a real message the target already " +
                         "received and re-sends a near-identical copy with the link or attachment " +
                         "swapped for a hostile one.",
-                "The quickest way to tell them apart is the To line and the level of detail. " +
+                "The quickest way to tell them apart is **the To line** and the **level of detail**. " +
                         "Thousands of recipients and no name means mass. One recipient and " +
                         "details only an insider would know means spear."
             ),
             steps = listOf(
-                "Open the report desk and open R2 again.",
-                "Look at the To line: how many people received this message?",
-                "Look at what the sender knows: the student's first name, her thesis title, " +
+                "Open the report desk and open **R2** again.",
+                "Look at the **To line**: how many people received this message?",
+                "Look at **what the sender knows**: the student's first name, her thesis title, " +
                         "her adviser, her defense date.",
                 "Ask yourself how long it would take to collect those details for one person, " +
                         "and whether that effort makes sense for thousands.",
-                "Swipe down and name the shape this attack takes."
+                "Swipe down and **name the shape** this attack takes."
             ),
             entryPage = "report.html#r2",
             requiredClues = listOf(PhishDeskClues.REPORT_OPENED_R2),
@@ -193,29 +193,29 @@ fun phishDeskLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t3",
             title = "Why the filter let it through",
-            objective = "R2 passed every automatic check the mail system ran. Open its mail " +
-                    "gateway scan and submit the CvSU account that actually sent it.",
+            objective = "R2 passed every automatic check the mail system ran. **Open its mail " +
+                    "gateway scan** and submit the **CvSU account that actually sent it**.",
             guide = listOf(
                 "Mail filters do two useful things. They check attachments and links against " +
                         "lists of known-bad files and sites, and they check whether the sending " +
                         "server is allowed to send mail for the domain in the From line. That " +
-                        "second check has names you'll see in the scan: SPF and DKIM. When they " +
+                        "second check has names you'll see in the scan: **SPF** and **DKIM**. When they " +
                         "say \"pass\", it means the message really did come from that domain's " +
                         "own mail system.",
-                "Here is the gap. Those checks answer \"did this come from where it claims?\" " +
+                "**Here is the gap.** Those checks answer \"did this come from where it claims?\" " +
                         "They cannot answer \"is the person at the keyboard the account's real " +
-                        "owner?\" If an attacker steals someone's password, every check passes " +
+                        "owner?\" If an attacker **steals someone's password**, every check passes " +
                         "perfectly, because the mail genuinely is coming from inside.",
                 "That is what happened to R2. The adviser's own account was taken over last " +
-                        "week, so the message sailed through with a clean verdict. A clean scan " +
-                        "means nothing was detected — not that the message is safe."
+                        "week, so the message sailed through with a clean verdict. A **clean scan " +
+                        "means nothing was detected — not that the message is safe**."
             ),
             steps = listOf(
-                "Open the report desk and open R2.",
-                "Scroll to the Investigation section below the message.",
-                "Tap \"Mail gateway scan\" to expand it and read the verdict lines.",
-                "The SPF line names the mailbox the message was really sent from.",
-                "Swipe down and type that address, exactly as it is written in the scan."
+                "Open the report desk and open **R2**.",
+                "Scroll to the **Investigation** section below the message.",
+                "Tap **\"Mail gateway scan\"** to expand it and read the verdict lines.",
+                "The **SPF line** names the mailbox the message was really sent from.",
+                "Swipe down and type that **address**, **exactly as it is written** in the scan."
             ),
             entryPage = "report.html#r2",
             requiredClues = listOf(PhishDeskClues.GATEWAY_OPENED_R2),
@@ -245,30 +245,30 @@ fun phishDeskLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t4",
             title = "Follow the hook",
-            objective = "R4's attachment is not the PDF it claims to be. Preview it safely, " +
-                    "inspect its code, and submit the flag the attacker left behind.",
+            objective = "R4's attachment is not the PDF it claims to be. **Preview it safely**, " +
+                    "**inspect its code**, and submit the **flag** the attacker left behind.",
             guide = listOf(
-                "Every phishing message has a hook: the one thing it needs you to do. Usually " +
+                "Every phishing message has a **hook**: the one thing it needs you to do. Usually " +
                         "it is a link or an attachment, and the attachment here is worth a close " +
-                        "look. Its name ends in .pdf.html. Phones and computers hide the ending " +
+                        "look. Its name ends in **.pdf.html**. Phones and computers hide the ending " +
                         "of long file names, so a student glancing at it sees \"...pdf\" and " +
-                        "expects a document. What actually opens is a web page.",
+                        "expects a document. What actually opens is **a web page**.",
                 "That page is built to look exactly like the CvSU portal sign-in, complete with " +
-                        "a drawn-in address bar showing the real portal address. It is a picture, " +
-                        "not a real address bar. Anything typed into the form is sent straight " +
-                        "to the attacker, and the page then forwards you to the genuine portal " +
+                        "a drawn-in address bar showing the real portal address. It is **a picture**, " +
+                        "not a real address bar. **Anything typed into the form is sent straight " +
+                        "to the attacker**, and the page then forwards you to the genuine portal " +
                         "so nothing seems to have gone wrong.",
-                "You will open it in a sandbox, which is a safe copy that cannot send anything " +
+                "You will open it in a **sandbox**, which is a safe copy that cannot send anything " +
                         "anywhere. Investigators do this to study an attack without becoming a " +
-                        "victim of it. Do not type a password into it even here — the lab " +
-                        "watches for that, and it costs you a heart."
+                        "victim of it. **Do not type a password** into it even here — the lab " +
+                        "watches for that, and it **costs you a heart**."
             ),
             steps = listOf(
-                "Open the report desk and open R4.",
-                "Tap the attachment at the bottom of the message to open it in the sandbox.",
-                "Look at the fake sign-in page, but do not type anything into it.",
-                "Tap INSPECT PAGE to reveal the code behind the form.",
-                "Find the hidden field holding a CYBERITY{...} value, and type it in below " +
+                "Open the report desk and open **R4**.",
+                "Tap the **attachment** at the bottom of the message to open it in the **sandbox**.",
+                "Look at the fake sign-in page, but **do not type anything** into it.",
+                "Tap **INSPECT PAGE** to reveal the code behind the form.",
+                "Find the **hidden field** holding a **CYBERITY{...}** value, and type it in below " +
                         "exactly as written, braces included."
             ),
             entryPage = "report.html#r4",
@@ -296,11 +296,11 @@ fun phishDeskLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t5",
             title = "No link, no attachment",
-            objective = "R3 contains no link and no attachment, so there is nothing for any " +
-                    "scanner to check. Read its full headers and decide what the administrator " +
-                    "should do.",
+            objective = "R3 contains **no link and no attachment**, so there is nothing for any " +
+                    "scanner to check. **Read its full headers** and **decide what the administrator " +
+                    "should do**.",
             guide = listOf(
-                "Not every phishing message carries a payload. Some of the most expensive ones " +
+                "**Not every phishing message carries a payload.** Some of the most expensive ones " +
                         "are plain text, because plain text is invisible to security software: " +
                         "there is no file to scan and no link to check. All the attacker wants " +
                         "is a reply and an action at the other end.",
@@ -308,20 +308,20 @@ fun phishDeskLab(): LabDefinition = LabDefinition(
                         "it is marked confidential so the reader won't check with anyone, and it " +
                         "sets a deadline of 3:00 PM so there is no time to think. The catch is " +
                         "₱385,000, and the hook is simply hitting reply and paying.",
-                "The headers give it away in two places. The domain is cvsu-edu.ph.example, " +
-                        "which is not cvsu.edu.ph. And the Reply-To line — the address a reply " +
+                "The headers give it away in **two places**. The **domain** is cvsu-edu.ph.example, " +
+                        "which is not cvsu.edu.ph. And the **Reply-To** line — the address a reply " +
                         "would actually go to — is a free webmail account, not the President's " +
                         "office at all. The defence for this kind of request never lives in the " +
-                        "message itself: you confirm it through a channel you already trust, " +
+                        "message itself: you **confirm it through a channel you already trust**, " +
                         "like phoning the office on a number you looked up yourself."
             ),
             steps = listOf(
-                "Open the report desk and open R3.",
-                "Read what the message actually asks for, and by when.",
-                "In the Investigation section, tap \"Full headers\" to expand it.",
-                "Compare the From address with the Reply-To address — they are not the same.",
-                "Swipe down and choose the response that checks the request without trusting " +
-                        "the message."
+                "Open the report desk and open **R3**.",
+                "Read what the message actually **asks for**, and by **when**.",
+                "In the Investigation section, tap **\"Full headers\"** to expand it.",
+                "Compare the **From** address with the **Reply-To** address — they are not the same.",
+                "Swipe down and choose the response that **checks the request without trusting " +
+                        "the message**."
             ),
             entryPage = "report.html#r3",
             requiredClues = listOf(PhishDeskClues.HEADERS_OPENED_R3),

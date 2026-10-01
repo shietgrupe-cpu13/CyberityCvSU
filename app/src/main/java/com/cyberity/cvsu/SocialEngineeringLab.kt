@@ -61,37 +61,37 @@ fun socialEngineeringLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t1",
             title = "The courier at the door",
-            objective = "Review incident A: the CCTV notes and the door badge log. Name the " +
-                    "technique the visitor used to get inside.",
+            objective = "**Review incident A**: the **CCTV notes** and the **door badge log**. **Name the " +
+                    "technique** the visitor used to get inside.",
             guide = listOf(
-                "Locks, badges and passwords are all built on one assumption: that the person " +
+                "Locks, badges and passwords are all built on **one assumption**: that the person " +
                         "using them is the person they belong to. Social engineering attacks that " +
                         "assumption directly, and the tools are ordinary human habits.",
                 "Holding a door for someone whose hands are full is good manners. Doing it at a " +
                         "badge-controlled door is how an outsider walks into a server room, and " +
-                        "the technique has a name: tailgating, sometimes called piggybacking. " +
+                        "the technique has a name: **tailgating**, sometimes called **piggybacking**. " +
                         "The uniform and the boxes are the costume — what actually opens the door " +
                         "is a polite student who doesn't want to seem rude.",
-                "You will stand in that doorway yourself before you review the footage. There " +
+                "You will **stand in that doorway yourself** before you review the footage. There " +
                         "is no trick answer and no heart at stake — the point is to notice how " +
                         "much social weight sits on a two-second decision with somebody waiting.",
                 "Nobody in incident A did anything malicious. That is exactly what makes this " +
                         "class of attack work: the person who lets the attacker in is helpful, " +
-                        "not careless. The fix isn't to stop being kind, it is to make checking " +
-                        "normal — every visitor signs in, and a badge opens the door for one " +
+                        "not careless. The fix isn't to stop being kind, it is to **make checking " +
+                        "normal** — every visitor signs in, and a badge opens the door for one " +
                         "person at a time."
             ),
             steps = listOf(
-                "Open the review desk, tap incident A, and read the security officer's notes.",
-                "Tap STAND AT THE DOOR and make the call yourself before you judge anyone " +
-                        "else's. No answer there costs a heart.",
-                "Tap REVIEW CAMERA 3 FOOTAGE and step through the clip with NEXT. Watch the " +
-                        "door between 14:10:22 and 14:10:24.",
-                "On the two frames where he raises his phone, use ZOOM to see what he could " +
+                "Open the review desk, tap **incident A**, and read the security officer's notes.",
+                "Tap **STAND AT THE DOOR** and make the call yourself before you judge anyone " +
+                        "else's. No answer there **costs a heart**.",
+                "Tap **REVIEW CAMERA 3 FOOTAGE** and step through the clip with **NEXT**. Watch the " +
+                        "door between **14:10:22 and 14:10:24**.",
+                "On the two frames where he raises his phone, use **ZOOM** to see what he could " +
                         "read.",
-                "At the last frame, tap RECONCILE WITH THE DOOR BADGE LOG and rule on all " +
+                "At the last frame, tap **RECONCILE WITH THE DOOR BADGE LOG** and rule on all " +
                         "four door events yourself.",
-                "Swipe the bar at the top down and name what the visitor did."
+                "Swipe the bar at the top down and **name what the visitor did**."
             ),
             entryPage = "desk.html",
             requiredClues = listOf(
@@ -126,32 +126,32 @@ fun socialEngineeringLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t2",
             title = "The helpful caller",
-            objective = "Read the recorded call in incident B. Decide what the library staff " +
-                    "member should have done at the moment the caller asked for the password.",
+            objective = "**Read the recorded call** in incident B. **Decide what the library staff " +
+                    "member should have done** at the moment the caller asked for the password.",
             guide = listOf(
-                "Pretexting is inventing a role and a reason to be asking. The role gives the " +
+                "**Pretexting** is inventing a **role** and a **reason** to be asking. The role gives the " +
                         "attacker authority — IT support, the registrar, a bank officer — and " +
                         "the reason gives them urgency, so the target acts before thinking. The " +
                         "caller in B does both in under a minute.",
-                "Listen for the tells. The caller knows small true details, which makes the role " +
+                "**Listen for the tells.** The caller knows small true details, which makes the role " +
                         "believable, but those details are public: the office name, a staff " +
                         "member's first name, a system everyone uses. Then comes the pressure — " +
                         "a deadline, an account about to be locked, an apology for the rush — " +
                         "and finally the ask, which is always something a real IT office would " +
                         "never need: your password, a code sent to you, or permission to " +
                         "install remote-access software.",
-                "The defence is the same every time, and it doesn't require you to be suspicious " +
-                        "or rude: hang up and call back on a number you looked up yourself. A " +
+                "The **defence** is the same every time, and it doesn't require you to be suspicious " +
+                        "or rude: **hang up and call back on a number you looked up yourself**. A " +
                         "real colleague will not mind. An attacker cannot survive it, because " +
                         "they don't control the number in the campus directory."
             ),
             steps = listOf(
-                "Open the review desk and open incident B.",
-                "Expand \"Call transcript\" and read the whole conversation.",
-                "Mark where the caller establishes authority, where he adds time pressure, and " +
-                        "what he finally asks for.",
-                "Ask yourself which of these the real ITSO would ever need over the phone.",
-                "Swipe down and choose what the staff member should have done."
+                "Open the review desk and open **incident B**.",
+                "Expand **\"Call transcript\"** and read the **whole conversation**.",
+                "Mark where the caller establishes **authority**, where he adds **time pressure**, and " +
+                        "what he finally **asks for**.",
+                "Ask yourself which of these the real ITSO would **ever need** over the phone.",
+                "Swipe down and choose what the staff member **should have done**."
             ),
             entryPage = "incident.html#b",
             requiredClues = listOf(SocialEngClues.TRANSCRIPT_OPENED),
@@ -183,30 +183,30 @@ fun socialEngineeringLab(): LabDefinition = LabDefinition(
             id = "t3",
             title = "Nothing is free",
             objective = "Three flash drives were found in the canteen and one was plugged into " +
-                    "a lab PC. Analyse the drive safely and submit the flag hidden in what it " +
+                    "a lab PC. **Analyse the drive safely** and submit the **flag** hidden in what it " +
                     "ran.",
             guide = listOf(
-                "Baiting is leaving something desirable where the target will find it and let " +
+                "**Baiting** is leaving something desirable where the target will find it and let " +
                         "curiosity do the rest. A drive labelled SCHOLARSHIP GRANTEES 2026 — " +
                         "CONFIDENTIAL is not litter; it is chosen so that whoever picks it up " +
                         "wants to look inside, and maybe feels they are doing the right thing by " +
                         "finding the owner.",
-                "A modern flash drive doesn't need you to open a file. It can tell the computer " +
-                        "it is a keyboard and type commands by itself the moment it is plugged " +
-                        "in, faster than you can read them. That is why \"I'll just check what's " +
+                "A modern flash drive **doesn't need you to open a file**. It can tell the computer " +
+                        "it is a keyboard and type commands by itself **the moment it is plugged " +
+                        "in**, faster than you can read them. That is why \"I'll just check what's " +
                         "on it\" is the mistake, not opening the documents afterwards.",
-                "Investigators analyse a found drive on an isolated machine that can't reach " +
+                "Investigators analyse a found drive on an **isolated machine** that can't reach " +
                         "the network, or read its contents without letting it run anything. The " +
-                        "review desk here does the same: ANALYSE SAFELY lists what is on the " +
+                        "review desk here does the same: **ANALYSE SAFELY** lists what is on the " +
                         "drive and what it would execute, without executing it."
             ),
             steps = listOf(
-                "Open the review desk and open incident C.",
-                "Tap OPEN THE DRIVE ANALYSIS to see the drive the student handed in.",
-                "Use ANALYSE SAFELY. Do not use the PLUG IN button — that is the mistake the " +
-                        "student made, and here it costs a heart.",
-                "Read the hidden startup script and the endpoint log under it.",
-                "Find the CYBERITY{...} value in the script and type it in below, braces " +
+                "Open the review desk and open **incident C**.",
+                "Tap **OPEN THE DRIVE ANALYSIS** to see the drive the student handed in.",
+                "Use **ANALYSE SAFELY**. **Do not use the PLUG IN button** — that is the mistake the " +
+                        "student made, and here it **costs a heart**.",
+                "Read the **hidden startup script** and the endpoint log under it.",
+                "Find the **CYBERITY{...}** value in the script and type it in below, braces " +
                         "included."
             ),
             entryPage = "incident.html#c",
@@ -232,28 +232,28 @@ fun socialEngineeringLab(): LabDefinition = LabDefinition(
             id = "t4",
             title = "A code from a friend",
             objective = "Incident D is a Messenger chat from a classmate's account asking for " +
-                    "a verification code. Check the account and decide what is really going on.",
+                    "a **verification code**. **Check the account** and decide what is really going on.",
             guide = listOf(
-                "The strongest lever in social engineering isn't fear, it's familiarity. A " +
+                "The strongest lever in social engineering isn't fear, it's **familiarity**. A " +
                         "message from a name you know skips every suspicion you would apply to a " +
                         "stranger, and hijacked accounts are cheap and plentiful.",
-                "Look at what is being asked for here: a one-time code that was texted to the " +
+                "Look at what is being asked for here: a **one-time code** that was texted to the " +
                         "victim's own phone. A verification code only ever proves one thing — " +
-                        "that whoever types it controls that phone number. So there is no " +
-                        "honest reason for another person to need yours, not a friend, not a " +
+                        "that whoever types it controls that phone number. So there is **no " +
+                        "honest reason** for another person to need yours, not a friend, not a " +
                         "bank, not a delivery rider, not the ITSO. Anyone asking is trying to " +
                         "get into something of yours.",
                 "The story around the request is built to rush you: the sender is in a hurry, " +
                         "something will be lost, and there is a small favour framing that makes " +
-                        "refusing feel petty. Slow it down and the whole thing collapses — one " +
+                        "refusing feel petty. **Slow it down** and the whole thing collapses — one " +
                         "phone call to the real classmate ends it in ten seconds."
             ),
             steps = listOf(
-                "Open the review desk and open incident D.",
-                "Read the chat from the top. Notice how quickly it moves to the request.",
-                "Expand \"Account check\" to see what that account has been doing lately.",
-                "Ask what the code actually proves, and to whom.",
-                "Swipe down and pick the best reading of the situation."
+                "Open the review desk and open **incident D**.",
+                "Read the chat from the top. Notice **how quickly it moves to the request**.",
+                "Expand **\"Account check\"** to see what that account has been doing lately.",
+                "Ask what the code **actually proves**, and to **whom**.",
+                "Swipe down and pick the **best reading** of the situation."
             ),
             entryPage = "incident.html#d",
             requiredClues = listOf(SocialEngClues.CHAT_CHECKED),
@@ -283,10 +283,10 @@ fun socialEngineeringLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t5",
             title = "One person, four moves",
-            objective = "Put the week together. The four incidents share a thread — decide " +
-                    "what the visitor in A was really after, and why the order matters.",
+            objective = "**Put the week together**. The four incidents share a **thread** — decide " +
+                    "what the **visitor in A** was really after, and **why the order matters**.",
             guide = listOf(
-                "Real social engineering is rarely a single trick. It is a chain, where each " +
+                "Real social engineering is rarely a single trick. It is **a chain**, where each " +
                         "step buys something small that makes the next step believable, and no " +
                         "single step looks like an attack on its own.",
                 "Read the week in order. Monday: a courier gets inside the MIS building and is " +
@@ -295,18 +295,18 @@ fun socialEngineeringLab(): LabDefinition = LabDefinition(
                         "already knows the staff member's name and the system she uses. " +
                         "Wednesday: drives appear in the canteen with a label aimed at students. " +
                         "Thursday: a hijacked account harvests codes.",
-                "Each incident feeds the next: information first, then access, then credentials. " +
-                        "Defending against this means reporting the small things. The courier at " +
+                "Each incident feeds the next: **information first, then access, then credentials**. " +
+                        "Defending against this means **reporting the small things**. The courier at " +
                         "the door is the cheapest moment to stop the whole chain, and it costs " +
                         "nothing but a question."
             ),
             steps = listOf(
-                "Open the review desk and re-read the summary line of all four incidents.",
-                "Look at the dates and put them in order.",
-                "In incident A, read what the CCTV notes say the visitor did while he was " +
+                "Open the review desk and re-read the **summary line** of **all four incidents**.",
+                "Look at the dates and put them **in order**.",
+                "In **incident A**, read what the **CCTV notes** say the visitor did while he was " +
                         "alone in the corridor.",
-                "Ask what he could have learned there that the caller in B already knew.",
-                "Swipe down and choose what the first visit was for."
+                "Ask what he could have **learned** there that the caller in B already knew.",
+                "Swipe down and choose what **the first visit** was for."
             ),
             requiredClues = listOf(
                 SocialEngClues.INCIDENT_OPENED_A,

@@ -86,30 +86,30 @@ fun phishingSimLab(): LabDefinition = LabDefinition(
             id = "t1",
             title = "Not everything strange is phishing",
             objective = "M1 is urgent, badly written and has a deadline tonight. M5 is a " +
-                    "maintenance notice nobody asked for. Read both, check where M1's link " +
-                    "goes, and decide what actually makes M1 genuine.",
+                    "maintenance notice nobody asked for. **Read both**, **check where M1's link " +
+                    "goes**, and decide **what actually makes M1 genuine**.",
             guide = listOf(
                 "Every level so far has shown you mail that turned out to be hostile, which " +
                         "quietly teaches the wrong reflex: that urgency, poor grammar and an " +
-                        "unexpected arrival are proof. They are not. Real institutions send " +
+                        "unexpected arrival are proof. **They are not.** Real institutions send " +
                         "rushed, ugly, badly timed mail constantly, and a registrar with a " +
                         "deadline tonight sounds exactly like a scammer with a deadline tonight.",
-                "The cost of getting this backwards is real. Flag everything and the warnings " +
+                "**The cost of getting this backwards is real.** Flag everything and the warnings " +
                         "stop being read, a genuine enrollment deadline gets missed, and the " +
                         "next real alert is ignored because the last four were nothing. A help " +
                         "desk is judged on false alarms as much as on misses.",
-                "So the test is never how the message feels. It is what the message asks you " +
-                        "to do, and where it actually sends you. A genuine notice points at the " +
+                "So the test is **never how the message feels**. It is **what the message asks you " +
+                        "to do**, and **where it actually sends you**. A genuine notice points at the " +
                         "service's own address and asks for nothing you would not normally " +
                         "give it. A hostile one needs something from you — a password, a " +
                         "payment, a reply — and sends you somewhere it controls."
             ),
             steps = listOf(
-                "Open the mailbox and read M1, the enrollment slot confirmation.",
-                "Tap its link to reveal where it really goes, and read that address carefully.",
-                "Read M5, the maintenance notice, and notice what it asks you to do.",
-                "Ask of both: what does this want from me, and who owns the place it sends me?",
-                "Swipe down and choose what makes M1 genuine despite how it reads."
+                "Open the mailbox and read **M1**, the enrollment slot confirmation.",
+                "Tap its link to **reveal where it really goes**, and read that address carefully.",
+                "Read **M5**, the maintenance notice, and notice what it asks you to do.",
+                "Ask of both: **what does this want from me**, and **who owns the place it sends me**?",
+                "Swipe down and choose what makes **M1 genuine** despite how it reads."
             ),
             entryPage = "inbox.html",
             requiredClues = listOf(
@@ -145,27 +145,27 @@ fun phishingSimLab(): LabDefinition = LabDefinition(
             id = "t2",
             title = "The name is not the address",
             objective = "M2 says it is from Microsoft 365 and your password expires today. " +
-                    "Reveal where its button really goes and submit the domain that owns it.",
+                    "**Reveal where its button really goes** and submit the **domain that owns it**.",
             guide = listOf(
-                "The name you see on a message is a display name, and the sender types it " +
+                "The name you see on a message is a **display name**, and the sender types it " +
                         "themselves. It can say Microsoft 365, ITSO, or the name of your own " +
                         "lecturer, and your mail app will show it without checking anything. " +
                         "This is the same trick as the sender ID in 304, wearing a different hat.",
-                "Password-expiry mail is the most copied template in the world because it " +
+                "**Password-expiry mail** is the most copied template in the world because it " +
                         "works on everyone: it is plausible, it is boring, and it has a built-in " +
                         "deadline. The page it leads to is a pixel-accurate copy of a sign-in " +
                         "screen, and the only thing that differs is the address bar.",
-                "Read that address the way 302 taught: find the first single slash, then read " +
-                        "the two pieces immediately before it. Everything to the left of those " +
+                "Read that address the way 302 taught: **find the first single slash**, then read " +
+                        "the **two pieces immediately before it**. Everything to the left of those " +
                         "is decoration the attacker chose, and it very often contains the real " +
                         "institution's name to make the address look right at a glance."
             ),
             steps = listOf(
-                "Open M2 from the mailbox.",
-                "Tap the sign-in button to reveal its real destination instead of following it.",
-                "Find the first single slash in that address.",
-                "Read the two pieces just before it — that is who owns the page.",
-                "Swipe down and type that domain."
+                "Open **M2** from the mailbox.",
+                "Tap the sign-in button to **reveal its real destination** instead of following it.",
+                "Find the **first single slash** in that address.",
+                "Read the **two pieces just before it** — that is who owns the page.",
+                "Swipe down and type that **domain**."
             ),
             entryPage = "message.html#m2",
             requiredClues = listOf(PhishSimClues.LINK_CHECKED_M2),
@@ -190,32 +190,32 @@ fun phishingSimLab(): LabDefinition = LabDefinition(
             id = "t3",
             title = "Phishing with no link at all",
             objective = "M4 appears to come from Dean Ramirez, asks you to buy ₱8,000 of load " +
-                    "and send the codes, and contains no link and no attachment. Reveal its " +
-                    "Reply-To address and decide what settles it.",
+                    "and send the codes, and contains **no link and no attachment**. **Reveal its " +
+                    "Reply-To address** and **decide what settles it**.",
             guide = listOf(
                 "Everything so far had something to click. This one does not, and that is " +
                         "deliberate: with no link and no attachment there is nothing for a " +
                         "filter to score, so this style walks through defences that catch the " +
-                        "rest. It is called business email compromise, and in schools it usually " +
+                        "rest. It is called **business email compromise**, and in schools it usually " +
                         "arrives as a senior person needing a small favour quietly.",
-                "The engineering is social, not technical. It uses authority so you do not " +
+                "The engineering is **social, not technical**. It uses authority so you do not " +
                         "question it, urgency so you do not check, secrecy so you do not ask a " +
                         "colleague, and a small amount so it stays under the level where you " +
                         "would stop and think. Load, gift cards and e-wallet transfers are the " +
                         "usual form because they are irreversible and untraceable.",
-                "The defence is out-of-band verification: contact the person through a channel " +
+                "The defence is **out-of-band verification**: contact the person through a channel " +
                         "you already had, not one this message gave you. Call the number in the " +
-                        "directory, or walk to the office. Never reply — a reply goes to whatever " +
+                        "directory, or walk to the office. **Never reply** — a reply goes to whatever " +
                         "address the sender put in Reply-To, which is the whole point of the " +
                         "message."
             ),
             steps = listOf(
-                "Open M4 from the mailbox.",
-                "Tap \"Show full headers\" and read the Reply-To line against the From line.",
-                "Notice what is being asked for, and how it would be recovered if you sent it.",
-                "Do not reply, even to check — replying here costs a heart, and in real life " +
+                "Open **M4** from the mailbox.",
+                "Tap **\"Show full headers\"** and read the **Reply-To** line against the **From** line.",
+                "Notice **what is being asked for**, and how it would be recovered if you sent it.",
+                "**Do not reply**, even to check — replying here **costs a heart**, and in real life " +
                         "it starts the conversation the attacker wants.",
-                "Swipe down and choose what settles this one."
+                "Swipe down and choose what **settles** this one."
             ),
             entryPage = "message.html#m4",
             requiredClues = listOf(
@@ -248,29 +248,29 @@ fun phishingSimLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t4",
             title = "Follow the payload",
-            objective = "M6 says a thesis document was shared with you. Open its link in the " +
-                    "sandbox, inspect the page, and submit the flag hidden in the code.",
+            objective = "M6 says a thesis document was shared with you. **Open its link in the " +
+                    "sandbox**, **inspect the page**, and submit the **flag** hidden in the code.",
             guide = listOf(
-                "File-sharing notifications are the most effective phishing template aimed at " +
+                "**File-sharing notifications** are the most effective phishing template aimed at " +
                         "students, because they are ordinary. You genuinely do get these from " +
                         "classmates and advisers, and the one thing you are expected to do with " +
                         "them is click. Curiosity about your own thesis does the rest.",
                 "The page behind it is a sign-in copy, and it has one detail worth understanding: " +
-                        "after it takes your password it forwards you to the real service. You " +
+                        "after it takes your password it **forwards you to the real service**. You " +
                         "land on a genuine site, assume the first page glitched, sign in again " +
                         "and think nothing more about it. The theft leaves no moment that feels " +
                         "wrong, which is why it is often found weeks later.",
-                "Reading the page's own code is how an analyst proves where the typed password " +
+                "**Reading the page's own code** is how an analyst proves where the typed password " +
                         "goes, and kits leave their markings there — campaign identifiers, the " +
                         "collector address, comments the author never removed. That debris is " +
                         "what links one incident to the next."
             ),
             steps = listOf(
-                "Open M6 from the mailbox.",
-                "Tap the link and open the page in the sandbox browser.",
-                "Read the address panel above it: who actually owns that site?",
-                "Do not type a password — that costs a heart here, and your account outside.",
-                "Tap INSPECT PAGE, find the CYBERITY{...} value, and type it in below with " +
+                "Open **M6** from the mailbox.",
+                "Tap the link and open the page in the **sandbox browser**.",
+                "Read the **address panel** above it: who actually owns that site?",
+                "**Do not type a password** — that **costs a heart** here, and your account outside.",
+                "Tap **INSPECT PAGE**, find the **CYBERITY{...}** value, and type it in below with " +
                         "the braces."
             ),
             entryPage = "message.html#m6",
@@ -297,34 +297,34 @@ fun phishingSimLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t5",
             title = "File the shift report",
-            objective = "Mark every one of the eight messages as GENUINE or PHISHING. When all " +
-                    "eight match the evidence, the mailbox issues a shift report code. Submit it.",
+            objective = "**Mark every one of the eight messages** as **GENUINE** or **PHISHING**. When all " +
+                    "eight match the evidence, the mailbox issues a **shift report code**. Submit it.",
             guide = listOf(
-                "This is the whole unit at once, and it is the shape the job actually takes: a " +
+                "This is **the whole unit at once**, and it is the shape the job actually takes: a " +
                         "mixed pile, no labels, and a decision required on every item including " +
-                        "the boring ones. Four of these are genuine. A report that condemns all " +
+                        "the boring ones. **Four of these are genuine.** A report that condemns all " +
                         "eight is wrong in four places, and wrong in the direction that gets the " +
                         "help desk ignored.",
-                "Work one at a time and make each verdict for a reason you could defend out " +
-                        "loud — the destination of the link, the Reply-To address, the domain " +
+                "Work one at a time and **make each verdict for a reason you could defend out " +
+                        "loud** — the destination of the link, the Reply-To address, the domain " +
                         "that owns the page, the nature of the request. A verdict you cannot " +
                         "explain is a guess, and the mailbox will not tell you which ones you " +
                         "got wrong, only how many. That is on purpose: on a real desk nobody " +
                         "marks your work item by item either.",
-                "One habit to carry out of this unit: when you are unsure, the answer is not a " +
-                        "coin flip. It is to verify through a channel you already trust — type " +
+                "One habit to carry out of this unit: **when you are unsure**, the answer is not a " +
+                        "coin flip. It is to **verify through a channel you already trust** — type " +
                         "the address yourself, open the app you installed, ring the number in " +
                         "the directory. Checking costs a minute. Being wrong costs an account."
             ),
             steps = listOf(
-                "Open the mailbox and read all eight messages; a message can only be marked " +
+                "Open the mailbox and read **all eight messages**; a message can only be marked " +
                         "once you have opened it.",
-                "Use the tools inside each one — reveal links, show headers, open pages in the " +
+                "Use the **tools** inside each one — reveal links, show headers, open pages in the " +
                         "sandbox — before deciding.",
-                "Mark each message GENUINE or PHISHING on its card.",
-                "Check the counter at the top: it tells you how many do not match the evidence, " +
+                "Mark each message **GENUINE** or **PHISHING** on its card.",
+                "Check the **counter** at the top: it tells you how many do not match the evidence, " +
                         "but not which.",
-                "When all eight are right, the shift report code appears. Swipe down and type it in."
+                "When all eight are right, the **shift report code** appears. Swipe down and type it in."
             ),
             entryPage = "inbox.html",
             requiredClues = listOf(PhishSimClues.ALL_EIGHT_TRIAGED),

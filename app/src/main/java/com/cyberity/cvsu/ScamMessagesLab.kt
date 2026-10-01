@@ -66,29 +66,29 @@ fun scamMessagesLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t1",
             title = "Same name, same thread",
-            objective = "Open the GCASH thread. The last message sits under the same name as " +
-                    "your real receipts. Open its details and decide what that proves.",
+            objective = "**Open the GCASH thread**. The last message sits under the same name as " +
+                    "your real receipts. **Open its details** and decide **what that proves**.",
             guide = listOf(
                 "Banks and wallets send texts under a name instead of a number — GCASH, BDO, " +
-                        "BPI. That name is called a sender ID, and your phone groups every " +
+                        "BPI. That name is called a **sender ID**, and your phone groups every " +
                         "message carrying the same sender ID into one thread. It looks like a " +
                         "conversation with the company.",
-                "It isn't. A sender ID is just a label attached to the message as it travels, " +
+                "**It isn't.** A sender ID is just a **label** attached to the message as it travels, " +
                         "and scammers buy access to networks that let them set it to anything " +
                         "they like. When they set it to GCASH, your phone files their message in " +
                         "the same thread as your genuine receipts, right underneath them. " +
                         "Nothing about that placement is verified.",
-                "This is why \"it came in the same thread as the real ones\" is not a safety " +
+                "This is why **\"it came in the same thread as the real ones\"** is not a safety " +
                         "check. It is the single most convincing trick in Philippine smishing, " +
-                        "and the only defence is to judge each message by what it asks you to " +
-                        "do — never by where it landed."
+                        "and the only defence is to judge each message by **what it asks you to " +
+                        "do** — never by where it landed."
             ),
             steps = listOf(
-                "Open the phone and tap the GCASH thread.",
-                "Read the three messages. The first two are ordinary receipts.",
-                "Long-press the last message and choose DETAILS.",
-                "Compare how the genuine receipts arrived with how the last one arrived.",
-                "Swipe the bar at the top down and choose what the thread placement proves."
+                "Open the phone and tap the **GCASH** thread.",
+                "Read the **three messages**. The first two are ordinary receipts.",
+                "**Long-press** the last message and choose **DETAILS**.",
+                "Compare **how the genuine receipts arrived** with **how the last one arrived**.",
+                "Swipe the bar at the top down and choose what the **thread placement** proves."
             ),
             entryPage = "messages.html",
             requiredClues = listOf(
@@ -122,32 +122,32 @@ fun scamMessagesLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t2",
             title = "A prize you never entered",
-            objective = "Read the ₱850,000 raffle text. Identify the one feature that marks " +
+            objective = "**Read the ₱850,000 raffle text**. **Identify the one feature** that marks " +
                     "every prize scam, whatever the story around it.",
             guide = listOf(
-                "Prize smishing is the oldest text scam in the country and it still works, " +
+                "**Prize smishing** is the oldest text scam in the country and it still works, " +
                         "because the message is engineered to make you feel lucky rather than " +
                         "suspicious. The amount is large but not absurd, the raffle is named " +
                         "after something real, and there is a reference number to make it feel " +
                         "administrative.",
                 "Underneath, every version does the same thing: to release a prize you did not " +
-                        "enter, you must first send money — a processing fee, a courier charge, " +
+                        "enter, you must **first send money** — a processing fee, a courier charge, " +
                         "DST or tax, a \"refundable\" deposit. Sometimes it is not money but " +
-                        "your details, or a load transfer. Either way, value flows out of you " +
-                        "before anything flows in.",
-                "A genuine prize never requires a payment to receive it, and no legitimate " +
+                        "your details, or a load transfer. Either way, **value flows out of you " +
+                        "before anything flows in**.",
+                "**A genuine prize never requires a payment to receive it**, and no legitimate " +
                         "raffle contacts winners only by text from a personal number. Notice " +
                         "also that this message uses your first name — since SIM registration, " +
                         "leaked lists mean scammers often know that much."
             ),
             steps = listOf(
-                "Open the phone and tap the thread from +63 917 xxx xxxx about a raffle.",
-                "Read the message, including the small print at the end.",
-                "Ask three questions: did I enter this? who is it from? what do I have to do " +
+                "Open the phone and tap the thread from **+63 917 xxx xxxx** about a **raffle**.",
+                "Read the message, including the **small print** at the end.",
+                "Ask **three questions**: did I enter this? who is it from? what do I have to do " +
                         "to collect?",
-                "Do not reply, not even to ask. Replying in this lab costs a heart, and in " +
+                "**Do not reply**, not even to ask. Replying in this lab **costs a heart**, and in " +
                         "real life it tells them a person is holding the phone.",
-                "Swipe down and choose the feature that gives every prize scam away."
+                "Swipe down and choose the **feature** that gives every prize scam away."
             ),
             entryPage = "thread.html#s2",
             requiredClues = listOf(ScamMsgClues.THREAD_OPENED_S2),
@@ -176,30 +176,30 @@ fun scamMessagesLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t3",
             title = "The parcel you never ordered",
-            objective = "The courier text says a package is held pending a ₱195 fee. Open its " +
-                    "link in the sandbox, inspect the page, and submit the flag hidden in it.",
+            objective = "The courier text says a package is held pending a ₱195 fee. **Open its " +
+                    "link in the sandbox**, **inspect the page**, and submit the **flag** hidden in it.",
             guide = listOf(
-                "Parcel smishing works on volume and timing. Enough people are waiting for a " +
+                "**Parcel smishing** works on volume and timing. Enough people are waiting for a " +
                         "delivery at any moment that a message about a held package finds a " +
                         "real expectation to attach itself to, and ₱195 is small enough to pay " +
                         "without thinking.",
-                "The page behind the link is a payment form. Unlike a password page, it asks " +
+                "The page behind the link is **a payment form**. Unlike a password page, it asks " +
                         "for a card number, expiry and CVV, which is everything needed to charge " +
                         "the card repeatedly. Some versions ask you to \"verify\" with an OTP, " +
                         "which is the step that authorises a much larger transaction than the " +
                         "one displayed.",
-                "Two checks defeat this. First, couriers in the Philippines do not collect " +
-                        "customs or release fees by SMS link — fees are paid on delivery or " +
+                "Two checks defeat this. First, couriers in the Philippines **do not collect** " +
+                        "customs or release fees by **SMS link** — fees are paid on delivery or " +
                         "through the official app. Second, check whether you are expecting " +
-                        "anything at all, and track it in the app you installed yourself, not " +
+                        "anything at all, and **track it in the app you installed yourself**, not " +
                         "through a link someone texted you."
             ),
             steps = listOf(
-                "Open the phone and tap the parcel thread.",
-                "Tap the link. It opens a safe copy of the courier page in the sandbox.",
-                "Look at the address panel above the page: who really owns that site?",
-                "Do not type card details — that costs a heart here, and your card in real life.",
-                "Tap INSPECT PAGE, find the CYBERITY{...} value in the code, and type it in " +
+                "Open the phone and tap the **parcel** thread.",
+                "Tap the **link**. It opens a safe copy of the courier page in the **sandbox**.",
+                "Look at the **address panel** above the page: who really owns that site?",
+                "**Do not type card details** — that **costs a heart** here, and your card in real life.",
+                "Tap **INSPECT PAGE**, find the **CYBERITY{...}** value in the code, and type it in " +
                         "below with the braces."
             ),
             entryPage = "thread.html#s3",
@@ -226,30 +226,30 @@ fun scamMessagesLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t4",
             title = "The bank on the phone",
-            objective = "Play the recorded call from \"BPI Fraud Department\". Decide what " +
-                    "single fact ends the call, no matter how convincing the caller is.",
+            objective = "**Play the recorded call** from \"BPI Fraud Department\". **Decide what " +
+                    "single fact ends the call**, no matter how convincing the caller is.",
             guide = listOf(
-                "Vishing is the same attack delivered by voice, and voice is harder to resist " +
+                "**Vishing** is the same attack delivered by voice, and voice is harder to resist " +
                         "than text. A calm, professional caller who already knows your name, " +
                         "your bank and the last four digits of your card feels like proof of " +
                         "legitimacy. It isn't: card databases leak constantly, and the last four " +
                         "digits are printed on every receipt.",
-                "This call uses a clever inversion. The caller is not asking for your money — " +
+                "This call uses **a clever inversion**. The caller is not asking for your money — " +
                         "he is protecting you from a fraudulent transaction, and the OTP is " +
                         "needed to cancel it. Now you are on the same side, in a hurry, being " +
                         "helpful. The OTP he wants actually authorises his transaction.",
-                "One fact settles it every time: no bank, wallet, telco or government office " +
-                        "will ever ask for your OTP, PIN or password — not by call, text, chat, " +
+                "**One fact settles it every time**: no bank, wallet, telco or government office " +
+                        "will **ever ask for your OTP, PIN or password** — not by call, text, chat, " +
                         "or email. There is no exception, no emergency, and no department for " +
-                        "which it is different. Hang up, then call the number printed on your " +
+                        "which it is different. **Hang up**, then call the number printed on your " +
                         "card or in the official app."
             ),
             steps = listOf(
-                "Open the phone and tap RECENT CALLS, then play the recorded call.",
-                "Listen for what the caller already knows, and when the tone changes to urgency.",
-                "Notice exactly what he asks for, and the reason he gives for needing it.",
-                "Play it to the end, so you hear how he handles hesitation.",
-                "Swipe down and choose the fact that ends the call."
+                "Open the phone and tap **RECENT CALLS**, then play the recorded call.",
+                "Listen for **what the caller already knows**, and when the tone changes to **urgency**.",
+                "Notice exactly what he **asks for**, and the reason he gives for needing it.",
+                "Play it **to the end**, so you hear how he handles hesitation.",
+                "Swipe down and choose **the fact that ends the call**."
             ),
             entryPage = "call.html",
             requiredClues = listOf(ScamMsgClues.CALL_PLAYED),
@@ -280,31 +280,31 @@ fun scamMessagesLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t5",
             title = "What to do with all of them",
-            objective = "You have four scam messages and one scam call. Choose the response " +
-                    "that actually reduces what happens next.",
+            objective = "You have four scam messages and one scam call. **Choose the response " +
+                    "that actually reduces what happens next**.",
             guide = listOf(
-                "The instinct is to reply — to tell them off, to type STOP, or to ask \"who is " +
+                "The instinct is to **reply** — to tell them off, to type STOP, or to ask \"who is " +
                         "this?\" All three do the same thing: they confirm that a real person " +
                         "reads messages on this number. Confirmed numbers are worth more and get " +
                         "sold on, which is why one reply is usually followed by more scams, not " +
                         "fewer.",
-                "What helps is silence plus reporting. Don't reply, don't tap, then block the " +
+                "What helps is **silence plus reporting**. **Don't reply, don't tap**, then **block** the " +
                         "number and forward the message to your network's spam-report service " +
                         "so the sender can be shut down. Since the SIM Registration Act, " +
                         "reporting also gives the telco a registered identity to act against, " +
                         "which is why scammers increasingly use hijacked accounts instead.",
-                "Two more habits are worth building. Warn the people who trust you, especially " +
+                "Two more habits are worth building. **Warn the people who trust you**, especially " +
                         "older relatives, because prize and bank calls are aimed at them hardest. " +
-                        "And if you ever did enter details somewhere, act immediately: change the " +
+                        "And if you ever did enter details somewhere, **act immediately**: change the " +
                         "password, call the bank on its official number, and tell the ITSO if a " +
                         "campus account is involved. Speed limits the damage more than anything " +
                         "else."
             ),
             steps = listOf(
-                "Go back to the message list and look at all four threads together.",
-                "Ask what each one gains if you reply, even briefly.",
-                "Think about what a telco can act on, and what it cannot.",
-                "Swipe down and choose the response that leaves you with fewer of these, not " +
+                "Go back to the message list and look at **all four threads** together.",
+                "Ask what each one gains if you **reply**, even briefly.",
+                "Think about what a **telco** can act on, and what it cannot.",
+                "Swipe down and choose the response that leaves you with **fewer** of these, not " +
                         "more."
             ),
             requiredClues = listOf(
