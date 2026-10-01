@@ -1416,8 +1416,10 @@ fun LevelNode(
         }
 
         // Type badge for simulations/challenges so they read as different activities.
-        if (level.status != LevelStatus.LOCKED &&
-            (level.type == LevelType.SIMULATION || level.type == LevelType.CHALLENGE)
+        // A simulation's warning triangle only marks the level you are on: once it
+        // is completed the node shows its check mark alone.
+        if ((level.type == LevelType.SIMULATION && level.status == LevelStatus.CURRENT) ||
+            (level.type == LevelType.CHALLENGE && level.status != LevelStatus.LOCKED)
         ) {
             Box(
                 modifier = Modifier
