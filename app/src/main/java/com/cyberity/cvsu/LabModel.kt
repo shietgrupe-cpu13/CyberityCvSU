@@ -129,10 +129,16 @@ object LabValidator {
     /**
      * Flags are normalised further: whitespace removed entirely, and the
      * CYBERITY{} wrapper added if the student typed only the inner token.
+     *
+     * A missing closing brace is forgiven too: selecting text in the simulation
+     * often stops one character short, so a copied flag arrives without its "}".
      */
     fun normalizeFlag(input: String): String {
         val bare = input.trim().lowercase(Locale.ROOT).replace(" ", "")
-        return if (bare.startsWith("cyberity{")) bare else "cyberity{$bare}"
+        return when {
+            bare.startsWith("cyberity{") -> if (bare.endsWith("}")) bare else "$bare}"
+            else -> "cyberity{$bare}"
+        }
     }
 
     fun sha256(text: String): String =
