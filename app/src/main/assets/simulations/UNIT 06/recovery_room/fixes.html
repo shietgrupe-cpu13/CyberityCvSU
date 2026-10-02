@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Root cause and fixes</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated recovery room &middot; fictional people, accounts and amounts</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='room.html'">&#8592; Room</button>
+    <span class="topbar-title">Root cause &amp; fixes</span>
+  </div>
+
+  <div class="detail">
+    <button class="appui tool-btn" onclick="openSignins()">
+      <b>SIGN-IN DETAILS</b>How every attacker sign-in was made, and whether MFA was asked
+    </button>
+    <div class="reveal-slot" id="signins"></div>
+
+    <div class="section-label flush">Proposed fixes</div>
+    <div class="note top">Select the fixes to apply. Each card shows what it fixes and who it affects.</div>
+    <div id="fixes"></div>
+
+    <button class="cta" onclick="applyFixes()">APPLY FIXES</button>
+    <div class="banner" id="fix-banner"></div>
+  </div>
+
+  <div class="foot">The board only tells you how many choices are right, not which ones.</div>
+
+  <script src="script.js"></script>
+  <script>renderFixes('fixes');</script>
+</body>
+</html>
