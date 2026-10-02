@@ -59,7 +59,7 @@ fun phishDeskLab(): LabDefinition = LabDefinition(
             "the whole point, and it is the only place you will ever get to do it safely.\n\n" +
             "Each task explains what to look for, then hands you the report desk. Open it with " +
             "the button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "phish_desk",
+    assetDir = "UNIT 03/phish_desk",
     startPage = "queue.html",
     dangerousClues = listOf(PhishDeskClues.CREDENTIALS_SUBMITTED),
     tasks = listOf(

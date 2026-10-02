@@ -53,7 +53,7 @@ fun socialEngineeringLab(): LabDefinition = LabDefinition(
             "each one actually was.\n\n" +
             "Each task explains what to look for, then hands you the review desk. Open it with " +
             "the button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "social_eng",
+    assetDir = "UNIT 03/social_eng",
     startPage = "desk.html",
     dangerousClues = listOf(SocialEngClues.USB_PLUGGED_IN),
     tasks = listOf(

@@ -55,7 +55,7 @@ fun scamMessagesLab(): LabDefinition = LabDefinition(
             "to a scam, costs a heart, exactly as it would cost you in real life.\n\n" +
             "Each task explains what to look for, then hands you the phone. Open it with the " +
             "button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "scam_messages",
+    assetDir = "UNIT 03/scam_messages",
     startPage = "messages.html",
     dangerousClues = listOf(
         ScamMsgClues.REPLIED_TO_SCAM,

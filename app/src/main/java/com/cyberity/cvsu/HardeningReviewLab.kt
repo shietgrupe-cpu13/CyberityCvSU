@@ -37,7 +37,7 @@ fun hardeningReviewLab(): LabDefinition = LabDefinition(
             "grade lock behaves when it fails, and how many defences stood in the way.\n\n" +
             "Each task explains what to look for, then hands you the console. Open it with the " +
             "button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "hardening_review",
+    assetDir = "UNIT 01/hardening_review",
     startPage = "review.html",
     dangerousClues = listOf(PrincipleClues.INTEGRITY_LAYER_DISABLED),
     tasks = listOf(

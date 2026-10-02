@@ -57,7 +57,7 @@ fun mailForensicsLab(): LabDefinition = LabDefinition(
             "Revealing a link shows you where it goes; opening it in the sandbox browser shows " +
             "you what it serves. Both are safe here. Typing a password into one of those pages " +
             "is not, and costs a heart.",
-    assetDir = "mail_forensics",
+    assetDir = "UNIT 03/mail_forensics",
     startPage = "inbox.html",
     dangerousClues = listOf(
         MailForensicsClues.ATTACHMENT_RUN,

@@ -40,7 +40,7 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
             "availability. Use the admin tools to find what broke, prove it, and fix it.\n\n" +
             "Each task explains what to look for, then hands you the desk. Open it with the " +
             "button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "cia_triad",
+    assetDir = "UNIT 01/cia_triad",
     startPage = "desk.html",
     dangerousClues = listOf(CiaClues.BASELINE_OVERWRITTEN),
     tasks = listOf(

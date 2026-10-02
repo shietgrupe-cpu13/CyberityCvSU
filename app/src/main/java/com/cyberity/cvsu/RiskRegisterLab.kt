@@ -42,7 +42,7 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
             "risk, rank them, and build a plan that removes the most risk for the money.\n\n" +
             "Each task explains what to look for, then hands you the register. Open it with the " +
             "button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "risk_register",
+    assetDir = "UNIT 01/risk_register",
     startPage = "register.html",
     dangerousClues = listOf(RiskClues.RISK_HIDDEN),
     tasks = listOf(

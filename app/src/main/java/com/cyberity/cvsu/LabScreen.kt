@@ -1227,7 +1227,7 @@ private fun HintSection(
                 Column {
                     Text("Hint ${index + 1}", color = AppCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(2.dp))
-                    Text(hint, color = AppWhite, fontSize = 12.sp, lineHeight = 18.sp)
+                    Text(emphasised(hint), color = AppWhite, fontSize = 12.sp, lineHeight = 18.sp)
                 }
             }
         }
