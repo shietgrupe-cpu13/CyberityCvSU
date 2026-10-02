@@ -1,0 +1,566 @@
+/* Cyberity simulation palette: Terminal Teal.
+   Dark values below are the default. The app sets data-theme="light" on <html>
+   when Light Mode is on (see the first <script> in each page and LabBridge.theme()).
+   --on-blue / --on-accent: text on solid teal or accent fills. */
+/* Dark Mode (default) */
+:root {
+  --navy: #0A1016;
+  --card: #17222E;
+  --blue: #14B8A6;
+  --blue-dark: #0F2D2E;
+  --cyan: #5EEAD4;
+  --white: #E8EEF3;
+  --gray: #8FA0B2;
+  --red: #F2606C;
+  --green: #3FD68A;
+  --amber: #F2B84B;
+  --violet: #B49BF7;
+  --surface: #1C2A38;
+  --code-bg: #05090D;
+  --on-blue: #04211E;
+  --on-accent: #04211E;
+  --navy-rgb: 10, 16, 22;
+  --card-rgb: 23, 34, 46;
+  --blue-rgb: 20, 184, 166;
+  --blue-dark-rgb: 15, 45, 46;
+  --cyan-rgb: 94, 234, 212;
+  --white-rgb: 232, 238, 243;
+  --gray-rgb: 143, 160, 178;
+  --red-rgb: 242, 96, 108;
+  --green-rgb: 63, 214, 138;
+  --amber-rgb: 242, 184, 75;
+  --violet-rgb: 180, 155, 247;
+  --surface-rgb: 28, 42, 56;
+}
+/* Light Mode */
+:root[data-theme="light"] {
+  --navy: #D8E3E2;
+  --card: #F1F6F5;
+  --blue: #0F766E;
+  --blue-dark: #C6DAD8;
+  --cyan: #0B6560;
+  --white: #0A1A1E;
+  --gray: #455A61;
+  --red: #BF2A47;
+  --green: #146A34;
+  --amber: #8C5C00;
+  --violet: #6647C2;
+  --surface: #E7EFEE;
+  --code-bg: #E9F0EF;
+  --on-blue: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --navy-rgb: 216, 227, 226;
+  --card-rgb: 241, 246, 245;
+  --blue-rgb: 15, 118, 110;
+  --blue-dark-rgb: 198, 218, 216;
+  --cyan-rgb: 11, 101, 96;
+  --white-rgb: 10, 26, 30;
+  --gray-rgb: 69, 90, 97;
+  --red-rgb: 191, 42, 71;
+  --green-rgb: 20, 106, 52;
+  --amber-rgb: 140, 92, 0;
+  --violet-rgb: 102, 71, 194;
+  --surface-rgb: 231, 239, 238;
+}
+
+
+/* Cyberity — Incident Response Simulation: Stipend Day (level 605). */
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--navy);
+  color: var(--white);
+  font-family: -apple-system, "Roboto", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body { padding-bottom: 28px; }
+
+.sim-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--blue-dark);
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.25);
+}
+
+.mono { font-family: "Roboto Mono", monospace; word-break: break-all; }
+
+.good-text { color: var(--green) !important; }
+.bad-text { color: var(--red) !important; }
+
+/* ---------- heads-up bar: clock, payout countdown, money at risk ---------- */
+
+.hud {
+  position: sticky;
+  top: 26px;
+  z-index: 9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 7px 14px;
+  background: rgba(var(--amber-rgb), 0.12);
+  border-bottom: 1px solid rgba(var(--amber-rgb), 0.45);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.hud.calm {
+  background: rgba(var(--green-rgb), 0.10);
+  border-bottom-color: rgba(var(--green-rgb), 0.4);
+}
+
+.hud-clock { color: var(--amber); word-break: normal; }
+.hud-mid { flex: 1 1 auto; color: var(--white); }
+.hud-risk { color: var(--gray); }
+.hud-risk b { margin-left: 3px; }
+
+/* ---------- headers and sections ---------- */
+
+.hq-head { padding: 4px 0 12px; }
+.hq-head h1 { margin: 0; font-size: 18px; }
+.hq-head p { margin: 2px 0 0; font-size: 12px; color: var(--gray); }
+.hq-head p b { color: var(--white); }
+
+.section-label {
+  padding: 14px 16px 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+/* Inside .detail the page already has its gutter. */
+.section-label.flush { padding: 16px 0 6px; }
+
+.tile { display: block; }
+.tile-body { display: block; }
+.tile-name { display: block; font-size: 13px; font-weight: 800; letter-spacing: 0.06em; }
+.tile-sub { display: block; font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+.detail .choice { margin: 0 0 10px; }
+
+.alert-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.sms-when { font-size: 11px; color: var(--gray); flex: 0 0 auto; }
+
+/* Status words are spelled out, never carried by colour alone. */
+.state {
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 5px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.state.ok { color: var(--green); border: 1px solid rgba(var(--green-rgb), 0.5); }
+.state.todo { color: var(--cyan); border: 1px solid rgba(var(--cyan-rgb), 0.5); }
+
+/* ---------- explainer ---------- */
+
+.explain { background: var(--card); border-radius: 12px; padding: 4px 12px; }
+.explain-row {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.12);
+}
+.explain-row:last-child { border-bottom: none; }
+.explain-row b { color: var(--cyan); flex: 0 0 46px; }
+.explain-row span { color: var(--white); }
+
+.foot { padding: 14px 16px; font-size: 11px; color: var(--gray); }
+
+/* ---------- detail pages ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
+}
+
+.back-btn {
+  flex: 0 0 auto;
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
+  color: var(--white);
+  border-radius: 9px;
+  padding: 5px 11px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.topbar-title { font-size: 13px; color: var(--gray); }
+
+.detail { padding: 12px 16px 14px; }
+
+.rows {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 9px 10px;
+  margin-top: 8px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--gray);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.rows .hot { color: var(--red); }
+.rows .ok { color: var(--green); }
+.rows .warn { color: var(--amber); }
+
+.note { font-size: 12px; color: var(--gray); margin-top: 8px; }
+.note.top { margin: 0 0 8px; }
+
+.cta {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px;
+  margin: 10px 0 0;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* An action the student should think twice about. */
+.cta.danger {
+  background: none;
+  border: 1px solid rgba(var(--red-rgb), 0.55);
+  color: var(--red);
+}
+
+.banner {
+  display: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.banner.show { display: block; }
+.banner.good { background: rgba(var(--green-rgb), 0.12); color: var(--green); }
+.banner.warn { background: rgba(var(--amber-rgb), 0.12); color: var(--amber); }
+.banner.bad { background: rgba(var(--red-rgb), 0.12); color: var(--red); }
+
+.tool-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* ---------- alert cards ---------- */
+
+.choice.card { display: block; }
+.card-title { font-size: 14px; font-weight: 700; margin-top: 4px; }
+.card.read .card-title { color: var(--gray); font-weight: 600; }
+
+/* Severity is what the TOOL guessed, so it is shown as a label, not a verdict. */
+.sev {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  border-radius: 5px;
+  padding: 1px 7px;
+}
+.sev-low { color: var(--gray); border: 1px solid rgba(var(--gray-rgb), 0.5); }
+.sev-med { color: var(--amber); border: 1px solid rgba(var(--amber-rgb), 0.55); }
+.sev-high { color: var(--red); border: 1px solid rgba(var(--red-rgb), 0.6); }
+
+/* Both buttons look identical until one is chosen: the colour marks WHAT YOU
+   DECIDED, not whether you were right. */
+.verdict-row { display: flex; gap: 8px; margin-top: 10px; }
+
+.verdict-btn {
+  flex: 1 1 0;
+  background: rgba(var(--blue-dark-rgb), 0.55);
+  border: 1px solid rgba(var(--gray-rgb), 0.35);
+  color: var(--gray);
+  border-radius: 999px;
+  padding: 8px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.verdict-btn.picked-a {
+  background: rgba(var(--violet-rgb), 0.18);
+  border-color: var(--violet);
+  color: var(--violet);
+}
+
+.verdict-btn.picked-b {
+  background: rgba(var(--cyan-rgb), 0.18);
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+
+/* ---------- containment actions ---------- */
+
+.device {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.device.odd { border-color: rgba(var(--cyan-rgb), 0.45); }
+
+.device-name { grid-column: 1; font-size: 13px; font-weight: 700; }
+.device-sub { grid-column: 1; font-size: 12px; color: var(--gray); }
+.device > .small-btn, .device > .state { grid-column: 2; grid-row: 1 / span 2; }
+
+.small-btn {
+  border: none;
+  border-radius: 8px;
+  background: var(--cyan);
+  color: var(--on-accent);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+
+/* ---------- pick lists ---------- */
+
+.cond {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.3);
+  border-radius: 10px;
+  padding: 10px 11px;
+  margin-bottom: 7px;
+  color: var(--white);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.cond.on { border-color: var(--cyan); background: rgba(var(--cyan-rgb), 0.10); }
+
+.cond-box {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid var(--gray);
+  font-size: 12px;
+  line-height: 14px;
+  text-align: center;
+  font-weight: 800;
+}
+.cond.on .cond-box { border-color: var(--cyan); background: var(--cyan); color: var(--on-accent); }
+
+.cond-text b { display: block; }
+.fix-line { display: block; font-size: 12px; color: var(--gray); margin-top: 3px; }
+
+/* ---------- report form ---------- */
+
+.form-row { display: block; margin-bottom: 12px; }
+.form-row:last-child { margin-bottom: 0; }
+
+.form-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 4px;
+}
+
+.form-select {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--gray-rgb), 0.4);
+  background: var(--card);
+  color: var(--white);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* ---------- scorecard ---------- */
+
+.scorecard {
+  margin-top: 12px;
+  background: var(--card);
+  border: 1px solid rgba(var(--cyan-rgb), 0.45);
+  border-radius: 14px;
+  padding: 14px;
+  text-align: center;
+}
+
+.grade {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--cyan);
+}
+
+.score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.score-grid div {
+  background: rgba(var(--blue-dark-rgb), 0.5);
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.score-grid b { display: block; font-size: 16px; word-break: normal; }
+.score-grid span { display: block; font-size: 10px; color: var(--gray); letter-spacing: 0.06em; }
+
+/* ==========================================================================
+   SCENARIO CONTENT FRAMES — shared block, identical in every simulation.
+   Paste this unchanged into each styles.css; never edit one copy alone.
+
+   A frame means "judge this". Anything the app says ABOUT the simulation —
+   a tool, an instruction, a button — takes .appui instead and is never framed.
+
+   The rail colour says what KIND of thing it is, never whether it is safe.
+   Green, amber and red stay reserved for verdicts and severity, which the
+   student only sees after answering.
+   ========================================================================== */
+
+.artifact {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid rgba(var(--cyan-rgb), 0.30);
+  border-left: 4px solid var(--cyan);
+  border-radius: 3px 14px 14px 3px;
+  padding: 26px 14px 13px;
+  margin: 12px 0;
+}
+
+.artifact-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--cyan);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  padding: 2px 11px 3px;
+  border-radius: 0 0 11px 0;
+}
+
+/* Message — email, SMS, chat, a forwarded report. */
+.artifact.a-msg { border-color: rgba(var(--cyan-rgb), 0.30); border-left-color: var(--cyan); }
+.artifact.a-msg > .artifact-tag { background: var(--cyan); }
+
+/* Web page — anything rendered as a site in the sandbox browser. */
+.artifact.a-web { border-color: rgba(var(--white-rgb), 0.28); border-left-color: var(--white); }
+.artifact.a-web > .artifact-tag { background: var(--white); }
+
+/* Person — what a human said: a report, an interview, a recorded call. */
+.artifact.a-per { border-color: rgba(var(--violet-rgb), 0.32); border-left-color: var(--violet); }
+.artifact.a-per > .artifact-tag { background: var(--violet); }
+
+/* System record — logs, headers, page code, badge swipes. Always monospaced. */
+.artifact.a-sys { border-color: rgba(var(--gray-rgb), 0.30); border-left-color: var(--gray); }
+.artifact.a-sys > .artifact-tag { background: var(--gray); }
+
+/* The simulation's own UI: a tool or an instruction, never evidence. */
+.appui {
+  border: 1px dashed rgba(var(--gray-rgb), 0.40);
+  border-radius: 12px;
+  background: rgba(var(--blue-dark-rgb), 0.40);
+  padding: 12px 14px;
+  margin: 12px 0;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.appui b {
+  display: block;
+  color: var(--white);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+/* Content sitting directly inside a frame shouldn't add an outer gap. */
+.artifact > h2 { margin-top: 0; }
+.artifact > *:last-child { margin-bottom: 0; }
+
+/* ==========================================================================
+   CHOICE CARDS — the list a simulation opens on, the items the student picks.
+   Shared block: keep it identical in every styles.css.
+
+   One outlined card per choice with a gap between them, instead of rows
+   divided by hairlines, so a list of five can be counted at a glance and
+   each item is obviously its own tappable thing.
+
+   The OUTLINE carries progress, not danger: bright while an item is still
+   waiting for the student, faint once it has been opened. The optional left
+   rail carries whatever that desk genuinely sorts by — severity on a SOC
+   queue, kind of contact on a review desk — and is left off where there is
+   nothing to sort by.
+   ========================================================================== */
+
+.choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid rgba(var(--cyan-rgb), 0.18);
+  border-radius: 14px;
+  margin: 0 12px 10px;
+  padding: 12px 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Still waiting for the student. */
+.choice.unread { border-color: rgba(var(--cyan-rgb), 0.50); }
+
+/* Dealt with: the card recedes so the remaining work stands out. */
+.choice.read { border-color: rgba(var(--gray-rgb), 0.20); }
+
+.choice:active { background: var(--blue-dark); }
+
+/* A rail sits flush against the card's left edge, so the card gives up its
+   own padding and lets the body carry it. */
+.choice.has-rail { align-items: stretch; padding: 0; gap: 0; }
