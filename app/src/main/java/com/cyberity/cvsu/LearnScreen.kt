@@ -220,7 +220,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         levels = listOf(
             LearningLevel(601, "Security Incidents", "Security lab: Monday morning on the ITSO service desk — seven weekend tickets, three real incidents, and a \"probably spam\" report that is still sending phishing as you read.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(602, "Detection", "Security lab: rewind the breach on the campus monitoring console — sort real alerts from false alarms, read the logs, find three hidden victims, and build the alert that was missing.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
-            LearningLevel(603, "Containment", "Isolate the damage before you start cleaning up.", 25, LevelType.LESSON, LevelStatus.LOCKED),
+            LearningLevel(603, "Containment", "Security lab: four hijacked accounts and a phishing counter that won't stop — cut the attacker off, keep the evidence, follow the harm, and prove they can't get back in.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(604, "Recovery", "Restore safely and close the hole behind you.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(605, "Incident Response Simulation", "Run point on a live breach from alert to write-up.", 80, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 20)
         )
@@ -1710,6 +1710,7 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     405 -> LevelContent.Lab(malwareTriageLab(), malwareClueLabels)
     601 -> LevelContent.Lab(securityIncidentsLab(), securityIncidentsClueLabels)
     602 -> LevelContent.Lab(detectionLab(), detectionClueLabels)
+    603 -> LevelContent.Lab(containmentLab(), containmentClueLabels)
     else -> null
 }
 
