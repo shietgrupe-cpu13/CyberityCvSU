@@ -63,7 +63,7 @@
   --surface-rgb: 231, 239, 238;
 }
 
-/* Cyberity — Incident Desk (level 601). */
+/* Cyberity — Incident Hotline (level 601). */
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -227,6 +227,28 @@ body { padding-bottom: 28px; }
 .detail h2 { margin: 0 0 4px; font-size: 17px; line-height: 1.35; }
 .detail-sub { font-size: 12px; color: var(--gray); }
 .report-text { font-size: 14px; margin: 10px 0 0; }
+
+/* A text or a Messenger chat reads as a message; an email keeps its header. */
+.report-chat { margin-top: 10px; }
+
+.sys-line {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--gray);
+  word-break: normal;
+}
+
+.mail-head {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--gray);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 
 .rows {
   background: var(--code-bg);

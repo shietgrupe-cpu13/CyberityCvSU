@@ -1,4 +1,4 @@
-/* Cyberity — Incident Desk (level 601).
+/* Cyberity — Incident Hotline (level 601).
  * Local only. Fictional people, tickets, hosts and addresses; nothing is sent,
  * no account is touched, and nothing on the device this runs on changes.
  */
@@ -44,15 +44,17 @@ function escapeHtml(text) {
 }
 
 /* ---------------------------------------------------------------------------
- * The seven weekend tickets
+ * The seven weekend reports
  *
- * Every ticket gets the same card and the same weight on the desk: nothing in
- * the list says which are incidents. The loud ones (antivirus, firewall) are
- * events; the apologetic one (TKT-0144) is the worst thing in the queue.
+ * They reached the incident hotline as texts, Messenger chats, an email and one
+ * automatic notice. Every report gets the same card and the same weight:
+ * nothing in the list says which are incidents. The loud ones (antivirus,
+ * firewall) are events; the apologetic text (TKT-0144) is the worst
+ * thing in the queue.
  * ------------------------------------------------------------------------ */
 var TICKETS = {
   t1: {
-    id: 't1', code: 'TKT-0139', when: 'Sat 11:20 PM', channel: 'WEB FORM',
+    id: 't1', code: 'TKT-0139', when: 'Sat 11:20 PM', channel: 'MESSENGER',
     title: 'Someone tried to log in to my portal?',
     from: 'Ana C. · BSCS 2',
     report: 'I got an email saying there was a failed login on my student portal account at ' +
@@ -76,7 +78,7 @@ var TICKETS = {
   },
 
   t2: {
-    id: 't2', code: 'TKT-0140', when: 'Sun 2:35 PM', channel: 'CALL',
+    id: 't2', code: 'TKT-0140', when: 'Sun 2:35 PM', channel: 'SMS',
     title: 'Antivirus warning on LAB04',
     from: 'Lab technician · Computer Laboratory 1',
     report: 'Antivirus popped up on LAB04 during the weekend open lab. A student tried to ' +
@@ -94,38 +96,38 @@ var TICKETS = {
           '',
           'session: guest account, no admin rights'
         ],
-        note: 'The scariest-looking ticket in the queue, and a defence that worked: the file never ' +
+        note: 'The scariest-sounding report in the queue, and a defence that worked: the file never ' +
           'ran. That is an event worth logging, not an incident.'
       }
     ]
   },
 
   t3: {
-    id: 't3', code: 'TKT-0141', when: 'Sat 9:40 PM', channel: 'WEB FORM',
-    title: 'Our grades are on the Freedom Wall',
-    from: 'Student · BSIT 3',
-    report: 'Someone posted a link on the CvSU Freedom Wall page. It opens a spreadsheet with ' +
-      'ALL the BSIT students\' grades, birthdays and home addresses. Mine is in there. Please ' +
-      'do something.',
+    id: 't3', code: 'TKT-0141', when: 'Sat 9:40 PM', channel: 'MESSENGER',
+    title: 'I got everyone\'s OJT forms by email??',
+    from: 'Student · BSIT 2',
+    report: 'Hi po. I just got an email from the OJT coordinator with a PDF of all the 4th ' +
+      'years\' internship forms. Home addresses, birthdays, PhilHealth numbers, emergency ' +
+      'contacts. I\'m not even in 4th year. I think the whole department got it?',
     tools: [
       {
-        label: 'WHAT\'S IN THE FILE', sub: 'The sheet behind the link',
-        clue: 'file_t3', tag: 'FILE DETAILS · BSIT_grades_2nd_sem_FINAL.xlsx',
+        label: 'WHAT WAS SENT', sub: 'The email and its attachment',
+        clue: 'file_t3', tag: 'MAIL LOG · from ojt.coordinator@cvsu.edu.ph',
         rows: [
-          'owner:    registrar.staff3@cvsu.edu.ph',
-          '<span class="hot">sharing:  anyone with the link can view</span>',
-          'shared:   Sat 19:20',
+          'sent:      Sat 19:20',
+          'subject:   "OJT forms for endorsement"',
+          '<span class="hot">to:        bsit-all@cvsu.edu.ph (1,214 people)</span>',
+          'meant for: bsit-ojt-panel@cvsu.edu.ph (6 people)',
           '',
-          'rows:     1,214 students',
-          'columns:',
-          '<span class="hot">  student number</span>',
-          '  full name',
+          'attachment: OJT_Forms_BSIT4.pdf',
+          '  300 students, one page each:',
           '<span class="hot">  birthday</span>',
           '<span class="hot">  home address</span>',
-          '<span class="hot">  final grades, every subject</span>'
+          '<span class="hot">  PhilHealth number</span>',
+          '<span class="hot">  emergency contact name and phone</span>'
         ],
-        note: 'A staff member meant to share it with one office and picked "anyone with the link" ' +
-          'instead. No hacker needed: personal data is exposed all the same.'
+        note: 'The address book suggested "bsit-all" when the coordinator typed "bsit". No hacker ' +
+          'needed: personal data is exposed all the same.'
       },
       {
         label: 'INCIDENT POLICY', sub: 'CvSU ITSO reporting procedure',
@@ -147,41 +149,41 @@ var TICKETS = {
           '<span class="warn">   University learning of the breach,</span>',
           '<span class="warn">   and notifies the affected people.</span>',
           '',
-          '<span class="hot">this ticket received:  Sat 21:40</span>',
+          '<span class="hot">this report received:  Sat 21:40</span>',
           '<span class="hot">now:                   Mon 08:02</span>',
           '<span class="hot">72-hour deadline:      Tue 21:40</span>'
         ],
-        note: 'The clock started when the student told ITSO, not when someone opened the ticket. ' +
-          'Over 58 of the 72 hours are already gone.'
+        note: 'The clock started when the student told the hotline, not when someone opened the ' +
+          'report. Over 58 of the 72 hours are already gone.'
       },
       {
-        label: 'FOLLOW-UP', sub: 'What changed since the ticket came in',
-        clue: 'update_t3', tag: 'FOLLOW-UP · Registrar',
+        label: 'FOLLOW-UP', sub: 'What changed since the report came in',
+        clue: 'update_t3', tag: 'FOLLOW-UP · mail server',
         rows: [
-          'Sun 09:05  Registrar turned link sharing OFF',
-          '           (staff saw the post themselves)',
-          '<span class="ok">link now: access denied</span>',
+          'Sun 09:05  coordinator noticed and asked',
+          '           for the message to be recalled',
+          '<span class="ok">recalled:  412 unopened copies</span>',
           '',
-          '<span class="hot">open for:          13 h 45 min</span>',
-          '<span class="hot">times opened:      640</span>',
-          '<span class="hot">copies downloaded: unknown</span>'
+          '<span class="hot">opened before recall:   802</span>',
+          '<span class="hot">attachment downloaded:  211</span>',
+          '<span class="hot">forwarded outside CvSU: 9</span>'
         ],
-        note: 'The leak has stopped, but anyone who opened it in those 14 hours could have kept a ' +
-          'copy. Closing a link doesn\'t un-expose the data.'
+        note: 'The recall pulled back the copies nobody had opened yet. It can\'t pull back what 802 ' +
+          'people already read, or the 9 copies now outside CvSU.'
       }
     ],
     actions: [
       {
-        label: 'POST A WARNING ON THE FREEDOM WALL', clue: 'posted_wall',
-        result: 'Blocked by the simulation. A public post sends even more people looking for the ' +
-          'sheet, and announces the breach before the DPO has assessed it or the affected ' +
-          'students have been told properly. Report it; don\'t broadcast it.'
+        label: 'REPLY ALL TELLING EVERYONE TO DELETE IT', clue: 'replied_all',
+        result: 'Blocked by the simulation. A reply-all to 1,214 people makes everyone who skipped ' +
+          'the email go and open it, and announces the breach before the DPO has assessed it or ' +
+          'the 300 students have been told properly. Report it; don\'t broadcast it.'
       }
     ]
   },
 
   t4: {
-    id: 't4', code: 'TKT-0144', when: 'Mon 7:57 AM', channel: 'EMAIL',
+    id: 't4', code: 'TKT-0144', when: 'Mon 7:57 AM', channel: 'SMS', missed: 'Missed call · Mon 7:55 AM',
     title: 'Strange replies from my students',
     from: 'Prof. Liza Ramos · Department of IT',
     report: 'Good morning. Since earlier, some of my students have been replying to me asking ' +
@@ -274,32 +276,34 @@ var TICKETS = {
   },
 
   t5: {
-    id: 't5', code: 'TKT-0142', when: 'Sun 12:10 AM', channel: 'WEB FORM',
-    title: 'Portal won\'t load!!',
+    id: 't5', code: 'TKT-0142', when: 'Sat 2:15 PM', channel: 'MESSENGER',
+    title: 'Library Wi-Fi is dead!!',
     from: 'Student · BSHM 1',
-    report: 'I\'ve been trying to submit my enlistment since 10 PM and the portal won\'t load. ' +
-      'Deadline is Monday!! Are we hacked??',
+    report: 'The Wi-Fi in the library has been down since this morning and our group report is ' +
+      'due Monday!! Someone said it got hacked?? Is it safe to use mobile data?',
     tools: [
       {
         label: 'ITSO ANNOUNCEMENTS', sub: 'Posted on the ITSO page this week',
         tag: 'ANNOUNCEMENT · CvSU ITSO page',
         rows: [
-          'Wed 10:00  "Student portal maintenance:',
-          '            Sat 10:00 PM to Sun 2:00 AM.',
-          '            Please submit enlistment early."',
+          'Wed 10:00  "Library Wi-Fi upgrade:',
+          '            Sat 8:00 AM to 5:00 PM.',
+          '            New access points on all floors.',
+          '            Wi-Fi will be off during the work."',
           '',
-          '<span class="ok">Sun 01:41  portal back online</span>',
-          'data lost:          none',
+          '<span class="ok">Sat 16:38  library Wi-Fi back online</span>',
+          'devices affected:   library only',
           'unexpected access:  none'
         ],
-        note: 'The portal was down, but on purpose, on schedule, and announced. Planned work is not ' +
-          'an incident, even when it\'s badly timed.'
+        note: 'The Wi-Fi was off, but on purpose, on schedule, and announced. Planned work is not ' +
+          'an incident, even when the timing is bad for someone.'
       }
     ]
   },
 
   t6: {
     id: 't6', code: 'TKT-0143', when: 'Sat 4:20 PM', channel: 'EMAIL',
+    address: 'b.aquino@cvsu.edu.ph', subject: 'Work laptop stolen',
     title: 'Work laptop stolen',
     from: 'Mr. Ben Aquino · Guidance Office',
     report: 'My car window was smashed in a mall parking lot this afternoon and my bag was taken. ' +
@@ -454,17 +458,38 @@ function renderTicket(mountId) {
       '<span class="artifact-tag">' + escapeHtml(t.channel) + ' · ' + escapeHtml(t.when) + '</span>' +
       '<h2>' + escapeHtml(t.title) + '</h2>' +
       '<div class="detail-sub">' + escapeHtml(t.from) + '</div>' +
-      '<p class="report-text">' + escapeHtml(t.report) + '</p>' +
+      reportBody(t) +
     '</div>' +
     '<div class="section-label flush">Evidence</div>' +
     tools +
     (actions ? '<div class="section-label flush">Actions</div>' + actions : '') +
     '<div class="banner" id="ticket-banner"></div>' +
-    '<a class="cta" href="desk.html">BACK TO THE DESK</a>';
+    '<a class="cta" href="desk.html">BACK TO THE HOTLINE</a>';
 
   var title = document.getElementById('ticket-title');
   if (title) title.textContent = t.code;
   window.scrollTo(0, 0);
+}
+
+/** Each channel looks like what it is: a text, a Messenger chat, an email, a notice. */
+function reportBody(t) {
+  if (t.channel === 'SMS' || t.channel === 'MESSENGER') {
+    var source = t.channel === 'SMS' ? 'to the ITSO hotline number' : 'to the ITSO Facebook page';
+    return '<div class="chat report-chat">' +
+        (t.missed ? '<div class="sys-line mono">&#9742; ' + escapeHtml(t.missed) + '</div>' : '') +
+        '<div class="bubble-row"><div class="bubble">' + escapeHtml(t.report) + '</div></div>' +
+        '<div class="sys-line mono">' + source + '</div>' +
+      '</div>';
+  }
+  if (t.channel === 'EMAIL') {
+    return '<div class="mail-head mono">' +
+        'From:    ' + escapeHtml(t.address) + '\n' +
+        'To:      itso-incident@cvsu.edu.ph\n' +
+        'Subject: ' + escapeHtml(t.subject) +
+      '</div>' +
+      '<p class="report-text">' + escapeHtml(t.report) + '</p>';
+  }
+  return '<p class="report-text mono">' + escapeHtml(t.report) + '</p>';
 }
 
 function openTool(index) {
@@ -537,8 +562,8 @@ function submitTriage() {
   if (missing > 0) {
     banner.className = 'banner show warn';
     banner.textContent = missing === 1
-      ? 'One ticket still has no tag.'
-      : missing + ' tickets still have no tag.';
+      ? 'One report still has no tag.'
+      : missing + ' reports still have no tag.';
     return;
   }
   var right = ORDER.filter(function (id) { return tags[id] === TRIAGE_KEY[id]; }).length;
@@ -563,8 +588,8 @@ function submitTriage() {
  * the discovery time in place of the start time, a guess in place of a fact.
  * ------------------------------------------------------------------------ */
 var CHAT = [
-  { us: true, t: '8:10', text: 'Good morning, Prof. Ramos. This is the ITSO service desk about ' +
-    'your ticket. Please don\'t delete anything or restart your PC for now.' },
+  { us: true, t: '8:10', text: 'Good morning, Prof. Ramos. This is the ITSO incident hotline about ' +
+    'your text. Please don\'t delete anything or restart your PC for now.' },
   { us: false, t: '8:10', text: 'Oh, okay. I haven\'t touched anything. Is it serious?' },
   { us: true, t: '8:11', text: 'Did you open any email recently that asked you to log in?' },
   { us: false, t: '8:12', text: 'The "Payroll update" one on Friday. I clicked it at 4:47, I ' +
@@ -596,7 +621,7 @@ var FIELDS = [
       'Fri 4:47 PM · password typed into the fake page',
       'Sat 2:10 AM · forwarding rule created',
       'Mon 7:55 AM · she noticed the replies',
-      'Mon 8:02 AM · ticket opened by the desk'
+      'Mon 8:02 AM · text read by the hotline'
     ],
     correct: 0
   },
@@ -606,7 +631,7 @@ var FIELDS = [
       'Fri 4:47 PM · password typed into the fake page',
       'Sat 2:10 AM · forwarding rule created',
       'Mon 7:55 AM · she noticed the replies',
-      'Mon 8:02 AM · ticket opened by the desk'
+      'Mon 8:02 AM · text read by the hotline'
     ],
     correct: 2
   },
@@ -616,7 +641,7 @@ var FIELDS = [
       'A student who received the email',
       'Prof. Liza Ramos, Department of IT',
       'The campus firewall',
-      'The service desk'
+      'The incident hotline'
     ],
     correct: 1
   },
@@ -644,7 +669,7 @@ var FIELDS = [
     options: [
       'Phishing email deleted and PC restarted',
       'Warning forwarded to all staff',
-      'Her password changed by the service desk',
+      'Her password changed by the hotline',
       'Nothing changed on her PC or mailbox; reported to the ITSO incident line at 8:15 AM'
     ],
     correct: 3

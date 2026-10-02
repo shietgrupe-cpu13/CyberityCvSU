@@ -236,7 +236,7 @@ fun incidentResponseSimLab(): LabDefinition = LabDefinition(
                 correctIndex = 3
             ),
             hints = listOf(
-                "This is the same rule as the grades sheet in 601.",
+                "This is the same rule as the misdirected OJT email in 601.",
                 "The clock starts when the University knows, not when the money moves."
             ),
             successFeedback = "Within 72 hours. Portal profiles hold birthdays, addresses and " +

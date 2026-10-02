@@ -124,15 +124,16 @@ var ALERTS = [
     ]
   },
   {
-    id: 'a6', sev: 'HIGH', when: 'Sun 1:00 AM', real: false,
-    title: 'Large transfer: 40 GB to an external address',
+    id: 'a6', sev: 'HIGH', when: 'Sun 8:00 AM', real: false,
+    title: 'Sign-in surge: 912 sign-ins to e-learning in 10 minutes',
     rows: [
-      'host:   backup01 · ITSO server room',
-      'to:     offsite backup provider (contracted)',
-      'size:   40.2 GB',
+      'site:     elearn.cvsu.edu.ph',
+      'accounts: 912 different students',
+      'from:     homes and mobile data, all PH',
+      'failed:   14 (normal typos)',
       '',
-      'same transfer, every night at 01:00,',
-      'last 180 nights: 38 to 44 GB'
+      'e-learning calendar: "GE Math online',
+      'quiz, Sun 8:00 AM, all sections"'
     ]
   },
   {

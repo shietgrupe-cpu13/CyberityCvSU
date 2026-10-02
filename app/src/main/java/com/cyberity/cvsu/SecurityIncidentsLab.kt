@@ -1,7 +1,7 @@
 package com.cyberity.cvsu
 
 // ===========================================================================
-// LEVEL 601 CONTENT — Security Incidents, Monday morning at the ITSO desk
+// LEVEL 601 CONTENT — Security Incidents, Monday morning on the ITSO hotline
 // ===========================================================================
 // Content only. Engine is LabModel.kt / LabScreen.kt, same format as 401-404:
 // every task teaches first (guide), says exactly what to do (steps), then asks.
@@ -11,8 +11,13 @@ package com.cyberity.cvsu
 // first responder's three habits: don't destroy evidence, tell the right
 // people, and work the incident that is still happening first. It ends with
 // the report that hands the case to Detection (602) and Containment (603).
+//
+// Kept deliberately apart from Level 103 (CIA Triad), which already uses a
+// ticket desk, a link-sharing leak and a portal outage: reports here arrive
+// as texts, Messenger chats and email, the leak is a misdirected email, and the noise is a
+// planned Wi-Fi upgrade.
 
-/** Clue ids reported by the incident desk through the JS bridge. */
+/** Clue ids reported by the incident hotline through the JS bridge. */
 object SecurityIncidentsClues {
     const val OPENED_T1 = "opened_t1"
     const val OPENED_T2 = "opened_t2"
@@ -36,24 +41,24 @@ object SecurityIncidentsClues {
     const val DELETED_EMAIL = "deleted_email"
     const val FORWARDED_EMAIL = "forwarded_email"
     const val RESTARTED_PC = "restarted_pc"
-    const val POSTED_WALL = "posted_wall"
+    const val REPLIED_ALL = "replied_all"
 }
 
 val securityIncidentsClueLabels: Map<String, String> = mapOf(
     SecurityIncidentsClues.OPENED_T1 to "Opened TKT-0139 · failed portal login",
     SecurityIncidentsClues.OPENED_T2 to "Opened TKT-0140 · antivirus on LAB04",
-    SecurityIncidentsClues.OPENED_T3 to "Opened TKT-0141 · grades sheet on Facebook",
+    SecurityIncidentsClues.OPENED_T3 to "Opened TKT-0141 · OJT forms sent to the wrong list",
     SecurityIncidentsClues.OPENED_T4 to "Opened TKT-0144 · strange replies to a professor",
-    SecurityIncidentsClues.OPENED_T5 to "Opened TKT-0142 · portal down Saturday",
+    SecurityIncidentsClues.OPENED_T5 to "Opened TKT-0142 · library Wi-Fi down Saturday",
     SecurityIncidentsClues.OPENED_T6 to "Opened TKT-0143 · stolen Guidance laptop",
     SecurityIncidentsClues.OPENED_T7 to "Opened TKT-0145 · firewall blocked connections",
-    SecurityIncidentsClues.TRIAGE_COMPLETE to "Sorted all seven tickets correctly",
+    SecurityIncidentsClues.TRIAGE_COMPLETE to "Sorted all seven reports correctly",
     SecurityIncidentsClues.EMAIL_T4 to "Read the email Prof. Ramos clicked",
     SecurityIncidentsClues.RULES_T4 to "Checked her mailbox rules",
     SecurityIncidentsClues.OUTBOX_T4 to "Checked her sent log",
-    SecurityIncidentsClues.FILE_T3 to "Checked what the leaked sheet contains",
+    SecurityIncidentsClues.FILE_T3 to "Checked what the misdirected email contained",
     SecurityIncidentsClues.POLICY_T3 to "Read the CvSU incident reporting policy",
-    SecurityIncidentsClues.UPDATE_T3 to "Read the Registrar's follow-up",
+    SecurityIncidentsClues.UPDATE_T3 to "Read the mail recall follow-up",
     SecurityIncidentsClues.DEVICE_T6 to "Checked the stolen laptop's device record",
     SecurityIncidentsClues.CHAT_T4 to "Read the chat with Prof. Ramos",
     SecurityIncidentsClues.REPORT_COMPLETE to "Filed a complete incident report"
@@ -61,19 +66,19 @@ val securityIncidentsClueLabels: Map<String, String> = mapOf(
 
 fun securityIncidentsLab(): LabDefinition = LabDefinition(
     levelId = 601,
-    title = "Incident Desk",
+    title = "Hotline Shift",
     subtitle = "Security Incidents · ITSO",
     briefing = "Every defence in this course can fail. When one does, what happens in the " +
             "first hour decides how bad it gets, and the first person to hear about it is " +
-            "rarely a security expert. It is whoever is sitting at the help desk.\n\n" +
-            "It is Monday, 8:02 AM. You are the student assistant at the CvSU IT Services " +
-            "Office service desk, and the staff member on duty is on leave. Seven reports " +
-            "came in over the weekend. Some are real security incidents. Most are the normal " +
-            "noise of a campus network.\n\n" +
+            "rarely a security expert. It is whoever picks up the phone.\n\n" +
+            "It is Monday, 8:02 AM. You are the student assistant on the CvSU IT Services " +
+            "Office incident hotline, and the staff member on duty is on leave. Seven reports " +
+            "came in over the weekend, by text, Messenger, email and one automatic notice. Some are " +
+            "real security incidents. Most are the normal noise of a campus.\n\n" +
             "Your job: sort them, protect the evidence, tell the right people, decide what " +
-            "goes first, and write the report. Reading tickets is free. Actions that destroy " +
+            "goes first, and write the report. Reading reports is free. Actions that destroy " +
             "evidence or spread the damage cost a heart.\n\n" +
-            "Each task explains what to look for, then hands you the desk. Open it with the " +
+            "Each task explains what to look for, then hands you the hotline. Open it with the " +
             "button, and swipe the bar at the top of it down when you are ready to answer.",
     assetDir = "UNIT 06/incident_desk",
     startPage = "desk.html",
@@ -81,38 +86,38 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
         SecurityIncidentsClues.DELETED_EMAIL,
         SecurityIncidentsClues.FORWARDED_EMAIL,
         SecurityIncidentsClues.RESTARTED_PC,
-        SecurityIncidentsClues.POSTED_WALL
+        SecurityIncidentsClues.REPLIED_ALL
     ),
     tasks = listOf(
 
         LabTask(
             id = "t1",
             title = "Event or incident?",
-            objective = "**Open all seven tickets**, then use the **triage board** to tag each " +
+            objective = "**Open all seven reports**, then use the **triage board** to tag each " +
                     "one an **Event** or an **Incident**. When the board is right, answer " +
                     "**what separates the two**.",
             guide = listOf(
                 "An **event** is anything observable that happens on a system or network: a " +
-                        "login, a blocked download, a firewall drop, a server restart. A campus " +
-                        "network produces **thousands of events a day**, and almost all of them " +
-                        "are normal.",
-                "A **security incident** is an event that **actually harms**, or is **about " +
-                        "to harm**, the **confidentiality, integrity or availability** of " +
-                        "information or systems, or that **breaks a security policy**. Data " +
-                        "seen by people who shouldn't see it, an account in the wrong hands, a " +
-                        "device with sensitive data gone missing.",
+                        "login, a blocked download, a firewall drop, a Wi-Fi network going " +
+                        "offline. A campus produces **thousands of events a day**, and almost " +
+                        "all of them are normal.",
+                "A **security incident** is an event that **actually causes harm**, or is " +
+                        "**about to**: personal data **sent or shown** to the wrong people, an " +
+                        "account **in the wrong hands**, a device with sensitive data **gone " +
+                        "missing**, or a security **policy broken**.",
                 "Two traps. A **scary-sounding** event isn't automatically an incident: a " +
                         "control that **blocked** an attack means the defence **worked**. And a " +
                         "**boring-sounding** report can be the worst one in the queue. Judge " +
-                        "by **what was harmed**, not by how loud the ticket is."
+                        "by **what was harmed**, not by how worried the caller sounds."
             ),
             steps = listOf(
-                "Open the desk. **Seven tickets** are waiting.",
-                "Tap each ticket. Read the report, then open its **evidence**. Use **← Desk** " +
-                        "to go back.",
+                "Open the hotline. **Seven reports** are waiting: texts, Messenger chats, an email and one " +
+                        "automatic notice.",
+                "Tap each report. Read it, then open its **evidence**. Use " +
+                        "**← Hotline** to go back.",
                 "For each one ask: did anything **actually get exposed, changed, taken or " +
                         "broken**, or did it just **happen**?",
-                "Back on the desk, tap **OPEN THE TRIAGE BOARD**, tag all seven, and submit. " +
+                "Back on the hotline, tap **OPEN THE TRIAGE BOARD**, tag all seven, and submit. " +
                         "The board says **how many** are right, not which.",
                 "**Swipe the bar** down and pick **what makes something an incident**."
             ),
@@ -127,7 +132,7 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                 SecurityIncidentsClues.OPENED_T7,
                 SecurityIncidentsClues.TRIAGE_COMPLETE
             ),
-            lockedMessage = "Open all seven tickets and get the triage board right first.",
+            lockedMessage = "Open all seven reports and get the triage board right first.",
             answer = LabAnswer.Choice(
                 options = listOf(
                     "A security tool flagged them, so they need to be investigated and closed",
@@ -140,13 +145,13 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
             hints = listOf(
                 "The antivirus popup and the firewall alert sound scary. What did they actually " +
                         "let through?",
-                "The portal outage was announced on Wednesday. Is a planned outage harm?"
+                "The Wi-Fi upgrade was announced on Wednesday. Is planned work harm?"
             ),
-            successFeedback = "Three incidents: the grades sheet (confidentiality), the " +
-                    "professor's mailbox (an account in an attacker's hands) and the stolen " +
-                    "laptop (a device with sensitive data gone). The antivirus block and the " +
-                    "firewall drops were defences doing their job, the failed login was a typo, " +
-                    "and the outage was planned. Loud isn't the same as harmful.",
+            successFeedback = "Three incidents: the OJT forms (personal data sent to the wrong " +
+                    "people), the professor's mailbox (an account in an attacker's hands) and " +
+                    "the stolen laptop (a device with sensitive data gone). The antivirus block " +
+                    "and the firewall drops were defences doing their job, the failed login was " +
+                    "a typo, and the Wi-Fi work was planned. Loud isn't the same as harmful.",
             failureFeedback = "Not that. Two of the four events raised alerts, and one incident " +
                     "was reported almost apologetically. Ask what was actually harmed."
         ),
@@ -172,7 +177,7 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                         "team's call (Level 603)."
             ),
             steps = listOf(
-                "Open TKT-0144 and read Prof. Ramos's report.",
+                "Open TKT-0144 and read Prof. Ramos's text.",
                 "Tap **THE EMAIL SHE CLICKED**. Note the **link's real address** and **when** " +
                         "she entered her password.",
                 "Tap **MAILBOX RULES**. Find the rule she didn't make: **when** it was created " +
@@ -213,9 +218,9 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t3",
             title = "Who do you tell?",
-            objective = "TKT-0141: a student found the BSIT grades sheet on the Freedom Wall. " +
-                    "**Check what's in the file** and **read the incident policy**, then choose " +
-                    "**who must be told, and how fast**.",
+            objective = "TKT-0141: the OJT coordinator emailed 300 students' internship forms to " +
+                    "the whole department. **Check what was sent** and **read the incident " +
+                    "policy**, then choose **who must be told, and how fast**.",
             guide = listOf(
                 "Reporting an incident goes through the **official channel**, never around it. " +
                         "At CvSU that means the **ITSO incident line**, which brings in the " +
@@ -228,16 +233,17 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                         "the **NPC within 72 hours** of the school learning about it, and the " +
                         "**affected people** to be told.",
                 "Under the law, **sensitive personal information** includes a person's **age or " +
-                        "birthday**, **education** records and government-issued **ID numbers**. " +
-                        "A grades sheet is exactly that. And the **72 hours** start when the " +
-                        "school **first knew**, not when someone got around to the ticket."
+                        "birthday** and government-issued **ID numbers** like PhilHealth. A " +
+                        "breach doesn't need a hacker: an email sent to the **wrong list** " +
+                        "counts. And the **72 hours** start when the school **first knew**, not " +
+                        "when someone got around to the report."
             ),
             steps = listOf(
-                "Open TKT-0141 and read the student's report.",
-                "Tap **WHAT'S IN THE FILE**. Count the **students** and note which **kinds of " +
-                        "data** are in it.",
+                "Open TKT-0141 and read the student's chat.",
+                "Tap **WHAT WAS SENT**. Note **how many students** are in the attachment, " +
+                        "**how many people** received it, and which **kinds of data** it holds.",
                 "Tap **INCIDENT POLICY** and find **who** must be told and **how fast**.",
-                "**Don't post** a public warning. It costs a heart.",
+                "**Don't reply-all** to the email. It costs a heart.",
                 "**Swipe the bar** down and choose who must be told."
             ),
             entryPage = "ticket.html#t3",
@@ -245,38 +251,37 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                 SecurityIncidentsClues.FILE_T3,
                 SecurityIncidentsClues.POLICY_T3
             ),
-            lockedMessage = "Check what's in the file and read the incident policy first.",
+            lockedMessage = "Check what was sent and read the incident policy first.",
             answer = LabAnswer.Choice(
                 options = listOf(
                     "ITSO and the Data Protection Officer, who handles the NPC report and the " +
                             "students",
-                    "The Registrar staffer who shared it, so they can fix the link before it " +
-                            "spreads",
-                    "The Freedom Wall admins, so the post comes down and students can protect " +
-                            "themselves",
+                    "The OJT coordinator who sent it, so they can quietly recall it and apologise",
+                    "Everyone on the mailing list, so they delete it and keep the data private",
                     "ITSO only. Personal data goes to the NPC only once someone actually misuses it"
                 ),
                 correctIndex = 0
             ),
             hints = listOf(
                 "The policy has a section just for personal data.",
-                "Birthdays, home addresses, student numbers and grades of 1,214 students: who " +
-                        "outside CvSU must hear about that, and within how many hours?"
+                "Birthdays, home addresses and PhilHealth numbers of 300 students: who outside " +
+                        "CvSU must hear about that, and within how many hours?"
             ),
-            successFeedback = "ITSO and the DPO. The sheet holds 1,214 students' birthdays, home " +
-                    "addresses, student numbers and grades: sensitive personal information. The " +
-                    "ticket came in Saturday at 9:40 PM, so the 72-hour clock has been running " +
-                    "for over 58 hours. The DPO needs to know this morning.",
-            failureFeedback = "Not that one. Quiet fixes hide the breach, public posts spread it, " +
-                    "and waiting runs out the legal clock. Read the policy's personal-data " +
-                    "section."
+            successFeedback = "ITSO and the DPO. The attachment holds 300 students' birthdays, " +
+                    "home addresses and PhilHealth numbers, and it went to 1,214 people: " +
+                    "sensitive personal information. The report came in Saturday at 9:40 PM, so " +
+                    "the 72-hour clock has been running for over 58 hours. The DPO needs to know " +
+                    "this morning.",
+            failureFeedback = "Not that one. Quiet fixes hide the breach, messages to everyone " +
+                    "spread it, and waiting runs out the legal clock. Read the policy's " +
+                    "personal-data section."
         ),
 
         LabTask(
             id = "t4",
             title = "What goes first?",
             objective = "Three confirmed incidents, one of you. **Check the latest on each** " +
-                    "(the sent log, the Registrar's follow-up, the laptop's device record), then " +
+                    "(the sent log, the mail recall follow-up, the laptop's device record), then " +
                     "**put them in order**.",
             guide = listOf(
                 "Incidents are handled by **priority**, not first-come, first-served. The first " +
@@ -287,13 +292,13 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                         "inconvenience.",
                 "Finally, what **protections** already limit the damage? A stolen device with " +
                         "**full-disk encryption** and **remote lock** is a loss, but the data on " +
-                        "it is far harder to read than a public link anyone can open."
+                        "it is far harder to read than an attachment hundreds have already opened."
             ),
             steps = listOf(
                 "Open **TKT-0144** (Prof. Ramos) and tap **SENT LOG**. Is anything happening " +
                         "**right now**?",
-                "Open **TKT-0141** (grades sheet) and tap **FOLLOW-UP**. Is the link **still " +
-                        "open**?",
+                "Open **TKT-0141** (OJT forms) and tap **FOLLOW-UP**. Is the email **still " +
+                        "spreading**?",
                 "Open **TKT-0143** (stolen laptop) and tap **DEVICE RECORD**. What protects " +
                         "the data on it?",
                 "Rank them: **still happening** first, then **people and data**, then " +
@@ -306,14 +311,14 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                 SecurityIncidentsClues.UPDATE_T3,
                 SecurityIncidentsClues.DEVICE_T6
             ),
-            lockedMessage = "Check the sent log, the Registrar's follow-up and the device record " +
+            lockedMessage = "Check the sent log, the mail recall follow-up and the device record " +
                     "first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Grades sheet, then laptop, then mailbox",
-                    "Grades sheet, then mailbox, then laptop",
-                    "Laptop, then grades sheet, then mailbox",
-                    "Mailbox, then grades sheet, then laptop"
+                    "OJT forms, then laptop, then mailbox",
+                    "OJT forms, then mailbox, then laptop",
+                    "Laptop, then OJT forms, then mailbox",
+                    "Mailbox, then OJT forms, then laptop"
                 ),
                 correctIndex = 3
             ),
@@ -321,14 +326,14 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                 "Only one of the three is still causing damage at 8 AM Monday.",
                 "Look at the timestamps at the bottom of Prof. Ramos's sent log."
             ),
-            successFeedback = "Mailbox first. The \"probably spam\" ticket is the only one still " +
-                    "happening: her account has sent 52 phishing emails to students since 7:30 " +
-                    "AM and is still going, from an address students trust. The grades link was " +
-                    "closed Sunday, but 1,214 students were exposed and the DPA clock is " +
+            successFeedback = "Mailbox first. The \"probably spam\" text is the only one " +
+                    "still happening: her account has sent 52 phishing emails to students since " +
+                    "7:30 AM and is still going, from an address students trust. The OJT email " +
+                    "was recalled Sunday, but 802 people had opened it and the DPA clock is " +
                     "running, so it's a close second. The laptop is encrypted and lockable, so " +
                     "it comes third.",
             failureFeedback = "Not that order. Check which incident is still causing harm right " +
-                    "now. That one goes first, whatever order the tickets arrived in."
+                    "now. That one goes first, whatever order the reports arrived in."
         ),
 
         LabTask(
@@ -351,7 +356,7 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                         "long the attacker went unseen."
             ),
             steps = listOf(
-                "On the desk, tap **OPEN THE INCIDENT REPORT FORM**.",
+                "On the hotline, tap **OPEN THE INCIDENT REPORT FORM**.",
                 "Tap **CHAT WITH PROF. RAMOS** and read the whole conversation.",
                 "Fill in each field from the chat and the evidence you've already seen on " +
                         "TKT-0144.",
@@ -361,11 +366,10 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                         "and type it **exactly as written**, braces included."
             ),
             entryPage = "report.html",
-            requiredClues = listOf(
-                SecurityIncidentsClues.CHAT_T4,
-                SecurityIncidentsClues.REPORT_COMPLETE
-            ),
-            lockedMessage = "Read the chat and submit a complete, correct report first.",
+            // The accepted report is the proof. Reading the chat is evidence, not a gate:
+            // a correct report without it must still unlock the answer.
+            requiredClues = listOf(SecurityIncidentsClues.REPORT_COMPLETE),
+            lockedMessage = "Submit a complete, correct report first.",
             answer = LabAnswer.Flag(
                 sha256 = "2a167341dd2af99230475aad6b6280a75dbe232a5a080f8789d4a92b70ee58f4"
             ),

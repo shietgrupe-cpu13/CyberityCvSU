@@ -117,7 +117,7 @@ var REQUESTS = [
   },
   {
     id: 'r3', who: 'Ms. Ana Mendoza', acct: 'a.mendoza', channel: 'CALLBACK', when: 'Tue 8:55 AM',
-    said: 'Left a voicemail asking for her account back. ITSO called her back.',
+    said: 'Texted the hotline asking for her account back. ITSO called her back.',
     checked: [
       '<span class="ok">called back: local 2231 (Accounting, on file)</span>',
       '<span class="ok">she answered and confirmed the request</span>'
