@@ -457,6 +457,9 @@ fun LearnScreen(
         mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
     }
 
+    // Name and tester flag for the public leaderboard entry.
+    var leaderboardProfile by remember(uid) { mutableStateOf<UserProfile?>(null) }
+
     // Reconciles against Firestore in the background. Normally a no-op visually,
     // since it usually matches what the cache already showed.
     LaunchedEffect(uid) {
@@ -466,6 +469,7 @@ fun LearnScreen(
             onResult = { profile ->
                 if (profile != null) {
                     hasCompletedOnboarding = profile.hasCompletedOnboarding
+                    leaderboardProfile = profile
                 }
             },
             onError = {}
@@ -554,6 +558,14 @@ fun LearnScreen(
     // What the student actually holds: everything levels paid out, less what
     // hints have cost. This is the figure hints are bought with.
     val totalXp = xpBalance(earned = levelXp.values.sum(), spent = xpSpent)
+
+    // Keeps this student's leaderboard entry in step with the balance above:
+    // a level paying out, a hint being bought, or the first open after an update.
+    LaunchedEffect(uid, leaderboardProfile, totalXp) {
+        val id = uid ?: return@LaunchedEffect
+        val profile = leaderboardProfile ?: return@LaunchedEffect
+        LeaderboardRepository.publish(id, profile, totalXp)
+    }
 
     // Charging is immediate and final — a hint stays bought even if the level
     // is abandoned straight afterwards.
