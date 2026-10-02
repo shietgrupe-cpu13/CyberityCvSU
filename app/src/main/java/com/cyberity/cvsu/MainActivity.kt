@@ -1,5 +1,12 @@
 package com.cyberity.cvsu
 
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.imePadding
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -170,6 +177,7 @@ fun AppNavigator() {
             onLoginClick = { currentScreen = "login" }
         )
         "login" -> LoginScreen(
+            onBackClick = { currentScreen = "entry" },
             onRegisterClick = { currentScreen = "register" },
             onLoginSuccess = { currentScreen = "profileCheck" },
             onMfaRequired = { resolver ->
@@ -188,6 +196,7 @@ fun AppNavigator() {
         )
         "register" -> RegisterScreen(
             onBackClick = { currentScreen = "entry" },
+            onLoginClick = { currentScreen = "login" },
             onRegisterSuccess = { currentScreen = "checkEmail" }
         )
         "checkEmail" -> CheckEmailScreen(
@@ -424,7 +433,9 @@ fun AuthTextField(
     icon: ImageVector,
     isPassword: Boolean = false,
     keyboardType: KeyboardType = KeyboardType.Text,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    /** The Login/Register look: card-filled, softer border, cyan focus. Off keeps the original style. */
+    filled: Boolean = false
 ) {
 
     var passwordVisible by rememberSaveable {
@@ -483,12 +494,14 @@ fun AuthTextField(
 
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
 
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(if (filled) 14.dp else 12.dp),
 
         colors = OutlinedTextFieldDefaults.colors(
 
-            focusedBorderColor = AppBlue,
-            unfocusedBorderColor = AppGray,
+            focusedBorderColor = if (filled) AppCyan else AppBlue,
+            unfocusedBorderColor = if (filled) AppBorder else AppGray,
+            focusedContainerColor = if (filled) AppCard else Color.Transparent,
+            unfocusedContainerColor = if (filled) AppCard else Color.Transparent,
 
             focusedLabelColor = AppCyan,
 
@@ -506,12 +519,159 @@ fun AuthTextField(
     )
 }
 
+// ---------------------------------------------------------------------------
+// Login / Register building blocks
+// ---------------------------------------------------------------------------
+
+/** The shield and "Cyberity" wordmark, as on the Welcome screen. */
+@Composable
+private fun AuthBrand(logoSize: Int = 36, fontSize: Int = 22) {
+    val logo = if (CyberityThemeState.isDark) R.drawable.welcome_logo_dark else R.drawable.welcome_logo_light
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Image(
+            painter = painterResource(id = logo),
+            contentDescription = null,
+            modifier = Modifier.size(logoSize.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = buildAnnotatedString {
+                append("Cyber")
+                withStyle(SpanStyle(color = AppCyan)) { append("ity") }
+            },
+            color = AppWhite,
+            fontSize = fontSize.sp,
+            fontWeight = FontWeight.ExtraBold
+        )
+    }
+}
+
+/** An error (red) or notice (teal) shown just above the main button. */
+@Composable
+private fun AuthBanner(text: String, isError: Boolean) {
+    val accent = if (isError) AppDanger else AppCyan
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(accent.copy(alpha = 0.10f), RoundedCornerShape(12.dp))
+            .border(1.dp, accent.copy(alpha = 0.40f), RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Icon(
+            imageVector = if (isError) Icons.Filled.Warning else Icons.Filled.Email,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(18.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(text, color = accent, fontSize = 14.sp, lineHeight = 20.sp)
+    }
+}
+
+/** Small grey hint under a field. */
+@Composable
+private fun AuthHint(text: String) {
+    Text(
+        text,
+        color = AppGray,
+        fontSize = 12.sp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, top = 4.dp)
+    )
+}
+
+/** Small cyan label that opens a group of fields. */
+@Composable
+private fun AuthSectionLabel(text: String) {
+    Text(
+        text,
+        color = AppCyan,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.2.sp
+    )
+}
+
+/** "Question? Action": grey question, cyan bold action. */
+@Composable
+private fun AuthFooterLink(question: String, action: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(question, color = AppGray, fontSize = 14.sp)
+        TextButton(onClick = onClick) {
+            Text(action, color = AppCyan, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/**
+ * Login/Register page: [top] (the form) and [bottom] (banners, button, footer)
+ * in one scroll. Its height is the screen WITHOUT the keyboard, so the button
+ * sits at the bottom normally, and when the keyboard opens it stays put under
+ * the keyboard (reachable by scrolling) instead of riding up above it.
+ */
+@Composable
+private fun AuthPage(
+    top: @Composable ColumnScope.() -> Unit,
+    bottom: @Composable ColumnScope.() -> Unit
+) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppNavy)
+            .systemBarsPadding()
+    ) {
+        val fullHeight = maxHeight
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = fullHeight)
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(content = top)
+                Column(content = bottom)
+            }
+        }
+    }
+}
+
+/** The main action button, matching the Welcome screen's. */
+@Composable
+private fun AuthPrimaryButton(text: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue),
+        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(54.dp)
+    ) {
+        Text(text, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
 @Composable
 fun LoginScreen(
+    /** System back: return to the Welcome screen instead of closing the app. */
+    onBackClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onLoginSuccess: () -> Unit,
     onMfaRequired: (MultiFactorResolver) -> Unit
 ) {
+    BackHandler { onBackClick() }
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -520,55 +680,52 @@ fun LoginScreen(
     var isResetLoading by remember { mutableStateOf(false) }
     val auth = remember { FirebaseAuth.getInstance() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppNavy)
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = AppCard),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+    AuthPage(
+        top = {
+            Spacer(modifier = Modifier.height(28.dp))
+            AuthBrand()
+            Spacer(modifier = Modifier.height(52.dp))
+
+            Text(
+                "Welcome back",
+                color = AppWhite,
+                fontSize = 30.sp,
+                lineHeight = 36.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                "Log in to continue your training.",
+                color = AppGray,
+                fontSize = 15.sp,
+                lineHeight = 22.sp
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            AuthTextField(
+                email,
+                { email = it },
+                "CvSU email",
+                Icons.Filled.Email,
+                filled = true
+            )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            AuthTextField(
+                password,
+                { password = it },
+                "Password",
+                Icons.Filled.Lock,
+                isPassword = true,
+                filled = true
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
             ) {
-                Text(
-                    "Welcome!",
-                    color = AppWhite,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    "Log in to continue",
-                    color = AppGray,
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                AuthTextField(
-                    email,
-                    { email = it },
-                    "CvSU Email",
-                    Icons.Filled.Email
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AuthTextField(
-                    password,
-                    { password = it },
-                    "Password",
-                    Icons.Filled.Lock,
-                    isPassword = true
-                )
-
                 TextButton(
                     onClick = {
                         val resetEmail = email.trim()
@@ -606,91 +763,86 @@ fun LoginScreen(
                 ) {
                     Text(
                         text = if (isResetLoading) "Sending reset email..." else "Forgot password?",
-                        color = AppCyan
-                    )
-                }
-
-                if (resetMessage.isNotEmpty()) {
-                    Text(resetMessage, color = AppCyan, fontSize = 13.sp)
-                }
-
-                if (errorMessage.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(errorMessage, color = AppDanger, fontSize = 13.sp)
-                }
-
-                Spacer(modifier = Modifier.height(28.dp))
-
-                if (isLoading) {
-                    CircularProgressIndicator(color = AppCyan)
-                } else {
-                    Button(
-                        onClick = {
-                            val loginEmail = email.trim().lowercase()
-
-                            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(loginEmail).matches() ||
-                                !loginEmail.endsWith("@cvsu.edu.ph")
-                            ) {
-                                errorMessage = "Please use your @cvsu.edu.ph email"
-                            } else if (password.isBlank()) {
-                                errorMessage = "Please enter your password"
-                            } else {
-                                isLoading = true
-                                errorMessage = ""
-                                auth.signInWithEmailAndPassword(loginEmail, password)
-                                    .addOnSuccessListener {
-                                        val user = auth.currentUser
-                                        if (user != null && !user.isEmailVerified) {
-                                            isLoading = false
-                                            errorMessage =
-                                                "Please verify your email before logging in. Check your inbox."
-                                            auth.signOut()
-                                        } else {
-                                            isLoading = false
-                                            onLoginSuccess()
-                                        }
-                                    }
-                                    .addOnFailureListener { exception ->
-                                        isLoading = false
-                                        if (exception is FirebaseAuthMultiFactorException) {
-                                            onMfaRequired(exception.resolver)
-                                        } else {
-                                            errorMessage =
-                                                exception.localizedMessage ?: "Login failed"
-                                        }
-                                    }
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                    ) {
-                        Text("Log In", fontSize = 16.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onRegisterClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    elevation = ButtonDefaults.buttonElevation(0.dp)
-                ) {
-                    Text(
-                        "Don't have an account? Create one",
-                        color = AppCyan
+                        color = AppCyan,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        },
+        bottom = {
+            if (resetMessage.isNotEmpty()) {
+                AuthBanner(resetMessage, isError = false)
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            if (errorMessage.isNotEmpty()) {
+                AuthBanner(errorMessage, isError = true)
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = AppCyan)
+                }
+            } else {
+                AuthPrimaryButton("Log in") {
+                    val loginEmail = email.trim().lowercase()
+
+                    if (!android.util.Patterns.EMAIL_ADDRESS.matcher(loginEmail).matches() ||
+                        !loginEmail.endsWith("@cvsu.edu.ph")
+                    ) {
+                        errorMessage = "Please use your @cvsu.edu.ph email"
+                    } else if (password.isBlank()) {
+                        errorMessage = "Please enter your password"
+                    } else {
+                        isLoading = true
+                        errorMessage = ""
+                        auth.signInWithEmailAndPassword(loginEmail, password)
+                            .addOnSuccessListener {
+                                val user = auth.currentUser
+                                if (user != null && !user.isEmailVerified) {
+                                    isLoading = false
+                                    errorMessage =
+                                        "Please verify your email before logging in. Check your inbox."
+                                    auth.signOut()
+                                } else {
+                                    isLoading = false
+                                    onLoginSuccess()
+                                }
+                            }
+                            .addOnFailureListener { exception ->
+                                isLoading = false
+                                if (exception is FirebaseAuthMultiFactorException) {
+                                    onMfaRequired(exception.resolver)
+                                } else {
+                                    errorMessage =
+                                        exception.localizedMessage ?: "Login failed"
+                                }
+                            }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            AuthFooterLink("New to Cyberity?", "Create an account", onRegisterClick)
+            Spacer(modifier = Modifier.height(16.dp))
         }
-    }
+    )
 }
 
 @Composable
 fun RegisterScreen(
     onBackClick: () -> Unit,
+    /** "Already have an account? Log in" — straight to Login, unlike back (Welcome). */
+    onLoginClick: () -> Unit,
     onRegisterSuccess: () -> Unit
 ) {  BackHandler {
     onBackClick()
@@ -706,205 +858,203 @@ fun RegisterScreen(
     val context = LocalContext.current
     val debugBuild = remember { context.isDebugBuild() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppNavy)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = AppCard),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(28.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    "Create Account",
-                    color = AppWhite,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
+    AuthPage(
+        top = {
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Text(
-                    "Use your CvSU email to register",
-                    color = AppGray,
-                    fontSize = 14.sp
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                AuthTextField(
-                    username,
-                    { username = it },
-                    "Username",
-                    Icons.Filled.Person
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "Shown to other students, e.g. on the leaderboard.",
-                    color = AppGray,
-                    fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AuthTextField(
-                    studentId,
-                    { input ->
-                        studentId = if (debugBuild && input.any { !it.isDigit() }) {
-                            input.take(8)
-                        } else {
-                            input.filter { it.isDigit() }.take(9)
-                        }
-                    },
-                    "Student ID (e.g. 202310502)",
-                    Icons.Filled.Badge,
-                    keyboardType = if (debugBuild) KeyboardType.Text else KeyboardType.Number
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AuthTextField(
-                    email,
-                    { email = it },
-                    "Email (@cvsu.edu.ph)",
-                    Icons.Filled.Email
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AuthTextField(
-                    password,
-                    { password = it },
-                    "Password",
-                    Icons.Filled.Lock,
-                    isPassword = true
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                AuthTextField(
-                    confirmPassword,
-                    { confirmPassword = it },
-                    "Confirm Password",
-                    Icons.Filled.Lock,
-                    isPassword = true
-                )
-
-                if (errorMessage.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text(errorMessage, color = AppDanger, fontSize = 13.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBackClick, modifier = Modifier.offset(x = (-12).dp)) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = AppWhite
+                    )
                 }
+                AuthBrand(logoSize = 30, fontSize = 19)
+            }
 
-                Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-                if (isLoading) {
+            Text(
+                "Create your account",
+                color = AppWhite,
+                fontSize = 26.sp,
+                lineHeight = 32.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                "Use your @cvsu.edu.ph email.",
+                color = AppGray,
+                fontSize = 14.sp,
+                lineHeight = 20.sp
+            )
+
+            Spacer(modifier = Modifier.height(22.dp))
+            AuthSectionLabel("YOUR PROFILE")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            AuthTextField(
+                username,
+                { username = it },
+                "Username",
+                Icons.Filled.Person,
+                filled = true
+            )
+            AuthHint("Shown on the leaderboard.")
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            AuthTextField(
+                studentId,
+                { input ->
+                    studentId = if (debugBuild && input.any { !it.isDigit() }) {
+                        input.take(8)
+                    } else {
+                        input.filter { it.isDigit() }.take(9)
+                    }
+                },
+                "Student ID",
+                Icons.Filled.Badge,
+                keyboardType = if (debugBuild) KeyboardType.Text else KeyboardType.Number,
+                filled = true
+            )
+            AuthHint("9 digits, e.g. 202310502")
+
+            Spacer(modifier = Modifier.height(20.dp))
+            AuthSectionLabel("SIGN-IN DETAILS")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            AuthTextField(
+                email,
+                { email = it },
+                "CvSU email",
+                Icons.Filled.Email,
+                filled = true
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            AuthTextField(
+                password,
+                { password = it },
+                "Password",
+                Icons.Filled.Lock,
+                isPassword = true,
+                filled = true
+            )
+            AuthHint("At least 6 characters.")
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            AuthTextField(
+                confirmPassword,
+                { confirmPassword = it },
+                "Confirm password",
+                Icons.Filled.Lock,
+                isPassword = true,
+                filled = true
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+        },
+        bottom = {
+            if (errorMessage.isNotEmpty()) {
+                AuthBanner(errorMessage, isError = true)
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(color = AppCyan)
-                } else {
-                    Button(
-                        onClick = {
-                            val registerEmail = email.trim().lowercase()
-                            errorMessage =
-                                StudentIdRules.validateDisplayName(username)?.let { "Username: $it" }
-                                    ?: StudentIdRules.validateStudentId(studentId, debugBuild)
-                                            ?: when {
-                                        !android.util.Patterns.EMAIL_ADDRESS.matcher(registerEmail).matches() ||
-                                                !registerEmail.endsWith("@cvsu.edu.ph") ->
-                                            "Please use your @cvsu.edu.ph email"
+                }
+            } else {
+                AuthPrimaryButton("Create account") {
+                    val registerEmail = email.trim().lowercase()
+                    errorMessage =
+                        StudentIdRules.validateDisplayName(username)?.let { "Username: $it" }
+                            ?: StudentIdRules.validateStudentId(studentId, debugBuild)
+                                    ?: when {
+                                !android.util.Patterns.EMAIL_ADDRESS.matcher(registerEmail).matches() ||
+                                        !registerEmail.endsWith("@cvsu.edu.ph") ->
+                                    "Please use your @cvsu.edu.ph email"
 
-                                        password != confirmPassword ->
-                                            "Passwords do not match"
+                                password != confirmPassword ->
+                                    "Passwords do not match"
 
-                                        password.length < 6 ->
-                                            "Password must be at least 6 characters"
+                                password.length < 6 ->
+                                    "Password must be at least 6 characters"
 
-                                        else -> ""
-                                    }
+                                else -> ""
+                            }
 
-                            if (errorMessage.isEmpty()) {
-                                isLoading = true
-                                val normalizedId = StudentIdRules.normalize(studentId)
-                                val profile = UserProfile(
-                                    studentId = normalizedId,
-                                    displayName = username.trim(),
-                                    isTester = StudentIdRules.isDevId(normalizedId)
+                    if (errorMessage.isEmpty()) {
+                        isLoading = true
+                        val normalizedId = StudentIdRules.normalize(studentId)
+                        val profile = UserProfile(
+                            studentId = normalizedId,
+                            displayName = username.trim(),
+                            isTester = StudentIdRules.isDevId(normalizedId)
+                        )
+
+                        fun finish() {
+                            auth.currentUser?.sendEmailVerification()
+                                ?.addOnCompleteListener {
+                                    isLoading = false
+                                    onRegisterSuccess()
+                                }
+                        }
+
+                        auth.createUserWithEmailAndPassword(registerEmail, password)
+                            .addOnSuccessListener { result ->
+                                val newUser = result.user ?: return@addOnSuccessListener finish()
+
+                                // Also keep the name on the Firebase account itself.
+                                newUser.updateProfile(
+                                    userProfileChangeRequest { displayName = profile.displayName }
                                 )
 
-                                fun finish() {
-                                    auth.currentUser?.sendEmailVerification()
-                                        ?.addOnCompleteListener {
-                                            isLoading = false
-                                            onRegisterSuccess()
+                                UserProfileRepository.save(newUser.uid, registerEmail, profile) { saved ->
+                                    when (saved) {
+                                        ProfileSaveResult.Saved -> {
+                                            ProfileCache.markComplete(context, newUser.uid)
+                                            finish()
                                         }
-                                }
 
-                                auth.createUserWithEmailAndPassword(registerEmail, password)
-                                    .addOnSuccessListener { result ->
-                                        val newUser = result.user ?: return@addOnSuccessListener finish()
-
-                                        // Also keep the name on the Firebase account itself.
-                                        newUser.updateProfile(
-                                            userProfileChangeRequest { displayName = profile.displayName }
-                                        )
-
-                                        UserProfileRepository.save(newUser.uid, registerEmail, profile) { saved ->
-                                            when (saved) {
-                                                ProfileSaveResult.Saved -> {
-                                                    ProfileCache.markComplete(context, newUser.uid)
-                                                    finish()
-                                                }
-
-                                                // ID belongs to someone else: undo the account so the
-                                                // student can try again with the same email.
-                                                ProfileSaveResult.IdTaken -> newUser.delete()
-                                                    .addOnCompleteListener {
-                                                        isLoading = false
-                                                        errorMessage =
-                                                            "This student ID is already linked to another account."
-                                                    }
-
-                                                // Couldn't save the profile (e.g. offline). The account
-                                                // still works; "Complete your profile" asks again at login.
-                                                is ProfileSaveResult.Failed -> finish()
+                                        // ID belongs to someone else: undo the account so the
+                                        // student can try again with the same email.
+                                        ProfileSaveResult.IdTaken -> newUser.delete()
+                                            .addOnCompleteListener {
+                                                isLoading = false
+                                                errorMessage =
+                                                    "This student ID is already linked to another account."
                                             }
-                                        }
+
+                                        // Couldn't save the profile (e.g. offline). The account
+                                        // still works; "Complete your profile" asks again at login.
+                                        is ProfileSaveResult.Failed -> finish()
                                     }
-                                    .addOnFailureListener { exception ->
-                                        isLoading = false
-                                        errorMessage =
-                                            exception.localizedMessage ?: "Registration failed"
-                                    }
+                                }
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                    ) {
-                        Text("Create Account", fontSize = 16.sp)
+                            .addOnFailureListener { exception ->
+                                isLoading = false
+                                errorMessage =
+                                    exception.localizedMessage ?: "Registration failed"
+                            }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = onBackClick,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                    elevation = ButtonDefaults.buttonElevation(0.dp)
-                ) {
-                    Text("Back to Login", color = AppGray)
-                }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+            AuthFooterLink("Already have an account?", "Log in", onLoginClick)
+            Spacer(modifier = Modifier.height(16.dp))
         }
-    }
+    )
 }
 
 @Composable
