@@ -3,25 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Service desk</title>
+  <title>Incident hotline</title>
   <!-- Match the app's Light / Dark mode before the page draws. -->
   <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <div class="sim-ribbon">Simulated service desk &middot; fictional people and tickets</div>
+  <div class="sim-ribbon">Simulated incident hotline &middot; fictional people and reports</div>
 
   <div class="desk-head">
     <div class="clock-row">
-      <h1>Service desk queue</h1>
+      <h1>Incident hotline</h1>
       <span class="clock mono">MON 8:02 AM</span>
     </div>
-    <p>CvSU IT Services Office &middot; weekend tickets &middot; staff on duty: <b>you</b></p>
+    <p>CvSU IT Services Office &middot; weekend texts, chats and email &middot; on the line: <b>you</b></p>
     <p id="seen-count" class="unread-line">7 of 7 not opened yet</p>
   </div>
 
-  <div class="section-label">Weekend tickets</div>
+  <div class="section-label">Weekend reports</div>
   <div id="tickets"></div>
 
   <div class="desk-actions">
@@ -31,7 +31,7 @@
 
   <div class="section-label">First responder rules</div>
   <div class="explain">
-    <div class="explain-row"><b>Sort</b><span>An event just happened. An incident harmed, or is about to harm, confidentiality, integrity or availability.</span></div>
+    <div class="explain-row"><b>Sort</b><span>An event just happened. An incident actually exposed, changed, took over or lost something, or is about to.</span></div>
     <div class="explain-row"><b>Keep</b><span>Don't delete, restart, clean or forward anything. Evidence you change is evidence lost.</span></div>
     <div class="explain-row"><b>Tell</b><span>Report through the ITSO incident line. Never post publicly or tip anyone off.</span></div>
   </div>

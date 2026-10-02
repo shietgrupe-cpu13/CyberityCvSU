@@ -104,7 +104,7 @@ fun detectionLab(): LabDefinition = LabDefinition(
                 "Both HIGH alerts match something scheduled or ticketed.",
                 "The three real threats all lead back to cvsu-payroll.example or to l.ramos."
             ),
-            successFeedback = "Both HIGH alerts were false alarms: a scheduled backup and a " +
+            successFeedback = "Both HIGH alerts were false alarms: a scheduled online quiz and a " +
                     "ticketed reimage. The attack itself came in as a LOW: a new-country sign-in " +
                     "for l.ramos at 2:10 AM, with three similar alerts quietly suppressed. Every " +
                     "real signal was in the queue all weekend. Nobody was reading it.",
@@ -159,7 +159,7 @@ fun detectionLab(): LabDefinition = LabDefinition(
 
         LabTask(
             id = "t3",
-            title = "Pivot",
+            title = "Find the other victims",
             objective = "Search the logs for the **attacker's IP address** across **every " +
                     "account**. **How many other staff accounts** did it sign in to " +
                     "successfully?",
