@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Account requests</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated recovery room &middot; fictional people, accounts and amounts</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='room.html'">&#8592; Room</button>
+    <span class="topbar-title">Account requests</span>
+  </div>
+
+  <div class="desk-head">
+    <h1>Who gets their account back?</h1>
+    <p id="req-count" class="unread-line">6 of 6 still need a decision</p>
+  </div>
+
+  <div id="requests"></div>
+
+  <div class="board-actions">
+    <button class="cta" onclick="submitRequests()">SUBMIT DECISIONS</button>
+    <div class="banner" id="req-banner"></div>
+  </div>
+
+  <div class="foot">Phone numbers on file come from HR and the Registrar, not from the caller.</div>
+
+  <script src="script.js"></script>
+  <script>renderRequests('requests');</script>
+</body>
+</html>

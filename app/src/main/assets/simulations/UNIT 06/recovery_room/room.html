@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Recovery room</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated recovery room &middot; fictional people, accounts and amounts</div>
+
+  <div class="desk-head">
+    <div class="clock-row">
+      <h1>Recovery room</h1>
+      <span class="clock mono">TUE 9:00 AM</span>
+    </div>
+    <p>CvSU IT Services Office &middot; incident TKT-0144 &middot; status: <b>contained</b></p>
+  </div>
+
+  <div class="section-label">Recovery checklist</div>
+  <div id="checklist"></div>
+
+  <div class="section-label">Also on today's calendar</div>
+  <div class="explain">
+    <div class="explain-row"><b>10:00</b><span>Prof. Ramos is coming to the ITSO desk.</span></div>
+    <div class="explain-row"><b>3:00</b><span>Disbursement Office payment run: 14 supplier payments go out.</span></div>
+    <div class="explain-row"><b>4:00</b><span>Post-incident review with the ITSO director.</span></div>
+  </div>
+
+  <div class="foot">Everything here is simulated. No account, mailbox or payment is touched.</div>
+
+  <script src="script.js"></script>
+  <script>renderRoom('checklist');</script>
+</body>
+</html>

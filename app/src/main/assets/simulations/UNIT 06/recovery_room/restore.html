@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Mailbox restore</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated recovery room &middot; fictional people, accounts and amounts</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='room.html'">&#8592; Room</button>
+    <span class="topbar-title mono">Mailbox restore &middot; l.ramos</span>
+  </div>
+
+  <div class="detail">
+    <div class="artifact a-sys">
+      <span class="artifact-tag">WHAT'S MISSING</span>
+      <div class="rows mono">Sent Items, Sat 02:10 to Mon 08:24: empty
+attacker rule 2 deleted everything sent
+  from this mailbox in that window
+
+her own sent mail lost:      31 emails
+  incl. final grades to the dept chair
+attacker's phishing copies:  82
+  (already in the evidence locker)</div>
+    </div>
+
+    <div class="section-label flush">Restore options</div>
+    <div id="options"></div>
+    <div class="banner" id="restore-banner"></div>
+  </div>
+
+  <div class="foot">Mailbox settings today: clean, after containment in 603.</div>
+
+  <script src="script.js"></script>
+  <script>renderRestore('options');</script>
+</body>
+</html>
