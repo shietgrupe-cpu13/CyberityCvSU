@@ -93,13 +93,12 @@ fun recoveryLab(): LabDefinition = LabDefinition(
             lockedMessage = "Make the right call on all six requests first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "She was calling from Manila instead of campus",
-                    "The caller knew details from the stolen mailbox, called from a number not " +
-                            "on file, and wanted a new password read out over the phone",
-                    "She sounded stressed",
-                    "Phone calls can never be used to verify anyone"
+                    "She was calling from Manila, and accounts are only restored to staff on campus",
+                    "She sounded rushed, and urgency alone is reason enough to refuse a request",
+                    "The number wasn't the one on file, and she wanted the password read out loud",
+                    "She knew about the payroll email, which only the attacker could have known"
                 ),
-                correctIndex = 1
+                correctIndex = 2
             ),
             hints = listOf(
                 "Compare the caller's number with the one on file.",
@@ -145,13 +144,12 @@ fun recoveryLab(): LabDefinition = LabDefinition(
             lockedMessage = "Restore Prof. Ramos's sent mail safely first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Saturday's backup is too old to be useful",
-                    "It would bring back the attacker's forwarding rule and the Pixel 7 " +
-                            "recovery phone, along with the mail",
-                    "Backups can only be restored on weekends",
-                    "It would change her password back"
+                    "It would also bring back the forwarding rule and the Pixel 7 the attacker added",
+                    "It would put back her old password, which the attacker already knows",
+                    "It would bring back the 82 phishing copies the attacker sent to students",
+                    "Weekend snapshots are incomplete, because backups skip weekend changes"
                 ),
-                correctIndex = 1
+                correctIndex = 0
             ),
             hints = listOf(
                 "Open the Saturday 6 AM preview. What settings does it contain?",
@@ -249,12 +247,12 @@ fun recoveryLab(): LabDefinition = LabDefinition(
             lockedMessage = "Read the sign-in details and apply the right fixes first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "The attacker stole her phone",
-                    "MFA was switched off for everyone",
-                    "The attacker guessed her MFA codes",
-                    "Her account still allowed IMAP, an old mail protocol that never asks for MFA"
+                    "The attacker approved the MFA prompt on the Pixel 7 they had registered",
+                    "Her account still accepted IMAP sign-ins, which never ask for MFA at all",
+                    "MFA was switched off for staff accounts during last month's system upgrade",
+                    "She approved an MFA prompt at 2 AM without noticing, half asleep"
                 ),
-                correctIndex = 3
+                correctIndex = 1
             ),
             hints = listOf(
                 "Look at the protocol column in the sign-in details.",
@@ -266,8 +264,9 @@ fun recoveryLab(): LabDefinition = LabDefinition(
                     "Legacy sign-in is now off, forwarding outside CvSU needs approval, and bank " +
                     "detail changes need a callback. The 12 staff still on old mail apps are " +
                     "being moved by ITSO this week.",
-            failureFeedback = "Not that. Her MFA was on and her phone never left her. Read the " +
-                    "protocol on the attacker's sign-ins."
+            failureFeedback = "Not that. The Pixel 7 was added two minutes after the attacker " +
+                    "was already in, and no MFA prompt was ever sent. Read the protocol and the " +
+                    "MFA column on the attacker's sign-ins."
         ),
 
         LabTask(
