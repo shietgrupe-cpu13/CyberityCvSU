@@ -218,7 +218,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Incident Response",
         description = "What to do when defences have already failed",
         levels = listOf(
-            LearningLevel(601, "Security Incidents", "What counts as an incident, and who to tell.", 20, LevelType.LESSON, LevelStatus.LOCKED),
+            LearningLevel(601, "Security Incidents", "Security lab: Monday morning on the ITSO service desk — seven weekend tickets, three real incidents, and a \"probably spam\" report that is still sending phishing as you read.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(602, "Detection", "Logs, alerts, and separating signal from noise.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(603, "Containment", "Isolate the damage before you start cleaning up.", 25, LevelType.LESSON, LevelStatus.LOCKED),
             LearningLevel(604, "Recovery", "Restore safely and close the hole behind you.", 25, LevelType.LESSON, LevelStatus.LOCKED),
@@ -1708,6 +1708,7 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     404 -> LevelContent.Lab(malwarePreventionLab(), malwarePreventionClueLabels)
     450 -> LevelContent.Lab(bonusCacheLab(), bonusCacheClueLabels)
     405 -> LevelContent.Lab(malwareTriageLab(), malwareClueLabels)
+    601 -> LevelContent.Lab(securityIncidentsLab(), securityIncidentsClueLabels)
     else -> null
 }
 

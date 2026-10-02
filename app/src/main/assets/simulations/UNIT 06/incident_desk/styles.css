@@ -1,0 +1,504 @@
+/* Cyberity simulation palette: Terminal Teal.
+   Dark values below are the default. The app sets data-theme="light" on <html>
+   when Light Mode is on (see the first <script> in each page and LabBridge.theme()).
+   --on-blue / --on-accent: text on solid teal or accent fills. */
+/* Dark Mode (default) */
+:root {
+  --navy: #0A1016;
+  --card: #17222E;
+  --blue: #14B8A6;
+  --blue-dark: #0F2D2E;
+  --cyan: #5EEAD4;
+  --white: #E8EEF3;
+  --gray: #8FA0B2;
+  --red: #F2606C;
+  --green: #3FD68A;
+  --amber: #F2B84B;
+  --violet: #B49BF7;
+  --surface: #1C2A38;
+  --code-bg: #05090D;
+  --on-blue: #04211E;
+  --on-accent: #04211E;
+  --navy-rgb: 10, 16, 22;
+  --card-rgb: 23, 34, 46;
+  --blue-rgb: 20, 184, 166;
+  --blue-dark-rgb: 15, 45, 46;
+  --cyan-rgb: 94, 234, 212;
+  --white-rgb: 232, 238, 243;
+  --gray-rgb: 143, 160, 178;
+  --red-rgb: 242, 96, 108;
+  --green-rgb: 63, 214, 138;
+  --amber-rgb: 242, 184, 75;
+  --violet-rgb: 180, 155, 247;
+  --surface-rgb: 28, 42, 56;
+}
+/* Light Mode */
+:root[data-theme="light"] {
+  --navy: #D8E3E2;
+  --card: #F1F6F5;
+  --blue: #0F766E;
+  --blue-dark: #C6DAD8;
+  --cyan: #0B6560;
+  --white: #0A1A1E;
+  --gray: #455A61;
+  --red: #BF2A47;
+  --green: #146A34;
+  --amber: #8C5C00;
+  --violet: #6647C2;
+  --surface: #E7EFEE;
+  --code-bg: #E9F0EF;
+  --on-blue: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --navy-rgb: 216, 227, 226;
+  --card-rgb: 241, 246, 245;
+  --blue-rgb: 15, 118, 110;
+  --blue-dark-rgb: 198, 218, 216;
+  --cyan-rgb: 11, 101, 96;
+  --white-rgb: 10, 26, 30;
+  --gray-rgb: 69, 90, 97;
+  --red-rgb: 191, 42, 71;
+  --green-rgb: 20, 106, 52;
+  --amber-rgb: 140, 92, 0;
+  --violet-rgb: 102, 71, 194;
+  --surface-rgb: 231, 239, 238;
+}
+
+/* Cyberity — Incident Desk (level 601). */
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--navy);
+  color: var(--white);
+  font-family: -apple-system, "Roboto", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body { padding-bottom: 28px; }
+
+.sim-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--blue-dark);
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.25);
+}
+
+.mono { font-family: "Roboto Mono", monospace; word-break: break-all; }
+
+/* ---------- desk header ---------- */
+
+.desk-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
+}
+
+.desk-head h1 { margin: 0; font-size: 18px; }
+.desk-head p { margin: 2px 0 0; font-size: 12px; color: var(--gray); }
+.desk-head p b { color: var(--white); }
+
+.clock-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
+/* The desk clock: Monday morning, and the queue is already late. */
+.clock {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  border: 1px solid rgba(var(--amber-rgb), 0.5);
+  background: rgba(var(--amber-rgb), 0.10);
+  border-radius: 6px;
+  padding: 2px 7px;
+  word-break: normal;
+}
+
+.unread-line { color: var(--cyan) !important; font-size: 12px; margin-top: 2px; }
+
+.section-label {
+  padding: 14px 16px 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+/* Inside .detail the page already has its gutter. */
+.section-label.flush { padding: 10px 0 0; }
+
+.desk-actions { padding: 0 12px; }
+.desk-actions .cta { margin: 6px 0; }
+
+/* ---------- explainer ---------- */
+
+.explain { margin: 0 12px; background: var(--card); border-radius: 12px; padding: 4px 12px; }
+.explain-row {
+  display: flex;
+  gap: 10px;
+  padding: 9px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.12);
+}
+.explain-row:last-child { border-bottom: none; }
+.explain-row b { color: var(--cyan); flex: 0 0 42px; }
+.explain-row span { color: var(--white); }
+
+.foot { padding: 14px 16px; font-size: 11px; color: var(--gray); }
+
+/* ---------- ticket cards ---------- */
+
+.proc-row { display: block; }
+.proc-body { display: block; }
+
+.sms-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.sms-when { font-size: 11px; color: var(--gray); flex: 0 0 auto; }
+
+.ticket-id { color: var(--cyan); font-weight: 700; font-size: 12px; letter-spacing: 0.04em; }
+
+.proc-name { display: block; font-size: 14px; font-weight: 700; margin-top: 3px; }
+.proc-row.read .proc-name { color: var(--gray); font-weight: 600; }
+
+.spec-meta { display: block; font-size: 12px; color: var(--gray); margin-top: 3px; }
+
+/* Channel chip — EMAIL / CALL / WEB FORM / AUTO all share one outline, never a colour. */
+.kind {
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--cyan);
+  border: 1px solid rgba(var(--cyan-rgb), 0.4);
+  border-radius: 5px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+/* New / opened label. Spelled out, so the state never has to be guessed
+   from a colour alone. */
+.mail-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.proc-row.unread .mail-badge {
+  background: rgba(var(--cyan-rgb), 0.16);
+  border: 1px solid rgba(var(--cyan-rgb), 0.5);
+  color: var(--cyan);
+}
+.proc-row.read .mail-badge {
+  background: rgba(var(--gray-rgb), 0.10);
+  border: 1px solid rgba(var(--gray-rgb), 0.32);
+  color: var(--gray);
+}
+
+/* ---------- ticket detail ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
+}
+
+.back-btn {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
+  color: var(--white);
+  border-radius: 9px;
+  padding: 5px 11px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.topbar-title { font-size: 13px; color: var(--gray); }
+
+.detail { padding: 14px 16px; }
+.detail h2 { margin: 0 0 4px; font-size: 17px; line-height: 1.35; }
+.detail-sub { font-size: 12px; color: var(--gray); }
+.report-text { font-size: 14px; margin: 10px 0 0; }
+
+.rows {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--gray);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.rows .hot { color: var(--red); }
+.rows .ok { color: var(--green); }
+.rows .warn { color: var(--amber); }
+
+.note { font-size: 12px; color: var(--gray); margin-top: 8px; }
+
+.cta {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px;
+  margin: 12px 0 6px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* A secondary action. */
+.cta.ghost {
+  background: none;
+  border: 1px solid rgba(var(--cyan-rgb), 0.45);
+  color: var(--cyan);
+}
+
+/* An action the student should think twice about. */
+.cta.danger {
+  background: none;
+  border: 1px solid rgba(var(--red-rgb), 0.55);
+  color: var(--red);
+  margin: 8px 0;
+}
+
+.banner {
+  display: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.banner.show { display: block; }
+.banner.good { background: rgba(var(--green-rgb), 0.12); color: var(--green); }
+.banner.warn { background: rgba(var(--amber-rgb), 0.12); color: var(--amber); }
+.banner.bad { background: rgba(var(--red-rgb), 0.12); color: var(--red); }
+
+/* A tool is the desk speaking, so it wears the app-UI dashed box. Made a
+   button rather than a div because it is tappable. */
+.tool-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Slots that reveal a whole frame. */
+.reveal-slot { display: none; }
+.reveal-slot.open { display: block; }
+
+/* ---------- triage board ---------- */
+
+.board-row {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  margin: 10px 12px 0;
+  padding: 11px 12px;
+}
+
+.board-name { font-size: 14px; font-weight: 700; }
+.board-hint { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+
+.chip {
+  border: 1px solid rgba(var(--gray-rgb), 0.35);
+  background: transparent;
+  color: var(--white);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.chip.on {
+  border-color: var(--cyan);
+  background: rgba(var(--cyan-rgb), 0.16);
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+.board-actions { padding: 0 12px; }
+
+/* ---------- report form ---------- */
+
+.form-row { display: block; margin-bottom: 12px; }
+.form-row:last-child { margin-bottom: 0; }
+
+.form-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 4px;
+}
+
+.form-select {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--gray-rgb), 0.4);
+  background: var(--card);
+  color: var(--white);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* ---------- call transcript ---------- */
+
+.chat { display: flex; flex-direction: column; gap: 8px; }
+.bubble-row { display: flex; }
+.bubble-row.us { justify-content: flex-end; }
+.bubble {
+  max-width: 82%;
+  padding: 8px 11px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  background: rgba(var(--gray-rgb), 0.14);
+}
+.bubble-row.us .bubble { background: rgba(var(--blue-rgb), 0.35); }
+.bubble-name {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 3px;
+}
+.bubble-row.us .bubble-name { color: rgba(var(--white-rgb), 0.75); }
+
+/* ==========================================================================
+   SCENARIO CONTENT FRAMES — shared block, identical in every simulation.
+   Paste this unchanged into each styles.css; never edit one copy alone.
+
+   A frame means "judge this". Anything the app says ABOUT the simulation —
+   a tool, an instruction, a button — takes .appui instead and is never framed.
+
+   The rail colour says what KIND of thing it is, never whether it is safe.
+   Green, amber and red stay reserved for verdicts and severity, which the
+   student only sees after answering.
+   ========================================================================== */
+
+.artifact {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid rgba(var(--cyan-rgb), 0.30);
+  border-left: 4px solid var(--cyan);
+  border-radius: 3px 14px 14px 3px;
+  padding: 26px 14px 13px;
+  margin: 12px 0;
+}
+
+.artifact-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--cyan);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  padding: 2px 11px 3px;
+  border-radius: 0 0 11px 0;
+}
+
+/* Message — email, SMS, chat, a forwarded report. */
+.artifact.a-msg { border-color: rgba(var(--cyan-rgb), 0.30); border-left-color: var(--cyan); }
+.artifact.a-msg > .artifact-tag { background: var(--cyan); }
+
+/* Web page — anything rendered as a site in the sandbox browser. */
+.artifact.a-web { border-color: rgba(var(--white-rgb), 0.28); border-left-color: var(--white); }
+.artifact.a-web > .artifact-tag { background: var(--white); }
+
+/* Person — what a human said: a report, an interview, a recorded call. */
+.artifact.a-per { border-color: rgba(var(--violet-rgb), 0.32); border-left-color: var(--violet); }
+.artifact.a-per > .artifact-tag { background: var(--violet); }
+
+/* System record — logs, headers, page code, badge swipes. Always monospaced. */
+.artifact.a-sys { border-color: rgba(var(--gray-rgb), 0.30); border-left-color: var(--gray); }
+.artifact.a-sys > .artifact-tag { background: var(--gray); }
+
+/* The simulation's own UI: a tool or an instruction, never evidence. */
+.appui {
+  border: 1px dashed rgba(var(--gray-rgb), 0.40);
+  border-radius: 12px;
+  background: rgba(var(--blue-dark-rgb), 0.40);
+  padding: 12px 14px;
+  margin: 12px 0;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.appui b {
+  display: block;
+  color: var(--white);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+/* Content sitting directly inside a frame shouldn't add an outer gap. */
+.artifact > h2 { margin-top: 0; }
+.artifact > *:last-child { margin-bottom: 0; }
+
+/* ==========================================================================
+   CHOICE CARDS — the list a simulation opens on, the items the student picks.
+   Shared block: keep it identical in every styles.css.
+
+   One outlined card per choice with a gap between them, instead of rows
+   divided by hairlines, so a list of five can be counted at a glance and
+   each item is obviously its own tappable thing.
+
+   The OUTLINE carries progress, not danger: bright while an item is still
+   waiting for the student, faint once it has been opened. The optional left
+   rail carries whatever that desk genuinely sorts by — severity on a SOC
+   queue, kind of contact on a review desk — and is left off where there is
+   nothing to sort by.
+   ========================================================================== */
+
+.choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid rgba(var(--cyan-rgb), 0.18);
+  border-radius: 14px;
+  margin: 0 12px 10px;
+  padding: 12px 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Still waiting for the student. */
+.choice.unread { border-color: rgba(var(--cyan-rgb), 0.50); }
+
+/* Dealt with: the card recedes so the remaining work stands out. */
+.choice.read { border-color: rgba(var(--gray-rgb), 0.20); }
+
+.choice:active { background: var(--blue-dark); }
+
+/* A rail sits flush against the card's left edge, so the card gives up its
+   own padding and lets the body carry it. */
+.choice.has-rail { align-items: stretch; padding: 0; gap: 0; }
