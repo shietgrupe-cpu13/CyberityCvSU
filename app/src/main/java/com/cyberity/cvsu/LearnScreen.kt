@@ -192,11 +192,11 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Malware",
         description = "Recognise hostile code and stop it spreading",
         levels = listOf(
-            LearningLevel(401, "What is Malware?", "Classify hostile software by how it behaves.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(402, "Viruses & Trojans", "Replication, payloads, and disguised installers.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(403, "Ransomware", "Encryption extortion and why backups matter most.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(404, "Malware Prevention", "Patching, allowlisting, and endpoint hardening.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(450, "Bonus XP Cache", "Reward for surviving the malware unit.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 1),
+            LearningLevel(401, "What is Malware?", "Security lab: work the ITSO quarantine vault — five flagged files, four families of malware, and one that isn't malware at all.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(402, "Viruses & Trojans", "Security lab: replay a macro virus across campus on a live map, dissect its code, catch a trojan installer red-handed, and spot a swapped download by its hash.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(403, "Ransomware", "Security lab: 2 AM, a department share is being encrypted — stop the counter, talk to the gang, test the backups, and restore from before the break-in.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(404, "Malware Prevention", "Security lab: harden a brand-new computer lab before Monday — patch, allowlist, least privilege, settings, and layers that stop every attack in this unit.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(450, "Bonus XP Cache", "Reward for surviving the malware unit: crack the lock with four clues and collect a field guide to every malware family.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 2),
             LearningLevel(405, "Malware Identification Simulation", "Security lab: four hostile processes on one lab PC — classify each by what it does, not by what it is called.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
@@ -1702,6 +1702,11 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     304 -> LevelContent.Lab(scamMessagesLab(), scamMsgClueLabels)
     305 -> LevelContent.Lab(phishingSimLab(), phishSimClueLabels)
     350 -> LevelContent.Lab(quickQuizLab(), quickQuizClueLabels)
+    401 -> LevelContent.Lab(whatIsMalwareLab(), whatIsMalwareClueLabels)
+    402 -> LevelContent.Lab(virusesTrojansLab(), virusesTrojansClueLabels)
+    403 -> LevelContent.Lab(ransomwareLab(), ransomwareClueLabels)
+    404 -> LevelContent.Lab(malwarePreventionLab(), malwarePreventionClueLabels)
+    450 -> LevelContent.Lab(bonusCacheLab(), bonusCacheClueLabels)
     405 -> LevelContent.Lab(malwareTriageLab(), malwareClueLabels)
     else -> null
 }

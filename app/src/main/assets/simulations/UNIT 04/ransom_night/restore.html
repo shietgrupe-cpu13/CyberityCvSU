@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Restore point picker</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated incident &middot; fictional department and gang &middot; nothing is encrypted</div>
+
+  <div class="desk-head">
+    <h1>Restore point picker</h1>
+    <p>Snapshots from the immutable cloud backup &middot; the attack, reconstructed by ITSO</p>
+  </div>
+  <div class="tabs"><a class="tab" href="monitor.html">Monitor</a><a class="tab" href="chat.html">Chat</a><a class="tab" href="backups.html">Backups</a><a class="tab on" href="restore.html">Restore</a><a class="tab" href="plan.html">Plan</a></div>
+
+  <div class="section-label">What happened this week</div>
+  <div class="tl" id="timeline"></div>
+
+  <div class="section-label">Choose a snapshot to restore</div>
+  <div class="snap-pick" id="snaps"></div>
+  <div class="pad">
+    <button class="cta" onclick="runRestore()">RESTORE TO A TEST PC AND SCAN</button>
+    <div class="banner" id="restore-banner"></div>
+  </div>
+
+  <div class="foot">A newer snapshot means less lost work. A cleaner one means the attacker stays out. Choose carefully.</div>
+
+  <script src="script.js"></script>
+  <script>renderRestore();</script>
+</body>
+</html>

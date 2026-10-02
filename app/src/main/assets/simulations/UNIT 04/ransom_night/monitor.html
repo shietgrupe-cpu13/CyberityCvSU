@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Live share monitor</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated incident &middot; fictional department and gang &middot; nothing is encrypted</div>
+
+  <div class="desk-head">
+    <h1>Live share monitor</h1>
+    <p>CEIT Department &middot; Thursday 02:14 &middot; ITSO on-call page</p>
+  </div>
+  <div class="tabs"><a class="tab on" href="monitor.html">Monitor</a><a class="tab" href="chat.html">Chat</a><a class="tab" href="backups.html">Backups</a><a class="tab" href="restore.html">Restore</a><a class="tab" href="plan.html">Plan</a></div>
+
+  <div class="counter" id="counter">
+    <div class="counter-label" id="counter-label"></div>
+    <div class="counter-num" id="count"></div>
+    <div class="counter-sub" id="counter-sub"></div>
+  </div>
+
+  <div class="section-label">File activity on \\CEIT-NAS\Share &middot; newest first</div>
+  <div class="feed" id="feed"></div>
+
+  <div class="section-label">Network &middot; tap a machine to unplug its cable</div>
+  <div class="net-wrap"><div id="net"></div></div>
+  <div class="pad"><div class="banner" id="net-banner"></div></div>
+
+  <div class="foot">The counter is a simulation. Nothing on your device is encrypted or disconnected.</div>
+
+  <script src="script.js"></script>
+  <script>renderMonitor();</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+/* Cyberity simulation palette: Terminal Teal.
+   Dark values below are the default. The app sets data-theme="light" on <html>
+   when Light Mode is on (see the first <script> in each page and LabBridge.theme()).
+   --on-blue / --on-accent: text on solid teal or accent fills. */
+/* Dark Mode (default) */
+:root {
+  --navy: #0A1016;
+  --card: #17222E;
+  --blue: #14B8A6;
+  --blue-dark: #0F2D2E;
+  --cyan: #5EEAD4;
+  --white: #E8EEF3;
+  --gray: #8FA0B2;
+  --red: #F2606C;
+  --green: #3FD68A;
+  --amber: #F2B84B;
+  --violet: #B49BF7;
+  --surface: #1C2A38;
+  --code-bg: #05090D;
+  --on-blue: #04211E;
+  --on-accent: #04211E;
+  --navy-rgb: 10, 16, 22;
+  --card-rgb: 23, 34, 46;
+  --blue-rgb: 20, 184, 166;
+  --blue-dark-rgb: 15, 45, 46;
+  --cyan-rgb: 94, 234, 212;
+  --white-rgb: 232, 238, 243;
+  --gray-rgb: 143, 160, 178;
+  --red-rgb: 242, 96, 108;
+  --green-rgb: 63, 214, 138;
+  --amber-rgb: 242, 184, 75;
+  --violet-rgb: 180, 155, 247;
+  --surface-rgb: 28, 42, 56;
+}
+/* Light Mode */
+:root[data-theme="light"] {
+  --navy: #D8E3E2;
+  --card: #F1F6F5;
+  --blue: #0F766E;
+  --blue-dark: #C6DAD8;
+  --cyan: #0B6560;
+  --white: #0A1A1E;
+  --gray: #455A61;
+  --red: #BF2A47;
+  --green: #146A34;
+  --amber: #8C5C00;
+  --violet: #6647C2;
+  --surface: #E7EFEE;
+  --code-bg: #E9F0EF;
+  --on-blue: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --navy-rgb: 216, 227, 226;
+  --card-rgb: 241, 246, 245;
+  --blue-rgb: 15, 118, 110;
+  --blue-dark-rgb: 198, 218, 216;
+  --cyan-rgb: 11, 101, 96;
+  --white-rgb: 10, 26, 30;
+  --gray-rgb: 69, 90, 97;
+  --red-rgb: 191, 42, 71;
+  --green-rgb: 20, 106, 52;
+  --amber-rgb: 140, 92, 0;
+  --violet-rgb: 102, 71, 194;
+  --surface-rgb: 231, 239, 238;
+}
+
+/* Cyberity — Bonus XP Cache (level 450). */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--navy); color: var(--white);
+  font-family: -apple-system, "Roboto", "Segoe UI", sans-serif;
+  font-size: 15px; line-height: 1.5;
+}
+
+body { padding-bottom: 28px; }
+
+.sim-ribbon {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--blue-dark); color: var(--cyan);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 5px 12px; border-bottom: 1px solid rgba(var(--cyan-rgb), 0.25);
+}
+
+.mono { font-family: "Roboto Mono", monospace; }
+.desk-head { padding: 14px 16px 10px; border-bottom: 1px solid rgba(var(--gray-rgb), 0.18); }
+.desk-head h1 { margin: 0; font-size: 18px; }
+.desk-head p { margin: 2px 0 0; font-size: 12px; color: var(--gray); }
+.section-label { padding: 14px 16px 6px; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); }
+.foot { padding: 14px 16px; font-size: 11px; color: var(--gray); }
+.pad { padding: 0 12px; }
+
+.cta {
+  display: block; width: 100%; border: none; border-radius: 10px;
+  background: var(--blue); color: var(--on-blue);
+  font-size: 14px; font-weight: 700; padding: 12px; margin: 12px 0 6px;
+  text-align: center; cursor: pointer;
+}
+
+.banner { display: none; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-top: 10px; }
+.banner.show { display: block; }
+.banner.good { background: rgba(var(--green-rgb), 0.12); color: var(--green); }
+.banner.warn { background: rgba(var(--amber-rgb), 0.12); color: var(--amber); }
+
+/* ---------- the chest ---------- */
+
+.chest-wrap { display: flex; justify-content: center; padding: 14px 0 4px; }
+.chest { width: 190px; height: auto; overflow: visible; }
+.chest .body { fill: #7a4b22; stroke: #4a2c12; stroke-width: 3; }
+.chest .band { fill: #c8962e; stroke: #8a6418; stroke-width: 2; }
+.chest .lid { transform-origin: 20px 80px; transform-box: view-box; transition: transform 0.7s cubic-bezier(.3,1.6,.5,1); }
+.chest.open .lid { transform: rotate(-32deg) translate(-6px, -10px); }
+.chest .lock { fill: #d9dde3; stroke: #8a95a3; stroke-width: 2; transition: opacity 0.3s; }
+.chest.open .lock { opacity: 0; }
+.chest .glow { fill: #ffd860; opacity: 0; transition: opacity 0.6s 0.3s; }
+.chest.open .glow { opacity: 0.85; }
+.chest.shake { animation: shake 0.4s; }
+@keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+
+.xp-pop { text-align: center; font-size: 28px; font-weight: 800; color: var(--amber); height: 0; opacity: 0; transition: opacity 0.5s 0.6s; }
+.xp-pop.show { height: auto; opacity: 1; }
+
+/* ---------- the combination lock ---------- */
+
+.wheels { display: flex; justify-content: center; gap: 10px; margin: 6px 0 4px; }
+.wheel { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wheel button {
+  width: 54px; height: 30px; border-radius: 9px; border: 1px solid rgba(var(--cyan-rgb), 0.4);
+  background: var(--card); color: var(--cyan); font-size: 15px; cursor: pointer;
+}
+.digit {
+  width: 54px; height: 62px; border-radius: 12px; background: var(--surface);
+  border: 2px solid rgba(var(--gray-rgb), 0.4);
+  font-family: "Roboto Mono", monospace; font-size: 34px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.digit.right { border-color: var(--green); color: var(--green); }
+.wheel-n { font-size: 10px; font-weight: 800; color: var(--gray); letter-spacing: 0.06em; }
+
+.clue {
+  display: flex; gap: 10px; background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22); border-radius: 12px;
+  margin: 8px 12px 0; padding: 10px 12px;
+}
+.clue.right { border-color: rgba(var(--green-rgb), 0.6); }
+.clue-n {
+  flex: 0 0 26px; height: 26px; border-radius: 50%; background: rgba(var(--cyan-rgb), 0.16);
+  color: var(--cyan); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center;
+}
+.clue.right .clue-n { background: var(--green); color: var(--on-accent); }
+.clue-q { font-size: 13.5px; line-height: 1.4; }
+.clue-from { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+/* ---------- the field-guide cards ---------- */
+
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 12px 0; }
+.card { perspective: 800px; height: 184px; cursor: pointer; opacity: 0; transform: translateY(18px); transition: opacity 0.4s, transform 0.4s; }
+.card.dealt { opacity: 1; transform: none; }
+.card-in { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; }
+.card.flipped .card-in { transform: rotateY(180deg); }
+.face {
+  position: absolute; inset: 0; border-radius: 14px; padding: 12px 11px;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  display: flex; flex-direction: column;
+}
+.front { background: linear-gradient(160deg, var(--surface), var(--blue-dark)); border: 1px solid rgba(var(--cyan-rgb), 0.45); align-items: center; justify-content: center; text-align: center; }
+.front .sym { font-family: "Roboto Mono", monospace; font-size: 30px; font-weight: 800; color: var(--cyan); }
+.front .nm { font-size: 15px; font-weight: 800; margin-top: 6px; }
+.front .lv { font-size: 10.5px; color: var(--gray); margin-top: 2px; }
+.back { background: var(--card); border: 1px solid rgba(var(--gray-rgb), 0.35); transform: rotateY(180deg); font-size: 11.8px; line-height: 1.38; }
+.back b { color: var(--cyan); font-size: 12.5px; }
+.back .lbl { font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; color: var(--gray); margin-top: 6px; }
+.back .lbl.stop { color: var(--green); }
+.flip-count { font-size: 12px; color: var(--gray); text-align: center; margin-top: 10px; }

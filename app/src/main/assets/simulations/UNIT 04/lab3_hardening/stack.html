@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Defense in depth</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated lab &middot; fictional PCs and programs &middot; nothing is installed or run</div>
+
+  <div class="desk-head">
+    <h1>Defense in depth</h1>
+    <p>Four attacks from this unit &middot; budget for four layers</p>
+  </div>
+  <div class="tabs"><a class="tab" href="patch.html">Patch</a><a class="tab" href="allow.html">Allow</a><a class="tab" href="accounts.html">Accounts</a><a class="tab" href="harden.html">Harden</a><a class="tab on" href="stack.html">Layers</a></div>
+
+  <div class="stack"><div id="stack"></div></div>
+  <div class="pad">
+    <button class="cta" onclick="launch()">LAUNCH THE FOUR ATTACKS</button>
+    <div class="banner" id="stack-banner"></div>
+  </div>
+
+  <div class="section-label"><span id="slot-count"></span></div>
+  <div class="layer-pick" id="layers"></div>
+
+  <div class="foot">Dashed gaps are holes: the attack in that lane passes straight through that layer.</div>
+
+  <script src="script.js"></script>
+  <script>renderStack();</script>
+</body>
+</html>

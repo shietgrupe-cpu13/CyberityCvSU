@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Application allowlist</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated lab &middot; fictional PCs and programs &middot; nothing is installed or run</div>
+
+  <div class="desk-head">
+    <h1>Application allowlist</h1>
+    <p>Lab 3 policy &middot; inherited from last semester</p>
+  </div>
+  <div class="tabs"><a class="tab" href="patch.html">Patch</a><a class="tab on" href="allow.html">Allow</a><a class="tab" href="accounts.html">Accounts</a><a class="tab" href="harden.html">Harden</a><a class="tab" href="stack.html">Layers</a></div>
+
+  <div class="section-label">Rules &middot; toggle, then run a test day</div>
+  <div id="rules"></div>
+
+  <div class="pad">
+    <button class="cta" onclick="runTestDay()">RUN A TEST DAY</button>
+  </div>
+  <div class="results" id="results" style="display:none"></div>
+  <div class="pad">
+    <div class="banner" id="allow-banner"></div>
+    <button class="cta danger" onclick="disableAllowlist()">TURN APPLICATION CONTROL OFF FOR THE SEMESTER</button>
+  </div>
+
+  <div class="foot">A test day replays eight programs from last semester against your rules. Green tick = the right result.</div>
+
+  <script src="script.js"></script>
+  <script>renderRules();</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Backup test bench</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated incident &middot; fictional department and gang &middot; nothing is encrypted</div>
+
+  <div class="desk-head">
+    <h1>Backup test bench</h1>
+    <p>Five places CEIT thought were backups &middot; restore each onto a clean, isolated PC</p>
+  </div>
+  <div class="tabs"><a class="tab" href="monitor.html">Monitor</a><a class="tab" href="chat.html">Chat</a><a class="tab on" href="backups.html">Backups</a><a class="tab" href="restore.html">Restore</a><a class="tab" href="plan.html">Plan</a></div>
+
+  <div class="pad" style="margin-top:10px"><span class="flag-count" id="tested-count"></span></div>
+  <div id="bench"></div>
+  <div class="pad"><div class="banner" id="bench-banner"></div></div>
+
+  <div class="foot">Test restores happen on a separate clean PC, never on CEIT-SEC-02.</div>
+
+  <script src="script.js"></script>
+  <script>renderBackups();</script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Setup wizard</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated case &middot; fictional files and machines &middot; nothing runs</div>
+
+  <div class="desk-head">
+    <h1>Setup wizard</h1>
+    <p>StatWise_2026_FULL_Activated.zip &middot; from a &quot;free software&quot; Facebook group</p>
+  </div>
+  <div class="tabs"><a class="tab" href="map.html">Map</a><a class="tab" href="macro.html">Macro</a><a class="tab on" href="wizard.html">Installer</a><a class="tab" href="hash.html">Hash</a></div>
+
+  <div id="wiz"></div>
+
+  <div class="flag-bar">
+    <span class="flag-count" id="flag-count"></span>
+    <button class="flag-btn" onclick="reportFlag()">&#9873; REPORT RED FLAG</button>
+  </div>
+  <div class="pad"><div class="banner" id="wiz-banner"></div></div>
+
+  <div class="foot">A simulated installer: nothing is downloaded or installed. Report what looks wrong on each screen, then cancel.</div>
+
+  <script src="script.js"></script>
+  <script>renderWizard();</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>3-2-1 plan builder</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated incident &middot; fictional department and gang &middot; nothing is encrypted</div>
+
+  <div class="desk-head">
+    <h1>3-2-1 plan builder</h1>
+    <p>So the next 2 AM page ends with a restore, not a ransom</p>
+  </div>
+  <div class="tabs"><a class="tab" href="monitor.html">Monitor</a><a class="tab" href="chat.html">Chat</a><a class="tab" href="backups.html">Backups</a><a class="tab" href="restore.html">Restore</a><a class="tab on" href="plan.html">Plan</a></div>
+
+  <div class="copy-card">
+    <div class="copy-h">Copy 1 <span>the live data</span></div>
+    <div class="bk-sub">\\CEIT-NAS\Share &middot; on campus &middot; always connected</div>
+  </div>
+  <div class="copy-card" id="c2"></div>
+  <div class="copy-card" id="c3"></div>
+
+  <div class="section-label">Checklist</div>
+  <div class="rules" id="rules"></div>
+  <div class="pad"><div class="banner" id="plan-banner"></div></div>
+
+  <div class="foot">The checklist updates as you choose. A rule turns green when the plan meets it.</div>
+
+  <script src="script.js"></script>
+  <script>renderPlan();</script>
+</body>
+</html>
