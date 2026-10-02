@@ -157,7 +157,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
             LearningLevel(103, "CIA Triad", "Security lab: work three registrar incidents — one per pillar — then prove, contain, and restore.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(104, "Security Principles", "Security lab: audit roles, fix a fail-open lock, and stack defences until the attack replay fails.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(106, "Risk Assessment", "Security lab: inventory assets, scan the campus, and rank every risk by likelihood and impact.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
-            LearningLevel(105, "Fundamentals Quiz", "Prove you've got the basics locked down.", 40, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 8),
+            LearningLevel(105, "Fundamentals Quiz", "Five campus situations, one for each idea in this unit: alerts, the CIA triad, least privilege, failing safe and risk.", 40, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 5),
         )
     ),
     LearningUnit(
