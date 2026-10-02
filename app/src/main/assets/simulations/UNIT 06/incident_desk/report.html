@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Incident report</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated service desk &middot; fictional people and tickets</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='desk.html'">&#8592; Desk</button>
+    <span class="topbar-title">Incident report &middot; TKT-0144</span>
+  </div>
+
+  <div class="detail">
+    <button class="appui tool-btn" onclick="openChat()">
+      <b>CHAT WITH PROF. RAMOS</b>Your call with her this morning, as a transcript
+    </button>
+    <div class="reveal-slot" id="chat-slot"></div>
+
+    <div class="artifact a-sys form-card">
+      <span class="artifact-tag">ITSO INCIDENT REPORT</span>
+      <div id="form"></div>
+    </div>
+
+    <button class="cta" onclick="submitReport()">SUBMIT REPORT</button>
+    <div class="banner" id="report-banner"></div>
+  </div>
+
+  <div class="foot">Write what you saw, not what you guess. The form only tells you how many fields are right.</div>
+
+  <script src="script.js"></script>
+  <script>renderReport('form');</script>
+</body>
+</html>

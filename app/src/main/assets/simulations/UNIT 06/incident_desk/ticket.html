@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Ticket</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated service desk &middot; fictional people and tickets</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='desk.html'">&#8592; Desk</button>
+    <span class="topbar-title mono" id="ticket-title"></span>
+  </div>
+
+  <div class="detail" id="detail"></div>
+
+  <div class="foot">Reading a ticket and its evidence changes nothing. The action buttons do.</div>
+
+  <script src="script.js"></script>
+  <script>
+    renderTicket('detail');
+    window.addEventListener('hashchange', function () { renderTicket('detail'); });
+  </script>
+</body>
+</html>

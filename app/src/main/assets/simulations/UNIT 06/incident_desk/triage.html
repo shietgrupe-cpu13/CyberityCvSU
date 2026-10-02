@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Triage board</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated service desk &middot; fictional people and tickets</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='desk.html'">&#8592; Desk</button>
+    <span class="topbar-title">Triage board</span>
+  </div>
+
+  <div class="desk-head">
+    <h1>Event or incident?</h1>
+    <p>Tag all seven by what was actually harmed, then submit.</p>
+  </div>
+
+  <div id="board"></div>
+
+  <div class="board-actions">
+    <button class="cta" onclick="submitTriage()">SUBMIT TRIAGE</button>
+    <div class="banner" id="board-banner"></div>
+  </div>
+
+  <div class="foot">The board only tells you how many are right, not which ones. Go back to a ticket's evidence if you are unsure.</div>
+
+  <script src="script.js"></script>
+  <script>renderTriage('board');</script>
+</body>
+</html>
