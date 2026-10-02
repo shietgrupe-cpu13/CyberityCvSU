@@ -521,7 +521,8 @@ function applyFixes() {
 /* ---------------------------------------------------------------------------
  * Post-incident review
  *
- * The pool hides the times; the slots show them once the timeline is right.
+ * The pool shows only the day; the slots show the full time once the
+ * timeline is right. Ordering within Monday is the real test.
  * ------------------------------------------------------------------------ */
 var EVENTS = {
   e1: { t: 'Fri 4:41 PM', text: 'Fake "Payroll update" email reaches 38 staff' },
@@ -537,13 +538,19 @@ var EVENTS = {
 var CORRECT = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8'];
 var POOL_ORDER = ['e5', 'e2', 'e7', 'e1', 'e8', 'e3', 'e6', 'e4'];
 
+function dayChip(id) {
+  return '<span class="day-chip mono">' + escapeHtml(EVENTS[id].t.split(' ')[0].toUpperCase()) +
+    '</span>';
+}
+
 function renderReview() {
   document.getElementById('timeline').innerHTML = CORRECT.map(function (_, i) {
     var id = S.timeline[i];
     return '<div class="slot' + (id ? ' filled' : '') + '">' +
         '<span class="slot-n mono">' + (i + 1) + '</span>' +
         '<span class="slot-text">' + (id
-          ? (S.closed ? '<b class="mono">' + escapeHtml(EVENTS[id].t) + '</b> ' : '') + escapeHtml(EVENTS[id].text)
+          ? (S.closed ? '<b class="mono">' + escapeHtml(EVENTS[id].t) + '</b> ' : dayChip(id)) +
+            escapeHtml(EVENTS[id].text)
           : '<i>empty</i>') + '</span>' +
       '</div>';
   }).join('');
@@ -552,7 +559,7 @@ function renderReview() {
     return S.timeline.indexOf(id) === -1;
   }).map(function (id) {
     return '<button class="choice-btn" onclick="placeEvent(\'' + id + '\')">' +
-      escapeHtml(EVENTS[id].text) + '</button>';
+      dayChip(id) + escapeHtml(EVENTS[id].text) + '</button>';
   }).join('') || '<div class="note">All eight placed. Check the timeline.</div>';
 
   if (S.closed) showStats();

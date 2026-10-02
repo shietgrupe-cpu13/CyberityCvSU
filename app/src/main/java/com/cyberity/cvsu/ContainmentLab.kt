@@ -106,13 +106,13 @@ fun containmentLab(): LabDefinition = LabDefinition(
             lockedMessage = "Stop the sending from Prof. Ramos's account first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "A password reset takes 24 hours to apply",
-                    "The attacker guessed the new password straight away",
-                    "The attacker's mail app was already signed in, and a password change " +
-                            "doesn't end sessions that already exist",
-                    "The emails had all been scheduled in advance"
+                    "The attacker's mail app was already signed in, and a new password doesn't " +
+                            "end that",
+                    "Password resets only apply at the next mail sync, which runs every 30 minutes",
+                    "The attacker was sending the same emails from a second stolen account",
+                    "The attacker guessed the new password, because resets follow a set pattern"
                 ),
-                correctIndex = 2
+                correctIndex = 0
             ),
             hints = listOf(
                 "Look at the session from 203.0.113.47. When was it created, and how long is " +
@@ -210,13 +210,12 @@ fun containmentLab(): LabDefinition = LabDefinition(
             lockedMessage = "Contain all four staff accounts and add both network blocks first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "It deletes the phishing emails from every inbox",
-                    "It signs the attacker out of the four accounts",
-                    "Anyone on the campus network who clicks the link from now on, including " +
-                            "people who haven't reported anything, can't reach the fake page",
-                    "It reveals who the attacker is"
+                    "It stops the phishing emails from reaching any more inboxes on campus",
+                    "Anyone on campus who clicks the link from now on can't reach the fake page",
+                    "It cuts off the attacker's sessions on the four accounts that were taken over",
+                    "It stops the attacker's server from reaching any campus system from now on"
                 ),
-                correctIndex = 2
+                correctIndex = 1
             ),
             hints = listOf(
                 "Resetting accounts protects people who are already known victims. Who else " +
@@ -228,8 +227,9 @@ fun containmentLab(): LabDefinition = LabDefinition(
                     "payroll email and hundreds of students got the scholarship one. On campus, " +
                     "the link now leads nowhere. Off campus, on mobile data, it still works, " +
                     "which is why the emails themselves have to go next.",
-            failureFeedback = "Not that. Account resets and email clean-up are separate jobs. " +
-                    "Think about who might click the link after now."
+            failureFeedback = "Not that. That's the job of a different step or a different " +
+                    "block. DNS turns a name into an address. Think about who might click the " +
+                    "link after now."
         ),
 
         LabTask(

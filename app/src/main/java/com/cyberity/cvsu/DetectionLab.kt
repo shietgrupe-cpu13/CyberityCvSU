@@ -93,13 +93,12 @@ fun detectionLab(): LabDefinition = LabDefinition(
             lockedMessage = "Give all ten alerts the right verdict first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "LOW alerts can be safely ignored on weekends",
-                    "Severity is only the tool's guess. Every alert has to be checked against " +
-                            "what's normal",
-                    "The monitoring tool is broken and should be switched off",
-                    "HIGH alerts are always real threats"
+                    "LOW alerts can wait until Monday, since real attacks usually come in as HIGH",
+                    "Work HIGH alerts first, then MED and LOW, as time allows",
+                    "The tool gets severity wrong too often, so its alerts should be switched off",
+                    "Severity can't be trusted alone. Each alert must be compared with what's normal"
                 ),
-                correctIndex = 1
+                correctIndex = 3
             ),
             hints = listOf(
                 "Both HIGH alerts match something scheduled or ticketed.",
@@ -232,12 +231,12 @@ fun detectionLab(): LabDefinition = LabDefinition(
             lockedMessage = "Open the mail forwarding rule's history first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "No tool could have detected a forwarding rule",
-                    "Prof. Ramos switched the alert off herself",
-                    "The alert existed, but it was muted in August because it was too noisy",
-                    "The attacker deleted the logs"
+                    "It existed, but was muted in August for firing too often on normal forwards",
+                    "It only watched rules made on campus, so a sign-in from abroad slipped past",
+                    "It fired, but went to an inbox the ITSO team doesn't check on weekends",
+                    "The attacker's rule hid itself from the console by deleting the forwarded mail"
                 ),
-                correctIndex = 2
+                correctIndex = 0
             ),
             hints = listOf(
                 "One rule's status isn't ON.",

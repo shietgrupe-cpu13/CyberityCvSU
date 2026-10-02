@@ -130,13 +130,12 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
             lockedMessage = "Open all seven tickets and get the triage board right first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "They sounded the most alarming",
-                    "Something was actually exposed, taken over or lost: confidentiality, " +
-                            "integrity or availability was harmed",
-                    "A security tool raised an alert about them",
-                    "They happened outside office hours"
+                    "A security tool flagged them, so they need to be investigated and closed",
+                    "A real attacker was behind them, so every attempt counts as an incident",
+                    "Data, an account or a device was actually exposed, taken over or lost",
+                    "They affected more than one person, so they need a formal response"
                 ),
-                correctIndex = 1
+                correctIndex = 2
             ),
             hints = listOf(
                 "The antivirus popup and the firewall alert sound scary. What did they actually " +
@@ -190,13 +189,13 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
             lockedMessage = "Open the email Prof. Ramos clicked and her mailbox rules first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Delete the phishing email so nobody else clicks it",
-                    "Forward it to all staff with a warning not to click",
-                    "Run a cleaner on her PC and restart it",
-                    "Change nothing, write down what you saw and when, and report it to the " +
-                            "ITSO incident line now"
+                    "Delete the phishing email from her inbox so nobody can click the link again",
+                    "Leave her PC and mailbox as they are, note what you saw, and call the " +
+                            "incident line",
+                    "Restart her PC and run a full scan so the infection can't spread overnight",
+                    "Forward the email to all staff with a warning so others recognise it in time"
                 ),
-                correctIndex = 3
+                correctIndex = 1
             ),
             hints = listOf(
                 "Which of these leaves the investigators the most to work with?",
@@ -249,13 +248,15 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
             lockedMessage = "Check what's in the file and read the incident policy first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Only the Registrar staffer who shared it, so they can quietly fix it",
-                    "The Freedom Wall, so every student can protect themselves",
-                    "The ITSO incident line and the Data Protection Officer, who reports it to " +
-                            "the NPC within 72 hours and notifies the affected students",
-                    "Nobody yet. Wait until someone actually misuses the data"
+                    "ITSO and the Data Protection Officer, who handles the NPC report and the " +
+                            "students",
+                    "The Registrar staffer who shared it, so they can fix the link before it " +
+                            "spreads",
+                    "The Freedom Wall admins, so the post comes down and students can protect " +
+                            "themselves",
+                    "ITSO only. Personal data goes to the NPC only once someone actually misuses it"
                 ),
-                correctIndex = 2
+                correctIndex = 0
             ),
             hints = listOf(
                 "The policy has a section just for personal data.",
@@ -309,12 +310,12 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                     "first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "In the order they came in: grades sheet, laptop, mailbox",
-                    "Most people first: grades sheet, mailbox, laptop",
-                    "Still happening first: mailbox, grades sheet, laptop",
-                    "Theft first: laptop, grades sheet, mailbox"
+                    "Grades sheet, then laptop, then mailbox",
+                    "Grades sheet, then mailbox, then laptop",
+                    "Laptop, then grades sheet, then mailbox",
+                    "Mailbox, then grades sheet, then laptop"
                 ),
-                correctIndex = 2
+                correctIndex = 3
             ),
             hints = listOf(
                 "Only one of the three is still causing damage at 8 AM Monday.",
