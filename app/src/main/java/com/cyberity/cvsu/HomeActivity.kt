@@ -329,24 +329,7 @@ private fun LessonCard(
 
 @Composable
 fun LeaderboardTab() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppNavy),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = AppCyan,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("Leaderboard", color = AppWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text("Rankings coming soon", color = AppGray, fontSize = 14.sp)
-        }
-    }
+    LeaderboardScreen()
 }
 
 @Composable
