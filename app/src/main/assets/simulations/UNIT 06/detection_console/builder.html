@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Rule builder</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated monitoring console &middot; fictional accounts and addresses</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='console.html'">&#8592; Console</button>
+    <span class="topbar-title">Rule builder</span>
+  </div>
+
+  <div class="detail">
+    <div class="artifact a-sys">
+      <span class="artifact-tag">NEW RULE</span>
+      <div class="rule-when mono">WHEN a mailbox rule is created</div>
+      <div class="rule-and">AND all of these are true:</div>
+      <div id="conditions"></div>
+    </div>
+
+    <div class="meter">
+      <div class="meter-row">
+        <span>Attacks caught</span>
+        <b class="mono" id="caught">4 of 4</b>
+      </div>
+      <div class="bar"><div class="bar-fill good" id="caught-bar"></div></div>
+      <div class="meter-row">
+        <span>False alarms</span>
+        <b class="mono" id="noise">42</b>
+      </div>
+      <div class="bar"><div class="bar-fill bad" id="noise-bar"></div></div>
+      <div class="meter-note" id="noise-who"></div>
+    </div>
+
+    <button class="cta" id="save-btn" onclick="saveRule()">SAVE RULE</button>
+    <div class="banner" id="builder-banner"></div>
+  </div>
+
+  <div class="foot">Tested against last week's 46 mailbox-rule events: 4 attacks and 42 normal staff rules.</div>
+
+  <script src="script.js"></script>
+  <script>renderBuilder('conditions');</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Sign-in logs</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated monitoring console &middot; fictional accounts and addresses</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='console.html'">&#8592; Console</button>
+    <span class="topbar-title">Sign-in logs</span>
+  </div>
+
+  <div class="detail">
+    <form class="search-bar" onsubmit="runSearch(document.getElementById('q').value); return false;">
+      <input class="search-input mono" id="q" type="text" autocomplete="off"
+             autocapitalize="off" spellcheck="false" placeholder="account or IP address">
+      <button class="small-btn" type="submit">SEARCH</button>
+    </form>
+    <div class="chips">
+      <button class="chip" onclick="runSearch('l.ramos')">l.ramos</button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  <div class="foot">Tap an IP address in any result to search for it everywhere.</div>
+
+  <script src="script.js"></script>
+  <script>restoreSearch();</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Detection rules</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated monitoring console &middot; fictional accounts and addresses</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='console.html'">&#8592; Console</button>
+    <span class="topbar-title">Detection rules</span>
+  </div>
+
+  <div class="desk-head">
+    <h1>What the console watches for</h1>
+    <p>Tap a rule to see its history and what it fired on this weekend.</p>
+  </div>
+
+  <div id="rules"></div>
+
+  <div class="foot">Changing a rule here changes what the whole campus is protected against.</div>
+
+  <script src="script.js"></script>
+  <script>renderRules('rules');</script>
+</body>
+</html>

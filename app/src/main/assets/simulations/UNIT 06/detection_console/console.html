@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Monitoring console</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated monitoring console &middot; fictional accounts and addresses</div>
+
+  <div class="desk-head">
+    <div class="clock-row">
+      <h1>Campus monitoring console</h1>
+      <span class="clock mono">REPLAY: SAT&ndash;MON</span>
+    </div>
+    <p>CvSU IT Services Office &middot; incident review for TKT-0144</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <span class="stat-num mono" id="ttd">63 h</span>
+      <span class="stat-label">Time to detect</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num mono">10</span>
+      <span class="stat-label">Weekend alerts</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num mono">0</span>
+      <span class="stat-label">Reviewed by anyone</span>
+    </div>
+  </div>
+
+  <div class="section-label">Tools</div>
+  <a class="choice tile" href="alerts.html">
+    <span class="tile-body">
+      <span class="tile-name">ALERT QUEUE</span>
+      <span class="tile-sub">Every alert raised over the weekend, waiting for a verdict</span>
+    </span>
+  </a>
+  <a class="choice tile" href="logs.html">
+    <span class="tile-body">
+      <span class="tile-name">SIGN-IN LOGS</span>
+      <span class="tile-sub">Search every sign-in by account or IP address</span>
+    </span>
+  </a>
+  <a class="choice tile" href="rules.html">
+    <span class="tile-body">
+      <span class="tile-name">DETECTION RULES</span>
+      <span class="tile-sub">What the console is set to alert on, and what it isn't</span>
+    </span>
+  </a>
+  <a class="choice tile" href="builder.html">
+    <span class="tile-body">
+      <span class="tile-name">RULE BUILDER</span>
+      <span class="tile-sub">Write and test a new alert against last week's logs</span>
+    </span>
+  </a>
+
+  <div class="section-label">How to read the console</div>
+  <div class="explain">
+    <div class="explain-row"><b>Alert</b><span>The tool's guess. Severity is a guess too. Check it against what's normal.</span></div>
+    <div class="explain-row"><b>Log</b><span>The facts: when, who, from where, on what device. The pattern tells the story.</span></div>
+    <div class="explain-row"><b>Mute</b><span>Silencing a noisy alert creates a blind spot. Tune it instead. Muting costs a heart.</span></div>
+  </div>
+
+  <div class="foot">Everything here is simulated. No account is touched and nothing on your device changes.</div>
+
+  <script src="script.js"></script>
+  <script>renderConsole();</script>
+</body>
+</html>

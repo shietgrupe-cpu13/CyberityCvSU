@@ -19,7 +19,8 @@ class UnitSimulationAssetsTest {
             403 to "UNIT 04/ransom_night", 404 to "UNIT 04/lab3_hardening",
             450 to "UNIT 04/bonus_cache",
             405 to "UNIT 04/malware_triage",
-            601 to "UNIT 06/incident_desk"
+            601 to "UNIT 06/incident_desk",
+            602 to "UNIT 06/detection_console"
         )
         for ((levelId, directory) in directories) {
             val lab = (contentFor(levelId) as LevelContent.Lab).lab
