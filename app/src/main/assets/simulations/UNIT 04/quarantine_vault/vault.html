@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Quarantine vault</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated vault &middot; fictional files &middot; nothing installs or runs</div>
+
+  <div class="desk-head">
+    <h1>Quarantine vault</h1>
+    <p>CvSU IT Services Office &middot; files caught on campus devices this month</p>
+    <p id="seen-count" class="unread-line">5 of 5 not inspected yet</p>
+  </div>
+
+  <div class="section-label">Quarantined files</div>
+  <div id="specs"></div>
+
+  <a class="cta" style="width:auto;margin:6px 12px 0" href="board.html">OPEN THE CLASSIFICATION BOARD</a>
+
+  <div class="section-label">How to classify</div>
+  <div class="explain">
+    <div class="explain-row"><b>Consent</b><span>Malware works against the owner of the device, without their informed say-so. What it CAN do is not the test.</span></div>
+    <div class="explain-row"><b>Behaviour</b><span>Name a family by what the file does in the sandbox report, never by its file name or icon.</span></div>
+    <div class="explain-row"><b>Look only</b><span>Reports, permissions, monitors and logs are free. Restoring a file from quarantine costs a heart.</span></div>
+  </div>
+
+  <div class="foot">Everything here is simulated. No file runs, no connection is made, and nothing on your device is touched.</div>
+
+  <script src="script.js"></script>
+  <script>renderVault('specs');</script>
+</body>
+</html>

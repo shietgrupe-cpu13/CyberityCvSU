@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Hash comparer</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated case &middot; fictional files and machines &middot; nothing runs</div>
+
+  <div class="desk-head">
+    <h1>Hash comparer</h1>
+    <p>Two downloads named StatWise_Setup_2026 &middot; ORGPC-01 Downloads folder</p>
+  </div>
+  <div class="tabs"><a class="tab" href="map.html">Map</a><a class="tab" href="macro.html">Macro</a><a class="tab" href="wizard.html">Installer</a><a class="tab on" href="hash.html">Hash</a></div>
+
+  <div class="publish" style="margin:12px 12px 0">
+    <div class="hg-label" style="color:var(--green)">Published on statwise.example/download</div>
+    <div class="small">SHA-256 of StatWise_Setup_2026.exe. Shown in grey on every first row below.</div>
+  </div>
+
+  <div class="dl-switch">
+    <button class="chip" id="sw-d1" onclick="switchDl('d1')">Copy 1 &middot; vendor site</button>
+    <button class="chip" id="sw-d2" onclick="switchDl('d2')">Copy 2 &middot; mirror</button>
+  </div>
+
+  <div class="hash-grid">
+    <div id="dl-info" style="margin:0 2px 10px"></div>
+    <div class="hg-label">grey = published &middot; white = this download</div>
+    <div id="grid"></div>
+  </div>
+
+  <div class="pad">
+    <button class="cta" onclick="sayIdentical()">ALL 64 CHARACTERS MATCH</button>
+    <div class="banner" id="hash-banner"></div>
+  </div>
+
+  <div class="foot">Tap the first white character that differs from the grey one above it, or confirm that all 64 match.</div>
+
+  <script src="script.js"></script>
+  <script>renderHash();</script>
+</body>
+</html>

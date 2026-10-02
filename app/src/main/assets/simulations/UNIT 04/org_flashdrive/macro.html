@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Macro dissector</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated case &middot; fictional files and machines &middot; nothing runs</div>
+
+  <div class="desk-head">
+    <h1>Macro dissector</h1>
+    <p>Org_Budget_2026.docm &middot; module BudgetHelper &middot; read-only</p>
+  </div>
+  <div class="tabs"><a class="tab" href="map.html">Map</a><a class="tab on" href="macro.html">Macro</a><a class="tab" href="wizard.html">Installer</a><a class="tab" href="hash.html">Hash</a></div>
+
+  <div class="macro-bar"><span><b>SECURITY WARNING</b> Macros have been disabled.</span><button class="macro-btn" onclick="enableContent()">Enable Content</button></div>
+
+  <div class="pad" style="margin-top:12px">
+    <div class="code" id="code"></div>
+    <div class="flag-count" id="label-count" style="margin-top:8px"></div>
+    <div class="buckets">
+      <button class="bucket rep" id="b-rep" onclick="labelAs('rep')">REPLICATION<span>makes a copy of itself</span></button>
+      <button class="bucket trg" id="b-trg" onclick="labelAs('trg')">TRIGGER<span>decides WHEN to strike</span></button>
+      <button class="bucket pay" id="b-pay" onclick="labelAs('pay')">PAYLOAD<span>the damage it does</span></button>
+      <button class="bucket cam" id="b-cam" onclick="labelAs('cam')">CAMOUFLAGE<span>stops you noticing</span></button>
+    </div>
+    <button class="cta" onclick="checkLabels()">CHECK MY LABELS</button>
+    <div class="banner" id="macro-banner"></div>
+  </div>
+
+  <div class="foot">Tap a dashed line, then tap the job it does. Pseudocode shown for teaching; it cannot run.</div>
+
+  <script src="script.js"></script>
+  <script>renderMacro();</script>
+</body>
+</html>
