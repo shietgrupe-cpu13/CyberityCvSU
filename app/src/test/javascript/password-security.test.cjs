@@ -3,11 +3,14 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const {createHash, webcrypto} = require("node:crypto");
-const root = path.resolve(__dirname, "../../main/assets/simulations/password_security");
-const source = name => fs.readFileSync(path.join(root, name), "utf8");
+const root = path.resolve(__dirname, "../../main/assets/simulations/UNIT 02/password_security");
+const levelFolders = {"201":"strong_passwords","202":"password_attacks","203":"multi_factor_authentication","204":"account_protection","205":"password_security_challenge","250":"hash_cracking_practice"};
+const pagePath = key => path.join(root, "..", levelFolders[key.split("_")[0]], "case_" + key + ".html");
+const source = name => fs.readFileSync(name.startsWith("case_") ? pagePath(name.slice(5, -5)) : path.join(root, name), "utf8");
 const casesSource = source("cases.js"), engineSource = source("hash-engine.js");
 const workspaceSource = source("account-workspace.js"), script = source("script.js");
 const learningSource = source("learning-content.js");
+const peopleSource = source("people.js");
 const cases = vm.runInNewContext(casesSource + ";passwordCases");
 const learning = vm.runInNewContext(learningSource + ";UnitTwoLearning");
 const hash = text => createHash("sha256").update(text, "utf8").digest("hex");
@@ -33,7 +36,7 @@ function harness(key, session = storage()) {
             scrollIntoView() {}, addEventListener(type, callback) { this.listeners[type] = callback; }
         }; all.push(el); return el;
     }
-    const html = fs.readFileSync(path.join(root, "case_" + key + ".html"), "utf8");
+    const html = fs.readFileSync(pagePath(key), "utf8");
     for (const match of html.matchAll(/id="([^"]+)"/g)) elements[match[1]] = element();
     const sandbox = {
         document: {body: {dataset: {case: key}}, getElementById: id => {
@@ -48,17 +51,14 @@ function harness(key, session = storage()) {
         setInterval: () => 1, clearInterval() {}, setTimeout: callback => {callback(); return 1;}
     };
     vm.createContext(sandbox);
-    vm.runInContext(casesSource + "\n" + engineSource + "\n" + workspaceSource + "\n" + learningSource + "\n" + script, sandbox);
+    vm.runInContext(casesSource + "\n" + engineSource + "\n" + workspaceSource + "\n" + learningSource + "\n" + peopleSource + "\n" + script, sandbox);
     return {elements, clues, all, session, run: code => vm.runInContext(code, sandbox), advance: ms => now += ms};
 }
 
-function claimFlag(h) {
-    assert.equal(h.clues.length, 0, "practical success alone must not unlock CASE submission");
-    assert.equal(h.elements.code.textContent, "");
-    assert.equal(h.elements["flag-panel"].hidden, false);
-    h.elements["flag-input"].value = ""; h.run("submitFlag()"); assert.equal(h.clues.length,0);
-    h.elements["flag-input"].value = "CYBERITY{wrong}"; h.run("submitFlag()"); assert.equal(h.clues.length,0);
-    h.elements["flag-input"].value = h.elements["earned-flag"].textContent; h.run("submitFlag()");
+function assertVerified(h) {
+    assert.equal(h.clues.length, 1, "verified practical work issues one proof directly");
+    assert.equal(h.elements.result.hidden, false);
+    assert.ok(h.elements.code.textContent.startsWith("CASE-"));
 }
 async function ready(h) { for (let i = 0; i < 4; i++) await h.run("Promise.resolve()"); }
 async function recovered(h) {
@@ -73,10 +73,8 @@ async function configure(h, key) {
     const select = (id, value) => controls[id].value = value;
     if (key === "201_0") {
         await click("generate-password"); check("unique"); h.run("apply()");
-        select("rsa-n", String(h.run("workspace.state.rsa.n"))); select("rsa-phi", String(h.run("workspace.state.rsa.phi"))); await click("check-rsa"); h.run("apply()");
         assert.equal(h.clues.length, 0, "short generated password is insufficient");
         select("length", "20"); await click("generate-password");
-        await click("hash-password"); select("pasted-hash", h.run("workspace.state.hash"));
 
     } else if (key === "201_1") {
         await click("replace-portal"); await click("replace-shop"); select("vault", "manager");
@@ -125,6 +123,11 @@ async function configure(h, key) {
     } else throw new Error("Unexpected workspace " + key);
 }
 (async () => {
+    const typography = harness("201_0");
+    typography.run('setLessonText(byId("guide"), "Use **unique credentials** and <script>literal text</script>.")');
+    assert.equal(typography.elements.guide.children[1].tag, "strong");
+    assert.equal(typography.elements.guide.children[1].textContent, "unique credentials");
+    assert.equal(typography.elements.guide.children[2].textContent, " and <script>literal text</script>.");
     const sessions = new Map();
     const caseIds = new Map();
     const capstoneSession = storage();
@@ -133,6 +136,11 @@ async function configure(h, key) {
     for (const [key, item] of Object.entries(cases)) {
         if (!sessions.has(item.id)) sessions.set(item.id, storage());
         const h = harness(key, sessions.get(item.id)); await ready(h);
+        const owner = h.all.find(el => el.id === "ask-owner");
+        const reply = h.all.find(el => el.id === "owner-reply");
+        assert.ok(owner && reply, "every task must include its fictional person's conversation");
+        assert.equal(reply.hidden, true); owner.listeners.click(); assert.equal(reply.hidden, false);
+        assert.ok(reply.textContent.length > 30); owner.listeners.click(); assert.equal(reply.hidden, true);
         if (key === "201_1") assert.equal(h.run("workspace.state.portal"),
             h.run("UnitTwoCaseFlow.read(201).outcomes[0].state.password"), "the repaired portal credential must carry into Task 2");
         const runId = h.run("UnitTwoCaseFlow.read(item.id).id");
@@ -140,6 +148,8 @@ async function configure(h, key) {
         else assert.equal(runId, caseIds.get(item.id), "all tasks must retain the same case identity");
         assert.equal(h.elements.evidence.textContent, item.evidence);
         const page = source("case_" + key + ".html");
+        assert.ok(page.includes("people.js"), "every task must load the person simulation");
+        assert.ok(!page.includes('id="flag-panel"'), "one proof code replaces the redundant flag step");
         assert.ok(!page.includes("drag-lesson.js") && !page.includes('id="sorting"') && !page.includes('id="choices"'));
         if (h.run("workspace !== null")) {
             h.run("apply()"); assert.equal(h.clues.length, 0, "unrepaired account cannot complete");
@@ -147,6 +157,7 @@ async function configure(h, key) {
             if (item.id === 205) assert.equal(h.run("CampusIncident.read().incident"), incidentId, "same account must persist between tasks");
         } else {
             assert.equal(h.run("isHash"), true, "every non-hash task must use practical controls");
+            h.run("complete()"); assert.equal(h.clues.length, 0, "hash evidence must be verified before proof is issued");
             const answer = await recovered(h);
             if (item.id === 205) incidentId = h.run("CampusIncident.read().incident");
             h.elements.recovered.value = answer;
@@ -172,8 +183,7 @@ async function configure(h, key) {
             assert.equal(h.elements.recovered.value, rows[0].children[0].children[0].textContent);
             h.elements.recovered.value = answer; await h.run("verify()");
         }
-        assert.equal(h.run("UnitTwoCaseFlow.read(item.id).completed.length"), item.index, "case progression waits for flag verification");
-        claimFlag(h);
+        assertVerified(h);
         assert.deepEqual(h.clues, ["password_" + item.id + "_" + item.index]);
         assert.equal(h.run("UnitTwoCaseFlow.read(item.id).completed.length"), item.index + 1);
         if (key === "201_0") assert.ok(h.run("UnitTwoCaseFlow.read(201).outcomes[0].state.password.length >= 20"));
@@ -215,7 +225,7 @@ async function configure(h, key) {
         assert.notEqual(h.run("record.hash"), old);
         assert.notEqual(await recovered(h), oldAnswer);
         h.elements.start.listeners.click(); h.elements.recovered.value = await recovered(h); await h.run("verify()");
-        claimFlag(h);
+        assertVerified(h);
         assert.equal(h.clues.length, 1);
     }
     const h = harness("205_0"); await ready(h);
@@ -240,23 +250,17 @@ async function configure(h, key) {
     assert.equal(demoRace.run("workspace.validate()"), "");
     const gate = harness("205_0"); await ready(gate);
     gate.elements.recovered.value = await recovered(gate); await gate.run("verify()");
-    claimFlag(gate);
+    assertVerified(gate);
     assert.equal(gate.clues.length, 1, "the final challenge evaluates incident work without mandatory card practice");
-    const shared = storage();
-    const typed = harness("201_0", shared), c = typed.run("workspace.controls"), rsa = typed.run("workspace.state.rsa");
-    c["typed-password"].value = "fictional-purple-river-27"; c.unique.checked = true;
-    c["rsa-n"].value = String(rsa.n + 1); c["rsa-phi"].value = String(rsa.phi); c["check-rsa"].listeners.click();
-    typed.run("apply()"); assert.equal(typed.clues.length, 0);
-    c["rsa-n"].value = String(rsa.n); c["check-rsa"].listeners.click();
-    await c["hash-password"].listeners.click();
-    assert.equal(c["password-digest"].textContent, hash(typed.run("workspace.state.salt") + ":fictional-purple-river-27"));
-    typed.run("apply()"); assert.equal(typed.clues.length, 0, "missing pasted hash cannot reveal CASE code");
-    c["pasted-hash"].value = "0".repeat(64); typed.run("apply()"); assert.equal(typed.clues.length, 0);
-    c["pasted-hash"].value = typed.run("workspace.state.hash");
-    c["typed-password"].value += "!"; typed.run("apply()"); assert.equal(typed.clues.length, 0, "an old hash cannot verify an edited password");
-    await c["hash-password"].listeners.click(); c["pasted-hash"].value = typed.run("workspace.state.hash");
-    typed.run("apply()"); claimFlag(typed); assert.equal(typed.clues.length, 1);
-    const next = harness("201_0", shared);
-    assert.notEqual(next.run("workspace.state.rsa.n"), rsa.n, "consecutive attempts must change the prime pair");
+    const fresh = harness("201_0"), controls = fresh.run("workspace.controls");
+    assert.equal(controls["rsa-n"], undefined, "password lesson must not require RSA");
+    assert.equal(controls["hash-password"], undefined, "hashing belongs in the attack lesson");
+    fresh.run("complete()"); assert.equal(fresh.clues.length, 0, "unrepaired settings cannot grant proof");
+    await configure(fresh, "201_0"); fresh.run("apply()"); assertVerified(fresh);
+    const conversation = harness("201_0");
+    const ask = conversation.all.find(el => el.id === "ask-owner");
+    assert.ok(ask); ask.listeners.click();
+    const reply = conversation.all.find(el => el.id === "owner-reply");
+    assert.equal(reply.hidden, false); assert.ok(reply.textContent.includes("shopping"));
     console.log("PASS: all 18 scenarios, six connected cases, prerequisite gates, carried account state, practical evidence and account repair, incident closure reports, recaps, login investigations, and hash workflows.");
 })().catch(error => {console.error(error); process.exitCode = 1;});

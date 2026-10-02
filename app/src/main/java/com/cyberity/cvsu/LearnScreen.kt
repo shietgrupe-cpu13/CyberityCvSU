@@ -1684,7 +1684,12 @@ sealed interface LevelContent {
 
 
 fun contentFor(levelId: Int): LevelContent? = when (levelId) {
-    201, 202, 203, 204, 205, 250 -> LevelContent.Lab(passwordSecurityLab(levelId), passwordSecurityClueLabels(levelId))
+    201 -> LevelContent.Lab(strongPasswordsLab(), strongPasswordsClueLabels)
+    202 -> LevelContent.Lab(passwordAttacksLab(), passwordAttacksClueLabels)
+    203 -> LevelContent.Lab(multiFactorAuthenticationLab(), multiFactorAuthenticationClueLabels)
+    204 -> LevelContent.Lab(accountProtectionLab(), accountProtectionClueLabels)
+    205 -> LevelContent.Lab(passwordSecurityChallengeLab(), passwordSecurityChallengeClueLabels)
+    250 -> LevelContent.Lab(hashCrackingPracticeLab(), hashCrackingPracticeClueLabels)
     101 -> LevelContent.Lab(inboxTriageLab(), inboxClueLabels)
     102 -> LevelContent.Lab(threatConsoleLab(), threatClueLabels)
     103 -> LevelContent.Lab(ciaTriadLab(), ciaClueLabels)

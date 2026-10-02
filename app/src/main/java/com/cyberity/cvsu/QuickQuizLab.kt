@@ -39,7 +39,7 @@ fun quickQuizLab(): LabDefinition = LabDefinition(
             "you nothing — no hearts, and you can restart as often as you want. Open the " +
             "quiz with the button, and swipe the bar at the top of it down when you have the " +
             "pass code.",
-    assetDir = "quick_quiz",
+    assetDir = "UNIT 03/quick_quiz",
     startPage = "quiz.html",
     tasks = listOf(
 

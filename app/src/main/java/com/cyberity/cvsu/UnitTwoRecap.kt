@@ -2,7 +2,7 @@ package com.cyberity.cvsu
 
 /** Short takeaways also available after returning to the native task panel. */
 private val unitTwoRecaps = mapOf(
-    "201_0" to listOf("You calculated the toy RSA modulus and totient, then replaced the predictable campus password.", "Familiar names and dates remain guessable even with a symbol.", "Use a password manager to create a long, unique password for each account."),
+    "201_0" to listOf("You replaced Maya's predictable campus password with a unique generated credential.", "Familiar names and dates remain guessable even with a symbol.", "Use a password manager to create a long, unique password for each account."),
     "201_1" to listOf("You replaced the reused passwords on both exposed accounts.", "A leaked password can open every account where it was reused.", "Replace exposed passwords everywhere they were reused and store different replacements privately."),
     "201_2" to listOf("You repaired a policy that encouraged predictable monthly changes.", "Rules should support unique passwords rather than push people toward familiar patterns.", "Allow long passwords and manager autofill; change credentials when exposure is suspected."),
     "202_0" to listOf("You identified common-word guessing against one account.", "Attackers often try likely passwords before exploring every combination.", "Use a unique generated password and enable MFA; services should limit repeated login attempts."),

@@ -35,7 +35,7 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             "is to work out what each alert actually is, not what the alert title claims.\n\n" +
             "Each task explains what to look for, then hands you the console. Open it with " +
             "the button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "threat_console",
+    assetDir = "UNIT 01/threat_console",
     startPage = "console.html",
     tasks = listOf(
 

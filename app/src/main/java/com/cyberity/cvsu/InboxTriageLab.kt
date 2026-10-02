@@ -45,7 +45,7 @@ fun inboxTriageLab(): LabDefinition = LabDefinition(
             "click things, read what's underneath. Nothing here reaches the real internet.\n\n" +
             "Each task explains what to look for, then hands you the mailbox. Open it with " +
             "the button, and swipe the bar at the top of it down when you are ready to answer.",
-    assetDir = "inbox_triage",
+    assetDir = "UNIT 01/inbox_triage",
     startPage = "inbox.html",
     dangerousClues = listOf(InboxClues.CREDENTIALS_SUBMITTED),
     tasks = listOf(

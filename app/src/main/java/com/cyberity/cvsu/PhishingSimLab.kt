@@ -73,7 +73,7 @@ fun phishingSimLab(): LabDefinition = LabDefinition(
             "check where a link goes, read the headers, and judge the request rather than the " +
             "presentation. Open a message with the button, and swipe the bar at the top of " +
             "the simulation down when you are ready to answer.",
-    assetDir = "phish_sim",
+    assetDir = "UNIT 03/phish_sim",
     startPage = "inbox.html",
     dangerousClues = listOf(
         PhishSimClues.REPLIED_TO_BEC,

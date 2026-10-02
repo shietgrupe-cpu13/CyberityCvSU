@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Unit 2 · Account security lab</title>
+<script>try{document.documentElement.dataset.theme=AndroidLab.theme()}catch(e){}</script>
+<link rel="stylesheet" href="styles.css"></head>
+<body data-case="201_2"><main>
+<div class="eyebrow" id="unit"></div><h1 id="title"></h1>
+<div class="phase" id="phase" role="status"></div>
+<p class="muted">Fictional campus account · Learn, investigate, then apply what you found.</p>
+<section class="card person-panel" id="person-panel" aria-label="Account owner conversation"></section>
+<div class="lesson-grid">
+<details class="card lesson"><summary>Optional investigation hint</summary><p id="guide"></p></details>
+<section class="card"><h2>Your case file</h2><p id="evidence"></p></section>
+</div>
+<details class="card reading"><summary>Lesson reference</summary><h2 id="reading-title"></h2><p id="reading-one"></p><p id="reading-two"></p></details><div id="case-journal"></div><section id="decision-panel" hidden><section class="card" id="workspace" hidden></section>
+<button class="primary" id="apply" disabled>Apply action</button></section>
+<section id="hash-panel" hidden>
+<section class="card"><h2>Offline hash workbench</h2><p class="muted">A hash match proves a guess; hashing does not decrypt the record.</p>
+<dl><dt>Algorithm</dt><dd id="formula"></dd><dt>Public salt</dt><dd><code id="salt"></code></dd>
+<dt>Target digest</dt><dd><code id="target"></code></dd><dt>Search space</dt><dd id="space"></dd></dl>
+<p class="muted">Pattern reference year: <span id="year"></span>. Each new attempt uses the current time and a random nonce to vary the fictional target.</p>
+<p class="muted">This lab intentionally uses fast SHA-256 to demonstrate weak storage. Production accounts need a suitable slow password hashing scheme, such as Argon2id.</p>
+</section>
+<p id="timer" role="timer"></p><div class="actions"><button class="primary" id="start" hidden>Start two-minute round</button><button id="new">New attempt</button></div>
+<label for="strategy">Candidate strategy</label><select id="strategy">
+<option value="dictionary">Common-password dictionary</option><option value="pattern">Campus word + year + suffix</option><option value="pin">Brute force two digits: 00–99</option><option value="custom">My candidate list</option></select>
+<button id="preview-list" disabled>Load and edit candidate list</button><label for="candidate-list">My classroom candidates (one per line)</label><textarea id="candidate-list" rows="5" maxlength="13000" spellcheck="false" placeholder="Enter fictional guesses, or load the selected list"></textarea><button class="primary" id="run" disabled>Calculate candidate hashes</button><label for="single-guess">Test one fictional guess</label><input id="single-guess" maxlength="128" autocomplete="off" autocapitalize="none" spellcheck="false"><button id="test-guess" disabled>Calculate this guess</button>
+<p id="count">0 candidates tested</p>
+<div class="log-wrap"><table><caption>Candidate hashes · compare with the target</caption><thead><tr><th>Candidate</th><th>Full SHA-256 digest</th></tr></thead><tbody id="log"></tbody></table></div>
+<label for="recovered">Recovered password (case-sensitive)</label><input id="recovered" maxlength="128" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Enter the candidate you think matches">
+<section class="card" id="repair-panel" hidden><h2>Close the incident</h2><p>Apply the protections from the earlier lessons:</p><div id="repairs"></div></section>
+<button class="primary" id="verify" disabled>Verify password and finish</button>
+</section>
+<p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+
+<section class="card success" id="result" hidden><h2>Repair verified · read the outcome</h2><div id="debrief"></div>
+<p>Your work has been verified. Return to the task panel and submit this single proof code:</p><code id="code"></code></section>
+</main><script src="../password_security/cases.js"></script><script src="../password_security/hash-engine.js"></script><script src="../password_security/account-workspace.js"></script><script src="../password_security/learning-content.js"></script><script src="../password_security/people.js"></script><script src="../password_security/script.js"></script></body></html>

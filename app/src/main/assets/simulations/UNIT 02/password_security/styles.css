@@ -1,0 +1,100 @@
+/* Match the shared app palette; data-theme is updated by the lab screen. */
+:root {
+  color-scheme: dark;
+  --bg: #0A1016;
+  --card: #17222E;
+  --text: #E8EEF3;
+  --muted: #8FA0B2;
+  --accent: #5EEAD4;
+  --border: #2A3B4D;
+}
+html[data-theme=light] {
+  color-scheme: light;
+  --bg: #D8E3E2;
+  --card: #F1F6F5;
+  --text: #0A1A1E;
+  --muted: #455A61;
+  --accent: #0B6560;
+  --border: #B1C6C4;
+}
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+.phase { color: var(--accent); padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--card); border-radius: 8px; }
+.lesson-grid { display: grid; gap: 16px; }
+.lesson-grid .card { margin-bottom: 0; }
+.lesson { border-top: 3px solid var(--accent); }
+button, input, select, .card { transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease; }
+button[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+button:active:not(:disabled) { transform: translateY(1px); }
+input:not([type=checkbox]), select { width: 100%; min-height: 48px; font: inherit; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin: 8px 0; }
+input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+label { display: block; margin-top: 18px; }
+textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--card); font: inherit; resize: vertical; }
+textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.workspace-status { background: var(--bg); border: 1px solid var(--border); padding: 12px; border-radius: 10px; overflow-wrap: anywhere; font-family: inherit; }
+#workspace input[type=checkbox] { margin-left: 12px; vertical-align: middle; }
+.candidate-pick { margin: 0; padding: 8px; width: auto; min-width: 80px; font: inherit; }
+.reading p, #debrief p { line-height: 1.8; }
+.sorting-layout { display: grid; gap: 18px; }
+.drag-card { display: flex; align-items: center; gap: 12px; min-height: 64px; }
+.drag-card[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.drop-group { border: 1px dashed var(--border); padding: 12px; border-radius: 12px; margin: 12px 0; }
+.drop-zone { min-height: 56px; }
+.placed-cards p { padding: 8px 12px; background: var(--bg); border-radius: 8px; font-size: 14px; }
+.placed-entry { border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; padding: 8px; }
+.return-card { font-size: inherit; padding: 10px; margin: 6px 0; }
+@media (min-width: 650px) { .sorting-layout { grid-template-columns: 1fr 1fr; } }
+#repairs label { display: flex; align-items: flex-start; gap: 12px; }
+input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--accent); margin-top: 3px; }
+dl { margin: 0; } dt { color: var(--muted); margin-top: 16px; } dd { margin: 4px 0; overflow-wrap: anywhere; }
+dd code { font-size: 14px; word-break: break-all; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; } .actions button { flex: 1; min-width: 130px; }
+.log-wrap { max-height: 320px; overflow: auto; overscroll-behavior: contain; border: 1px solid var(--border); border-radius: 12px; margin: 16px 0 24px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; } caption { color: var(--muted); text-align: left; padding: 12px; } th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--border); } td { font-family: monospace; white-space: nowrap; } th { position: sticky; top: 0; background: var(--card); }
+.feedback { border-left: 3px solid var(--accent); padding: 12px 16px; background: var(--card); border-radius: 8px; } .feedback:empty { display: none; }
+#result { animation: arrive 220ms ease-out; }
+@keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (min-width: 700px) { .lesson-grid { grid-template-columns: 1fr 1fr; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition: none !important; animation: none !important; } }
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 system-ui,sans-serif}main{max-width:760px;margin:auto;padding:24px 18px 48px}.eyebrow{color:var(--accent);font-size:13px;font-weight:700;letter-spacing:.06em}h1{font-size:18px;line-height:1.25}h2{font-size:17px;margin-top:0}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin:18px 0}p{white-space:pre-line}.muted{color:var(--muted)}button{display:block;width:100%;text-align:left;border:1px solid var(--border);border-radius:12px;background:var(--card);color:var(--text);font:inherit;padding:15px;margin:12px 0;cursor:pointer}button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}button:disabled{opacity:.65;cursor:default}button.primary{color:var(--accent);font-weight:700}.success{border-color:var(--accent)}code{font-size:22px;color:var(--accent);overflow-wrap:anywhere}#timer{font-weight:700;color:var(--accent)}details{margin:18px 0}summary{cursor:pointer;color:var(--accent)}
+
+.selection-count { font-weight: 700; color: var(--accent); }
+.case-journal p { overflow-wrap: anywhere; }
+
+/* Use the same base typography as the other bundled simulations.
+   The shared LabScreen applies the app's font-size preference through textZoom. */
+body {
+  font-family: -apple-system, "Roboto", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+strong { font-weight: 700; color: var(--text); }
+
+/* The account owner's request is evidence, alongside logs and account controls. */
+.person-panel { position: relative; border-top: 3px solid var(--accent); }
+.person-avatar {
+  display: grid; place-items: center; width: 48px; height: 48px;
+  border-radius: 50%; background: var(--bg); border: 1px solid var(--accent);
+  color: var(--accent); font-weight: 700; margin-bottom: 12px;
+}
+.person-panel h2 { margin-bottom: 4px; }
+.person-panel .muted { margin-top: 0; }
+.person-account { font-size: .9em; overflow-wrap: anywhere; }
+.person-message { margin: 16px 0; border-left: 3px solid var(--accent); padding: 8px 16px; }
+.person-reply { padding: 14px; background: var(--bg); border-radius: 12px; }
+/* Relative type sizes preserve the hierarchy as the WebView's text zoom changes. */
+h1 { font-size: 1.4em; }
+h2 { font-size: 1.15em; }
+h3 { font-size: 1.05em; }
+h4 { font-size: 1em; }
+button { min-height: 48px; }
+main, .card { min-width: 0; }
+p, label, button, blockquote, .workspace-status { overflow-wrap: anywhere; }
+.workspace-status { white-space: pre-wrap; }
+input[type=checkbox] { min-width: 22px; }
+code { font-size: 1.15em; }
+dd code, table { font-size: .9em; }
+@media (max-width: 420px) {
+  main { padding: 18px 12px 36px; }
+  .card { padding: 16px; }
+}
