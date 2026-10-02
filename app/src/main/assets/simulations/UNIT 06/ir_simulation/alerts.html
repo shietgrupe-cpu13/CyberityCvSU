@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Alert queue</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated incident HQ &middot; fictional students, accounts and amounts</div>
+
+  <div id="hud"></div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='hq.html'">&#8592; HQ</button>
+    <span class="topbar-title">Alert queue &middot; Tue night to Thu 1 PM</span>
+  </div>
+
+  <div class="detail" id="detail"></div>
+
+  <div class="foot">The queue only says how many verdicts are right, not which ones.</div>
+
+  <script src="script.js"></script>
+  <script>renderHud(); renderAlerts('detail');</script>
+</body>
+</html>
