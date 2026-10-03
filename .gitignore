@@ -18,3 +18,7 @@ local.properties
 # Claude Code Local Overrides
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Temporary generation files and dependencies
+/tmp/
+/output/pdf/
