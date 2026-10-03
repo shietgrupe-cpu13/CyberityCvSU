@@ -205,12 +205,12 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Network Security",
         description = "Defend the traffic moving between machines",
         levels = listOf(
-            LearningLevel(501, "Network Basics", "Packets, ports, and how traffic actually flows.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(502, "Wi-Fi Security", "WPA generations and the risk of open networks.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(503, "Safe Browsing", "TLS, certificate warnings, and hostile networks.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(504, "Network Threats", "Sniffing, spoofing, and man-in-the-middle attacks.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(550, "Cyber Challenge", "Spot the rogue access point in a campus network.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 10),
-            LearningLevel(505, "Network Security Simulation", "Configure a firewall against live hostile traffic.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
+            LearningLevel(501, "Network Basics", "Security lab: trace a library request, compare service ports, and repair the portal connection.", 20, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(502, "Wi-Fi Security", "Security lab: audit wireless protection, upgrade a mixed fleet, and isolate guests from staff records.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(503, "Safe Browsing", "Security lab: compare HTTP and HTTPS, investigate a certificate warning, and expose a secure lookalike.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(504, "Network Threats", "Security lab: inspect traffic visibility, reject a forged gateway mapping, and repair unauthorized DNS.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(550, "Cyber Challenge", "Security challenge: correlate radios with inventory, report the rogue AP, and reconnect with verified identity.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 10),
+            LearningLevel(505, "Network Security Simulation", "Security lab: configure narrow firewall rules, repair first-match ordering, and verify connection state.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -1720,6 +1720,12 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     404 -> LevelContent.Lab(malwarePreventionLab(), malwarePreventionClueLabels)
     450 -> LevelContent.Lab(bonusCacheLab(), bonusCacheClueLabels)
     405 -> LevelContent.Lab(malwareTriageLab(), malwareClueLabels)
+    501 -> LevelContent.Lab(networkSecurityLab(501), networkSecurityClueLabels(501))
+    502 -> LevelContent.Lab(networkSecurityLab(502), networkSecurityClueLabels(502))
+    503 -> LevelContent.Lab(networkSecurityLab(503), networkSecurityClueLabels(503))
+    504 -> LevelContent.Lab(networkSecurityLab(504), networkSecurityClueLabels(504))
+    505 -> LevelContent.Lab(networkSecurityLab(505), networkSecurityClueLabels(505))
+    550 -> LevelContent.Lab(networkSecurityLab(550), networkSecurityClueLabels(550))
     601 -> LevelContent.Lab(securityIncidentsLab(), securityIncidentsClueLabels)
     602 -> LevelContent.Lab(detectionLab(), detectionClueLabels)
     603 -> LevelContent.Lab(containmentLab(), containmentClueLabels)
