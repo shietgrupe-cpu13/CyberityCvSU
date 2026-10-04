@@ -81,15 +81,16 @@ object LeaderboardRepository {
 
     /** Writes this student's public entry. Test accounts are stored but never listed. */
     fun publish(uid: String, profile: UserProfile, xp: Int) {
-        db.collection(COLLECTION).document(uid).set(
-            mapOf(
+        db.runTransaction { transaction ->
+            val privacy = transaction.get(db.collection("privacyPreferences").document(uid))
+            if (privacy.getBoolean("leaderboardVisible") == false || privacy.getBoolean("deleting") == true) return@runTransaction
+            transaction.set(db.collection(COLLECTION).document(uid), mapOf(
                 FIELD_NAME to profile.displayName,
                 FIELD_XP to xp,
                 FIELD_IS_TESTER to profile.isTester,
                 FIELD_UPDATED_AT to FieldValue.serverTimestamp()
-            ),
-            SetOptions.merge()
-        )
+            ), SetOptions.merge())
+        }
     }
 
     /**
@@ -131,6 +132,17 @@ fun LeaderboardScreen(modifier: Modifier = Modifier) {
 
     var entries by remember { mutableStateOf<List<LeaderboardEntry>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var publiclyVisible by remember(myUid) { mutableStateOf(true) }
+
+    DisposableEffect(myUid) {
+        val registration = myUid?.let { uid ->
+            FirebaseFirestore.getInstance().collection("privacyPreferences").document(uid)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) publiclyVisible = snapshot.getBoolean("leaderboardVisible") != false
+                }
+        }
+        onDispose { registration?.remove() }
+    }
 
     DisposableEffect(Unit) {
         val registration = LeaderboardRepository.listenTop(
@@ -183,8 +195,8 @@ fun LeaderboardScreen(modifier: Modifier = Modifier) {
                             .padding(horizontal = 24.dp, vertical = 14.dp)
                     ) {
                         Text(
-                            "You're not in the top ${LeaderboardRepository.TOP_N} yet. " +
-                                    "Keep finishing levels to climb.",
+                            if (!publiclyVisible) "Your leaderboard entry is hidden. Change this in Settings > Privacy."
+                            else "You're not in the top ${LeaderboardRepository.TOP_N} yet. Keep finishing levels to climb.",
                             color = AppGray,
                             fontSize = 13.sp
                         )

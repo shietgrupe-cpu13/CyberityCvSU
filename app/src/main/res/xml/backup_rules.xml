@@ -7,6 +7,8 @@
 -->
 <full-backup-content>
     <exclude domain="sharedpref" path="auth_attempt_guard.xml" />
+    <exclude domain="sharedpref" path="account_sessions.xml" />
+    <exclude domain="sharedpref" path="learning_reminders.xml" />
     <!--
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>

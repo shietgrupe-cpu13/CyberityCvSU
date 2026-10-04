@@ -147,6 +147,8 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
+        LearningReminders.createChannel(this)
+        LearningReminders.schedule(this)
         setContent {
             // Keep status bar and navigation bar icons readable in both modes.
             val dark = CyberityThemeState.isDark
@@ -185,8 +187,31 @@ fun AppNavigator() {
     }
 
     val signOut = {
+        AccountSessions.end(context)
         auth.signOut()
         currentScreen = "entry"
+    }
+
+    // Observe external sign-out and check revocation while authenticated content is open.
+    DisposableEffect(auth) {
+        val listener = FirebaseAuth.AuthStateListener { updated ->
+            if (updated.currentUser == null && currentScreen in listOf("loggedIn", "profileCheck", "completeProfile")) {
+                currentScreen = "entry"
+            }
+        }
+        auth.addAuthStateListener(listener)
+        onDispose { auth.removeAuthStateListener(listener) }
+    }
+    LaunchedEffect(currentScreen) {
+        if (currentScreen in listOf("profileCheck", "loggedIn", "completeProfile")) {
+            while (true) {
+                val uid = auth.currentUser?.uid ?: break
+                if (PrivacyPreferencesRepository.activeDeletionUid != uid) AccountSessions.touch(context) { error ->
+                    if (auth.currentUser?.uid == uid && AccountSessions.isRevoked(error)) signOut()
+                }
+                delay(60_000L)
+            }
+        }
     }
 
     when (currentScreen) {
@@ -240,6 +265,11 @@ fun AppNavigator() {
                     return@LaunchedEffect
                 }
                 try {
+                    val deleting = withTimeout(30_000L) { PrivacyPreferencesRepository.readDeletionState(uid) }
+                    if (deleting) {
+                        currentScreen = "privacyRecovery"
+                        return@LaunchedEffect
+                    }
                     // A deadline bounds the wait; it never delays a ready result.
                     val profile = withTimeout(30_000L) {
                         suspendCancellableCoroutine<UserProfile?> { continuation ->
@@ -289,6 +319,7 @@ fun AppNavigator() {
                 slow = slow
             )
         }
+        "privacyRecovery" -> SettingsDialog(onDismiss = signOut, onSignOut = signOut, startInPrivacy = true)
         "completeProfile" -> CompleteProfileScreen(
             onProfileSaved = { currentScreen = "profileCheck" },
             onSignOut = signOut

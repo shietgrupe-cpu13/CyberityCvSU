@@ -1,0 +1,4 @@
+{
+  "functions": [{ "source": "functions", "codebase": "account-security", "runtime": "nodejs22" }],
+  "firestore": { "rules": "firestore.rules" }
+}
