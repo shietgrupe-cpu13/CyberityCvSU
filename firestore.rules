@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function verifiedOwner(uid) {
+      return owner(uid) && request.auth.token.email_verified == true;
+    }
+    function freshAuthentication() {
+      return request.auth != null && timestamp.value(request.auth.token.auth_time * 1000) > request.time - duration.value(5, 'm');
+    }
+    function accountDeleting(uid) {
+      return exists(/databases/$(database)/documents/privacyPreferences/$(uid)) &&
+        get(/databases/$(database)/documents/privacyPreferences/$(uid)).data.deleting == true;
+    }
+    function sparkSessionActive() {
+      return request.auth != null && !accountDeleting(request.auth.uid) &&
+        (!exists(/databases/$(database)/documents/accountSecuritySpark/$(request.auth.uid)) ||
+          timestamp.value(request.auth.token.auth_time * 1000) >
+            get(/databases/$(database)/documents/accountSecuritySpark/$(request.auth.uid)).data.revokedAt);
+    }
+    function deletionOwner(uid) {
+      return verifiedOwner(uid) && freshAuthentication() && accountDeleting(uid) &&
+        get(/databases/$(database)/documents/privacyPreferences/$(uid)).data.deletionAuthTime == request.auth.token.auth_time;
+    }
+    function publicEntryAllowed(uid) {
+      return !existsAfter(/databases/$(database)/documents/privacyPreferences/$(uid)) ||
+        (getAfter(/databases/$(database)/documents/privacyPreferences/$(uid)).data.leaderboardVisible == true &&
+          getAfter(/databases/$(database)/documents/privacyPreferences/$(uid)).data.deleting == false);
+    }
+
+    match /privacyPreferences/{uid} {
+      // Readable after cutoff/deletion to route a failed deletion back to its recovery flow.
+      allow get: if verifiedOwner(uid);
+      allow list, delete: if false;
+      allow create, update: if verifiedOwner(uid) && (
+        (sparkSessionActive() && request.resource.data.keys().hasAll(['leaderboardVisible', 'deleting']) &&
+          request.resource.data.keys().hasOnly(['leaderboardVisible', 'deleting']) &&
+          request.resource.data.leaderboardVisible is bool && request.resource.data.deleting == false) ||
+        (freshAuthentication() && request.resource.data.keys().hasAll(['leaderboardVisible', 'deleting', 'deletionAuthTime']) &&
+          request.resource.data.keys().hasOnly(['leaderboardVisible', 'deleting', 'deletionAuthTime']) &&
+          request.resource.data.leaderboardVisible == false && request.resource.data.deleting == true &&
+          request.resource.data.deletionAuthTime == request.auth.token.auth_time &&
+          ((!exists(/databases/$(database)/documents/privacyPreferences/$(uid)) && sparkSessionActive()) ||
+            (exists(/databases/$(database)/documents/privacyPreferences/$(uid)) &&
+              ((resource.data.deleting == false && sparkSessionActive()) ||
+                (resource.data.deleting == true && request.auth.token.auth_time >= resource.data.deletionAuthTime)))))
+      );
+    }
+    match /accountSecuritySpark/{uid} {
+      allow get: if verifiedOwner(uid);
+      allow list, delete: if false;
+      allow create, update: if verifiedOwner(uid) && freshAuthentication() &&
+        (sparkSessionActive() || deletionOwner(uid)) &&
+        request.resource.data.keys().hasOnly(['revokedAt']) && request.resource.data.revokedAt == request.time;
+      match /sessions/{sessionId} {
+        allow get, list: if verifiedOwner(uid) && (sparkSessionActive() || deletionOwner(uid));
+        allow create, update: if verifiedOwner(uid) && sparkSessionActive() &&
+          sessionId.matches('^[a-f0-9-]{36}$') &&
+          request.resource.data.keys().hasAll(['device', 'androidVersion', 'authTime', 'lastActive', 'signedOut']) &&
+          request.resource.data.keys().hasOnly(['device', 'androidVersion', 'authTime', 'lastActive', 'signedOut']) &&
+          request.resource.data.device is string && request.resource.data.device.size() > 0 && request.resource.data.device.size() <= 100 &&
+          request.resource.data.androidVersion is string && request.resource.data.androidVersion.size() <= 30 &&
+          request.resource.data.authTime == request.auth.token.auth_time && request.resource.data.signedOut is bool &&
+          (request.resource.data.lastActive == request.time ||
+            (request.resource.data.signedOut == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['signedOut'])));
+        allow delete: if verifiedOwner(uid) && (sparkSessionActive() || deletionOwner(uid));
+      }
+    }
+    match /userProgress/{uid} {
+      allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+      allow create, update: if owner(uid) && sparkSessionActive();
+      allow delete: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+    }
+    match /users/{uid} {
+      allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+      allow create, update: if owner(uid) && sparkSessionActive();
+      allow delete: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+    }
+    match /studentIds/{id} {
+      allow read: if request.auth != null &&
+        (sparkSessionActive() || (resource.data.uid == request.auth.uid && deletionOwner(request.auth.uid)));
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid && sparkSessionActive();
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid &&
+        (sparkSessionActive() || deletionOwner(request.auth.uid));
+    }
+    match /leaderboard/{uid} {
+      allow read: if request.auth != null && (sparkSessionActive() || (owner(uid) && deletionOwner(uid)));
+      allow create, update: if owner(uid) && sparkSessionActive() && publicEntryAllowed(uid) &&
+        request.resource.data.keys().hasOnly(['displayName', 'xp', 'isTester', 'updatedAt']) &&
+        request.resource.data.displayName is string && request.resource.data.displayName.size() >= 3 &&
+        request.resource.data.displayName.size() <= 20 && request.resource.data.xp is int &&
+        request.resource.data.xp >= 0 && request.resource.data.isTester is bool;
+      allow delete: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+    }
+  }
+}

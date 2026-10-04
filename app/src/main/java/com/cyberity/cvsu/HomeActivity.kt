@@ -500,6 +500,7 @@ fun ProfileTab(
             },
             onSignOut = {
                 showSettings = false
+                AccountSessions.end(context)
                 auth.signOut()
                 onLogout()
             }

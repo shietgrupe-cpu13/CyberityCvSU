@@ -5,6 +5,13 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,12 +41,21 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
@@ -144,18 +160,22 @@ fun TotpMfaCard() {
 }
 
 @Composable
-private fun TotpEnrollmentScreen(onDone: () -> Unit) {
+internal fun TotpEnrollmentScreen(onDone: () -> Unit, onEnrolled: () -> Unit = onDone,
+    factorName: String = "Authenticator", onBusyChanged: (Boolean) -> Unit = {}) {
     val auth = remember { FirebaseAuth.getInstance() }
     var secret by remember { mutableStateOf<TotpSecret?>(null) }
     var code by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
+    androidx.compose.runtime.SideEffect { onBusyChanged(loading) }
+    androidx.compose.runtime.DisposableEffect(Unit) { onDispose { onBusyChanged(false) } }
 
     AlertDialog(
         onDismissRequest = { if (!loading) onDone() },
+        properties = androidx.compose.ui.window.DialogProperties(securePolicy = androidx.compose.ui.window.SecureFlagPolicy.SecureOn),
         title = { Text("Set up authenticator app") },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
                 val currentSecret = secret
                 if (currentSecret == null) {
                     Text("Generate a secure key for your authenticator app.")
@@ -170,7 +190,10 @@ private fun TotpEnrollmentScreen(onDone: () -> Unit) {
                     Spacer(Modifier.height(12.dp))
                     SelectionContainer { Text(currentSecret.sharedSecretKey, fontSize = 16.sp, color = AppBlue) }
                     Spacer(Modifier.height(12.dp))
-                    Button(onClick = { currentSecret.openInOtpApp(qrCodeUri) }) { Text("Open authenticator app") }
+                    Button(onClick = {
+                        try { currentSecret.openInOtpApp(qrCodeUri) }
+                        catch (_: android.content.ActivityNotFoundException) { error = "Install an authenticator app, or scan the QR code on another device." }
+                    }) { Text("Open authenticator app") }
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = code,
@@ -187,7 +210,9 @@ private fun TotpEnrollmentScreen(onDone: () -> Unit) {
             if (loading) CircularProgressIndicator(modifier = Modifier.padding(12.dp))
             else if (secret == null) Button(onClick = {
                 loading = true; error = null
-                auth.currentUser?.multiFactor?.session
+                val user = auth.currentUser
+                if (user == null) { loading = false; error = "Please sign in again."; return@Button }
+                user.multiFactor.session
                     ?.addOnSuccessListener { session ->
                         TotpMultiFactorGenerator.generateSecret(session)
                             .addOnSuccessListener { secret = it; loading = false }
@@ -198,8 +223,10 @@ private fun TotpEnrollmentScreen(onDone: () -> Unit) {
             else Button(enabled = code.length == 6, onClick = {
                 loading = true
                 val assertion = TotpMultiFactorGenerator.getAssertionForEnrollment(secret!!, code)
-                auth.currentUser?.multiFactor?.enroll(assertion, "Google Authenticator")
-                    ?.addOnSuccessListener { onDone() }
+                val user = auth.currentUser
+                if (user == null) { loading = false; error = "Please sign in again."; return@Button }
+                user.multiFactor.enroll(assertion, factorName)
+                    .addOnSuccessListener { onEnrolled() }
                     ?.addOnFailureListener { loading = false; error = it.localizedMessage ?: "That code could not be verified. Try the current code." }
             }) { Text("Verify and enable") }
         },
@@ -212,17 +239,32 @@ fun TotpSignInScreen(resolver: MultiFactorResolver?, onSuccess: () -> Unit, onCa
     var code by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
-    val factor = resolver?.hints?.firstOrNull { it.factorId == TotpMultiFactorGenerator.FACTOR_ID }
+    val factors = resolver?.hints.orEmpty().filter { it.factorId == TotpMultiFactorGenerator.FACTOR_ID }
+    var selectedFactor by remember(resolver) { mutableStateOf(factors.firstOrNull()?.uid) }
+    val factor = factors.firstOrNull { it.uid == selectedFactor }
     val context = LocalContext.current
     val guard = remember { AuthAttemptGuard.get(context) }
     val retrySeconds = rememberRetrySeconds(guard)
     BackHandler { if (!loading) onCancel() }
-    Column(Modifier.fillMaxSize().background(AppNavy).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxSize().background(AppNavy).systemBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(96.dp)); Icon(Icons.Filled.Security, null, tint = AppCyan)
         Spacer(Modifier.height(16.dp)); Text("Verify it’s you", color = AppWhite, fontSize = 26.sp)
         Spacer(Modifier.height(8.dp)); Text("Enter the current 6-digit code from your authenticator app.", color = AppGray, textAlign = TextAlign.Center)
+        if (factors.size > 1) {
+            Text("Choose an authenticator", color = AppCyan, modifier = Modifier.padding(top = 16.dp))
+            factors.forEachIndexed { index, item ->
+                androidx.compose.material3.FilterChip(selected = item.uid == selectedFactor, enabled = !loading,
+                    onClick = { selectedFactor = item.uid; code = ""; error = null },
+                    label = { Text("${item.displayName ?: "Authenticator"} (${index + 1})") })
+            }
+        }
         Spacer(Modifier.height(24.dp))
-        OutlinedTextField(value = code, onValueChange = { code = it.filter(Char::isDigit).take(6) }, label = { Text("6-digit code") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        TotpCodeInput(
+            code = code,
+            onCodeChange = { code = it; error = null },
+            enabled = !loading,
+            hasError = error != null
+        )
         error?.let { Text(it, color = AppDanger, modifier = Modifier.padding(top = 12.dp)) }
         if (retrySeconds > 1 && !loading) {
             Text("Please wait ${retrySeconds}s before trying again.", color = AppGray, modifier = Modifier.padding(top = 12.dp))
@@ -244,4 +286,74 @@ fun TotpSignInScreen(resolver: MultiFactorResolver?, onSuccess: () -> Unit, onCa
         ) { Text("Verify") }
         TextButton(onClick = onCancel, enabled = !loading) { Text("Cancel", color = AppCyan) }
     }
+}
+
+/** One editable field keeps paste, deletion, and accessibility working across all six boxes. */
+@Composable
+private fun TotpCodeInput(
+    code: String,
+    onCodeChange: (String) -> Unit,
+    enabled: Boolean,
+    hasError: Boolean
+) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboard = LocalSoftwareKeyboardController.current
+    var focused by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboard?.show()
+    }
+
+    BasicTextField(
+        value = code,
+        onValueChange = { onCodeChange(it.filter { digit -> digit in '0'..'9' }.take(6)) },
+        enabled = enabled,
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+        textStyle = TextStyle(color = Color.Transparent),
+        cursorBrush = SolidColor(Color.Transparent),
+        modifier = Modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester)
+            .onFocusChanged { focused = it.isFocused }
+            .semantics { contentDescription = "6-digit authenticator code" },
+        decorationBox = { innerTextField ->
+            Box {
+                // Keep the actual editor present for keyboard and accessibility input.
+                innerTextField()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(6) { index ->
+                        val active = focused && index == code.length.coerceAtMost(5)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(56.dp)
+                                .background(AppCard, RoundedCornerShape(10.dp))
+                                .border(
+                                    if (active) 2.dp else 1.dp,
+                                    when {
+                                        hasError -> AppDanger
+                                        active -> AppCyan
+                                        else -> AppGray.copy(alpha = 0.45f)
+                                    },
+                                    RoundedCornerShape(10.dp)
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = code.getOrNull(index)?.toString() ?: "",
+                                color = AppWhite,
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    )
 }

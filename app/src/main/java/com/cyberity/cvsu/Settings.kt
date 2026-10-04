@@ -2,343 +2,177 @@ package com.cyberity.cvsu
 
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.cyberity.cvsu.ui.theme.CyberityThemeState
 
-/**
- * Modern, styled Settings Dialog matching Cyberity CvSU app theme.
- * Includes level font scaling (Small / Medium / Large), Multi-Factor Authentication (MFA),
- * preference toggles, and Sign Out action.
- */
+private enum class SettingsSection(val title: String, val description: String, val icon: ImageVector) {
+    APPEARANCE("Appearance", "Theme and display preferences", Icons.Default.Palette),
+    LEARNING("Learning", "Text size and guided tutorial", Icons.Default.School),
+    SECURITY("Security", "Password, authenticator and signed-in devices", Icons.Default.Shield),
+    NOTIFICATIONS("Notifications", "Learning reminders and phone permissions", Icons.Default.Notifications),
+    PRIVACY("Privacy", "Your information and data preferences", Icons.Default.PrivacyTip),
+    HELP("Help & About", "App information and support", Icons.AutoMirrored.Filled.HelpOutline)
+}
+
 @Composable
-fun SettingsDialog(
-    onDismiss: () -> Unit,
-    onSignOut: () -> Unit = {},
-    onReplayTutorial: () -> Unit = {}
-) {
+fun SettingsDialog(onDismiss: () -> Unit, onSignOut: () -> Unit = {}, onReplayTutorial: () -> Unit = {},
+    startInPrivacy: Boolean = false) {
+    var selected by rememberSaveable { mutableStateOf<String?>(if (startInPrivacy) "PRIVACY" else null) }
+    var confirmSignOut by remember { mutableStateOf(false) }
+    var securityBusy by remember { mutableStateOf(false) }
+    val section = selected?.let { SettingsSection.valueOf(it) }
+
+    // Keep this window alive across destinations; replacing it exposes the app below.
+    Dialog(onDismissRequest = {
+        if (!securityBusy) {
+            if (startInPrivacy) onDismiss()
+            else if (selected != null) selected = null else onDismiss()
+        }
+    }, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+    if (section == SettingsSection.SECURITY) {
+        AccountSecurityDialog(onDismiss = { selected = null }, onClose = onDismiss,
+            onBusyChanged = { securityBusy = it }, onSignOut = { onDismiss(); onSignOut() })
+    } else {
+        SettingsPage(title = section?.title ?: "Settings", onBack = if (section != null && !startInPrivacy) ({ selected = null }) else null,
+            onClose = onDismiss, canDismiss = !securityBusy) {
+            when (section) {
+                null -> {
+                    Text("Make Cyberity yours", color = AppWhite, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                    Text("Manage your learning, account and preferences.", color = AppGray)
+                    SettingsSection.entries.forEach { item ->
+                        Surface(onClick = { selected = item.name }, color = AppCard, shape = RoundedCornerShape(18.dp)) {
+                            Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Icon(item.icon, contentDescription = null, tint = AppCyan, modifier = Modifier.size(26.dp))
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(item.title, color = AppWhite, fontWeight = FontWeight.SemiBold)
+                                    Text(item.description, color = AppGray, fontSize = 13.sp)
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = AppGray)
+                            }
+                        }
+                    }
+                    OutlinedButton(onClick = { confirmSignOut = true }, modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppDanger)) { Text("Sign out of this device") }
+                }
+                SettingsSection.APPEARANCE -> AppearanceSettings()
+                SettingsSection.LEARNING -> LearningSettings { onDismiss(); onReplayTutorial() }
+                SettingsSection.NOTIFICATIONS -> NotificationSettings()
+                SettingsSection.PRIVACY -> PrivacySettingsScreen(onSignOut = { onDismiss(); onSignOut() },
+                    onBusyChanged = { securityBusy = it })
+                SettingsSection.HELP -> HelpSettingsScreen()
+                SettingsSection.SECURITY -> Unit
+            }
+        }
+    }
+    }
+    if (confirmSignOut) AlertDialog(onDismissRequest = { confirmSignOut = false }, containerColor = AppCard,
+        title = { Text("Sign out?", color = AppWhite) }, text = { Text("Sign out of Cyberity on this device?", color = AppGray) },
+        confirmButton = { TextButton(onClick = { confirmSignOut = false; onDismiss(); onSignOut() }) { Text("Sign out", color = AppDanger) } },
+        dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text("Cancel") } })
+}
+
+/** Content for a destination inside SettingsDialog's single persistent window. */
+@Composable
+internal fun SettingsPage(title: String, onBack: (() -> Unit)? = null, onClose: () -> Unit,
+    canDismiss: Boolean = true, content: @Composable ColumnScope.() -> Unit) {
+        Surface(modifier = Modifier.fillMaxSize(), color = AppNavy) {
+            Column(Modifier.fillMaxSize().systemBarsPadding().imePadding()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    if (onBack != null) IconButton(enabled = canDismiss, onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back to settings", tint = AppCyan)
+                    } else Icon(Icons.Default.Settings, null, tint = AppCyan, modifier = Modifier.padding(12.dp))
+                    Text(title, modifier = Modifier.weight(1f), color = AppWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    IconButton(enabled = canDismiss, onClick = onClose) { Icon(Icons.Default.Close, "Close settings", tint = AppGray) }
+                }
+                HorizontalDivider(color = AppBorder)
+                Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
+            }
+        }
+}
+
+@Composable
+private fun AppearanceSettings() {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
-
-    var notificationsEnabled by remember { mutableStateOf(prefs.getBoolean("notifications", true)) }
-    var fontSizeChoice by remember { mutableStateOf(prefs.getString("font_size", "medium") ?: "medium") }
-    var showSignOutConfirm by remember { mutableStateOf(false) }
-
-    fun saveBool(key: String, value: Boolean) {
-        prefs.edit().putBoolean(key, value).apply()
+    SettingsIntro("A comfortable view", "Choose the look that works best for you. System follows your phone's light or dark setting.")
+    SettingsChoices(listOf(CyberityThemeState.DARK to "Dark", CyberityThemeState.LIGHT to "Light", CyberityThemeState.SYSTEM to "System"),
+        CyberityThemeState.mode) { choice ->
+        CyberityThemeState.mode = choice
+        prefs.edit().putString(CyberityThemeState.PREF_KEY, choice).apply()
     }
+    SettingsPlaceholder("Reduced motion", "Use fewer animations for a calmer experience.")
+}
 
-    fun saveString(key: String, value: String) {
-        prefs.edit().putString(key, value).apply()
+@Composable
+private fun LearningSettings(onReplay: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
+    var font by remember { mutableStateOf(prefs.getString("font_size", "medium")?.lowercase()?.let { if (it == "normal") "medium" else it } ?: "medium") }
+    SettingsIntro("Learn your way", "Adjust text scaling for lessons, labs and quizzes.")
+    SettingsChoices(listOf("small" to "Small", "medium" to "Medium", "large" to "Large"), font) { choice ->
+        font = choice; prefs.edit().putString("font_size", choice).apply()
     }
+    Text("Text preview", color = AppCyan)
+    Text("Build safer habits, one lesson at a time.", color = AppWhite,
+        fontSize = when (font) { "small" -> 14.sp; "large" -> 20.sp; else -> 16.sp })
+    Button(onClick = onReplay, modifier = Modifier.fillMaxWidth()) { Text("Replay guided tutorial") }
+    SettingsPlaceholder("Offline lessons", "Download supported lessons to study without a connection.")
+}
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = AppCard,
-        shape = RoundedCornerShape(24.dp),
-        title = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = "Settings",
-                        tint = AppCyan,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(10.dp))
-                    Text(
-                        text = "Settings",
-                        color = AppWhite,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = "Close",
-                        tint = AppGray
-                    )
+@Composable
+internal fun SettingsIntro(title: String, description: String) {
+    Text(title, color = AppWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    Text(description, color = AppGray)
+}
+
+@Composable
+private fun SettingsChoices(options: List<Pair<String, String>>, selected: String, onSelect: (String) -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEach { (key, label) ->
+            Surface(modifier = Modifier.weight(1f).selectable(selected = key == selected, role = Role.RadioButton,
+                onClick = { onSelect(key) }), shape = RoundedCornerShape(12.dp),
+                color = if (key == selected) AppBlue else AppCard,
+                border = BorderStroke(1.dp, if (key == selected) AppCyan else AppBorder)) {
+                Box(Modifier.padding(vertical = 14.dp), contentAlignment = Alignment.Center) {
+                    Text(label, color = if (key == selected) AppOnBlue else AppWhite)
                 }
             }
-        },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(top = 4.dp)
-            ) {
-                // Section 0: Appearance (Light / Dark mode)
-                Text(
-                    text = "APPEARANCE",
-                    color = AppCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "System follows your phone's light or dark setting",
-                    color = AppGray,
-                    fontSize = 12.sp
-                )
-                Spacer(Modifier.height(10.dp))
+        }
+    }
+}
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val themeOptions = listOf(
-                        CyberityThemeState.DARK to "Dark",
-                        CyberityThemeState.LIGHT to "Light",
-                        CyberityThemeState.SYSTEM to "System"
-                    )
-                    themeOptions.forEach { (key, label) ->
-                        val isSelected = CyberityThemeState.mode == key
-
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(40.dp)
-                                .clickable {
-                                    CyberityThemeState.mode = key
-                                    saveString(CyberityThemeState.PREF_KEY, key)
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) AppBlue else AppNavy,
-                            border = if (isSelected) BorderStroke(1.dp, AppCyan) else BorderStroke(1.dp, AppNavy)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = label,
-                                    color = if (isSelected) AppOnBlue else AppGray,
-                                    fontSize = 14.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-                HorizontalDivider(color = AppNavy, thickness = 1.dp)
-                Spacer(Modifier.height(16.dp))
-
-                // Section 1: Level Font Size
-                Text(
-                    text = "LEVEL FONT SIZE",
-                    color = AppCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    text = "Text scaling for lessons, labs and quizzes",
-                    color = AppGray,
-                    fontSize = 12.sp
-                )
-                Spacer(Modifier.height(10.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val options = listOf("small" to "Small", "medium" to "Medium", "large" to "Large")
-                    options.forEach { (key, label) ->
-                        val isSelected = fontSizeChoice.equals(key, ignoreCase = true) ||
-                                (key == "medium" && fontSizeChoice.equals("normal", ignoreCase = true))
-
-                        Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(40.dp)
-                                .clickable {
-                                    fontSizeChoice = key
-                                    saveString("font_size", key)
-                                },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) AppBlue else AppNavy,
-                            border = if (isSelected) BorderStroke(1.dp, AppCyan) else BorderStroke(1.dp, AppNavy)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(
-                                    text = label,
-                                    color = if (isSelected) AppOnBlue else AppGray,
-                                    fontSize = when (key) {
-                                        "small" -> 12.sp
-                                        "medium" -> 14.sp
-                                        else -> 16.sp
-                                    },
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(20.dp))
-                HorizontalDivider(color = AppNavy, thickness = 1.dp)
-                Spacer(Modifier.height(16.dp))
-
-                // Section 2: Multi-Factor Authentication
-                Text(
-                    text = "SECURITY",
-                    color = AppCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Spacer(Modifier.height(10.dp))
-
-                TotpMfaCard()
-
-                Spacer(Modifier.height(20.dp))
-                HorizontalDivider(color = AppNavy, thickness = 1.dp)
-                Spacer(Modifier.height(16.dp))
-
-                // Section 3: Preferences
-                Text(
-                    text = "PREFERENCES",
-                    color = AppCyan,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Spacer(Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Notifications", color = AppWhite, fontSize = 14.sp)
-                    Switch(
-                        checked = notificationsEnabled,
-                        onCheckedChange = {
-                            notificationsEnabled = it
-                            saveBool("notifications", it)
-                        },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = AppOnBlue,
-                            checkedTrackColor = AppBlue,
-                            uncheckedThumbColor = AppGray,
-                            uncheckedTrackColor = AppNavy
-                        )
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                // Replay App Tutorial Button
-                Button(
-                    onClick = {
-                        onDismiss()
-                        onReplayTutorial()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppBlue.copy(alpha = 0.25f),
-                        contentColor = AppCyan
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, AppBlue)
-                ) {
-                    Text("Replay Guided Tutorial", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                }
-
-                Spacer(Modifier.height(16.dp))
-                HorizontalDivider(color = AppNavy, thickness = 1.dp)
-                Spacer(Modifier.height(20.dp))
-
-                // Section 4: Sign Out
-                Button(
-                    onClick = { showSignOutConfirm = true },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppDanger.copy(alpha = 0.12f),
-                        contentColor = AppDanger
-                    ),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, AppDanger.copy(alpha = 0.25f))
-                ) {
-                    Text("Sign Out", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                }
-            }
-        },
-        confirmButton = {}
-    )
-
-    if (showSignOutConfirm) {
-        AlertDialog(
-            onDismissRequest = { showSignOutConfirm = false },
-            containerColor = AppCard,
-            title = { Text("Sign Out", color = AppWhite, fontWeight = FontWeight.Bold) },
-            text = { Text("Are you sure you want to sign out?", color = AppGray, fontSize = 14.sp) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showSignOutConfirm = false
-                        onDismiss()
-                        onSignOut()
-                    }
-                ) {
-                    Text("Sign Out", color = AppDanger, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showSignOutConfirm = false }) {
-                    Text("Cancel", color = AppGray)
-                }
-            }
-        )
+/** Informational roadmap item; no saved preference or action is implied. */
+@Composable
+internal fun SettingsPlaceholder(title: String, description: String) {
+    Surface(modifier = Modifier.fillMaxWidth(), color = AppCard, shape = RoundedCornerShape(14.dp)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(title, color = AppWhite, fontWeight = FontWeight.Medium)
+            Text("Planned", color = AppCyan, fontSize = 12.sp)
+            Text(description, color = AppGray, fontSize = 13.sp)
+        }
     }
 }
