@@ -83,9 +83,18 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.ui.res.painterResource
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.material3.Surface
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeout
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 // Debug force option for onboarding tutorial testing
 const val DEBUG_FORCE_ONBOARDING = false
@@ -121,10 +130,21 @@ val AppReward: Color get() = AppXp
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // Restore the saved Light / Dark / System choice before the first frame.
+        // Only local theme restoration belongs on the splash path; network work
+        // is shown in the existing profile screen after the first app frame.
         CyberityThemeState.load(this)
+        setTheme(if (CyberityThemeState.isDark) R.style.Theme_Cyberity_Starting else R.style.Theme_Cyberity_Starting_Light)
+        val splash = installSplashScreen()
+        super.onCreate(savedInstanceState)
+        splash.setOnExitAnimationListener { provider ->
+            // ViewPropertyAnimator respects the device's animation scale.
+            // Content is already drawn underneath; this never delays routing.
+            provider.view.animate()
+                .alpha(0f)
+                .setDuration(180L)
+                .withEndAction { provider.remove() }
+                .start()
+        }
 
         enableEdgeToEdge()
         setContent {
@@ -141,7 +161,9 @@ class MainActivity : ComponentActivity() {
             }
 
             MyFirstTryTheme {
-                AppNavigator()
+                Surface(modifier = Modifier.fillMaxSize(), color = AppNavy) {
+                    AppNavigator()
+                }
             }
         }
     }
@@ -206,29 +228,56 @@ fun AppNavigator() {
             var failed by remember { mutableStateOf(false) }
             var errorDetail by remember { mutableStateOf<String?>(null) }
             var attempt by remember { mutableIntStateOf(0) }
+            var slow by remember { mutableStateOf(false) }
 
             LaunchedEffect(attempt) {
+                failed = false
+                slow = false
+                errorDetail = null
                 val uid = auth.currentUser?.uid
-                when {
-                    uid == null -> currentScreen = "entry"
-                    else -> {
-                        failed = false
-                        UserProfileRepository.load(
-                            uid,
-                            onResult = { profile ->
-                                if (profile?.isComplete == true) {
-                                    ProfileCache.markComplete(context, uid)
-                                    currentScreen = "loggedIn"
-                                } else {
-                                    currentScreen = "completeProfile"
+                if (uid == null) {
+                    currentScreen = "entry"
+                    return@LaunchedEffect
+                }
+                try {
+                    // A deadline bounds the wait; it never delays a ready result.
+                    val profile = withTimeout(30_000L) {
+                        suspendCancellableCoroutine<UserProfile?> { continuation ->
+                            UserProfileRepository.load(
+                                uid,
+                                onResult = { profile ->
+                                    if (continuation.isActive) continuation.resume(profile)
+                                },
+                                onError = { message ->
+                                    if (continuation.isActive) continuation.resumeWithException(IllegalStateException(message))
                                 }
-                            },
-                            onError = { message ->
-                                errorDetail = message
-                                failed = true
-                            }
-                        )
+                            )
+                        }
                     }
+                    if (profile?.isComplete == true) {
+                        ProfileCache.markComplete(context, uid)
+                        currentScreen = "loggedIn"
+                    } else {
+                        currentScreen = "completeProfile"
+                    }
+                } catch (_: TimeoutCancellationException) {
+                    errorDetail = "Profile validation timed out."
+                    failed = true
+                } catch (cancelled: CancellationException) {
+                    // Leaving this screen cancels its callbacks and timers.
+                    throw cancelled
+                } catch (error: Exception) {
+                    errorDetail = error.message
+                    failed = true
+                }
+            }
+
+            LaunchedEffect(attempt, failed) {
+                slow = false
+                if (!failed) {
+                    // Feedback timer only: validation can complete at any time.
+                    delay(8_000L)
+                    slow = true
                 }
             }
 
@@ -236,7 +285,8 @@ fun AppNavigator() {
                 failed = failed,
                 errorDetail = errorDetail,
                 onRetry = { attempt++ },
-                onSignOut = signOut
+                onSignOut = signOut,
+                slow = slow
             )
         }
         "completeProfile" -> CompleteProfileScreen(
@@ -525,7 +575,7 @@ fun AuthTextField(
 
 /** The shield and "Cyberity" wordmark, as on the Welcome screen. */
 @Composable
-private fun AuthBrand(logoSize: Int = 36, fontSize: Int = 22) {
+internal fun AuthBrand(logoSize: Int = 36, fontSize: Int = 22) {
     val logo = if (CyberityThemeState.isDark) R.drawable.welcome_logo_dark else R.drawable.welcome_logo_light
     Row(verticalAlignment = Alignment.CenterVertically) {
         Image(
@@ -649,9 +699,10 @@ private fun AuthPage(
 
 /** The main action button, matching the Welcome screen's. */
 @Composable
-private fun AuthPrimaryButton(text: String, onClick: () -> Unit) {
+private fun AuthPrimaryButton(text: String, enabled: Boolean = true, onClick: () -> Unit) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue),
         shape = RoundedCornerShape(14.dp),
         modifier = Modifier
@@ -670,8 +721,6 @@ fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onMfaRequired: (MultiFactorResolver) -> Unit
 ) {
-    BackHandler { onBackClick() }
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
@@ -679,6 +728,12 @@ fun LoginScreen(
     var isLoading by remember { mutableStateOf(false) }
     var isResetLoading by remember { mutableStateOf(false) }
     val auth = remember { FirebaseAuth.getInstance() }
+    val context = LocalContext.current
+    val signInGuard = remember { AuthAttemptGuard.get(context) }
+    val resetGuard = remember { AuthAttemptGuard.get(context, passwordReset = true) }
+    val retrySeconds = rememberRetrySeconds(signInGuard)
+    val resetRetrySeconds = rememberRetrySeconds(resetGuard)
+    BackHandler { if (!isLoading && !isResetLoading) onBackClick() }
 
     AuthPage(
         top = {
@@ -708,6 +763,7 @@ fun LoginScreen(
                 { email = it },
                 "CvSU email",
                 Icons.Filled.Email,
+                enabled = !isLoading && !isResetLoading,
                 filled = true
             )
 
@@ -719,6 +775,7 @@ fun LoginScreen(
                 "Password",
                 Icons.Filled.Lock,
                 isPassword = true,
+                enabled = !isLoading && !isResetLoading,
                 filled = true
             )
 
@@ -744,25 +801,46 @@ fun LoginScreen(
                             }
 
                             else -> {
+                                if (!resetGuard.tryStart()) {
+                                    errorMessage = "Please wait before requesting another reset email."
+                                    return@TextButton
+                                }
                                 isResetLoading = true
                                 auth.sendPasswordResetEmail(normalizedEmail)
                                     .addOnSuccessListener {
+                                        resetGuard.finished()
                                         isResetLoading = false
                                         resetMessage =
                                             "If this email is registered, password reset instructions will be sent shortly."
                                     }
                                     .addOnFailureListener { exception ->
                                         isResetLoading = false
-                                        errorMessage = exception.localizedMessage
-                                            ?: "Could not send password reset email"
+                                        when (exception) {
+                                            is com.google.firebase.FirebaseTooManyRequestsException -> {
+                                                resetGuard.serverThrottled()
+                                                errorMessage = "Too many requests. Please wait before requesting another reset email."
+                                            }
+                                            is com.google.firebase.auth.FirebaseAuthInvalidUserException -> {
+                                                resetGuard.finished()
+                                                resetMessage = "If this email is registered, password reset instructions will be sent shortly."
+                                            }
+                                            else -> {
+                                                resetGuard.finished()
+                                                errorMessage = "Could not send reset instructions. Check your connection and try again later."
+                                            }
+                                        }
                                     }
                             }
                         }
                     },
-                    enabled = !isLoading && !isResetLoading
+                    enabled = !isLoading && !isResetLoading && resetRetrySeconds == 0L
                 ) {
                     Text(
-                        text = if (isResetLoading) "Sending reset email..." else "Forgot password?",
+                        text = when {
+                            isResetLoading -> "Sending reset email..."
+                            resetRetrySeconds > 0 -> "Reset available in ${resetRetrySeconds}s"
+                            else -> "Forgot password?"
+                        },
                         color = AppCyan,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
@@ -773,6 +851,10 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
         },
         bottom = {
+            if (retrySeconds > 1 && !isLoading) {
+                AuthBanner("Please wait ${retrySeconds}s before trying to sign in again.", isError = false)
+                Spacer(modifier = Modifier.height(14.dp))
+            }
             if (resetMessage.isNotEmpty()) {
                 AuthBanner(resetMessage, isError = false)
                 Spacer(modifier = Modifier.height(14.dp))
@@ -793,7 +875,7 @@ fun LoginScreen(
                     CircularProgressIndicator(color = AppCyan)
                 }
             } else {
-                AuthPrimaryButton("Log in") {
+                AuthPrimaryButton("Log in", enabled = !isResetLoading && retrySeconds == 0L) {
                     val loginEmail = email.trim().lowercase()
 
                     if (!android.util.Patterns.EMAIL_ADDRESS.matcher(loginEmail).matches() ||
@@ -802,11 +884,14 @@ fun LoginScreen(
                         errorMessage = "Please use your @cvsu.edu.ph email"
                     } else if (password.isBlank()) {
                         errorMessage = "Please enter your password"
+                    } else if (!signInGuard.tryStart()) {
+                        errorMessage = "Please wait before trying to sign in again."
                     } else {
                         isLoading = true
                         errorMessage = ""
                         auth.signInWithEmailAndPassword(loginEmail, password)
                             .addOnSuccessListener {
+                                signInGuard.authenticated()
                                 val user = auth.currentUser
                                 if (user != null && !user.isEmailVerified) {
                                     isLoading = false
@@ -821,10 +906,10 @@ fun LoginScreen(
                             .addOnFailureListener { exception ->
                                 isLoading = false
                                 if (exception is FirebaseAuthMultiFactorException) {
+                                    signInGuard.finished()
                                     onMfaRequired(exception.resolver)
                                 } else {
-                                    errorMessage =
-                                        exception.localizedMessage ?: "Login failed"
+                                    errorMessage = signInGuard.handleFailure(exception)
                                 }
                             }
                     }
@@ -832,7 +917,9 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            AuthFooterLink("New to Cyberity?", "Create an account", onRegisterClick)
+            AuthFooterLink("New to Cyberity?", "Create an account") {
+                if (!isLoading && !isResetLoading) onRegisterClick()
+            }
             Spacer(modifier = Modifier.height(16.dp))
         }
     )

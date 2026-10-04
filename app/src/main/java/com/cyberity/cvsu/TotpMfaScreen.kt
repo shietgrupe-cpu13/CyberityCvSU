@@ -1,6 +1,8 @@
 package com.cyberity.cvsu
 
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -211,6 +213,10 @@ fun TotpSignInScreen(resolver: MultiFactorResolver?, onSuccess: () -> Unit, onCa
     var error by remember { mutableStateOf<String?>(null) }
     var loading by remember { mutableStateOf(false) }
     val factor = resolver?.hints?.firstOrNull { it.factorId == TotpMultiFactorGenerator.FACTOR_ID }
+    val context = LocalContext.current
+    val guard = remember { AuthAttemptGuard.get(context) }
+    val retrySeconds = rememberRetrySeconds(guard)
+    BackHandler { if (!loading) onCancel() }
     Column(Modifier.fillMaxSize().background(AppNavy).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Spacer(Modifier.height(96.dp)); Icon(Icons.Filled.Security, null, tint = AppCyan)
         Spacer(Modifier.height(16.dp)); Text("Verify it’s you", color = AppWhite, fontSize = 26.sp)
@@ -218,14 +224,22 @@ fun TotpSignInScreen(resolver: MultiFactorResolver?, onSuccess: () -> Unit, onCa
         Spacer(Modifier.height(24.dp))
         OutlinedTextField(value = code, onValueChange = { code = it.filter(Char::isDigit).take(6) }, label = { Text("6-digit code") }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
         error?.let { Text(it, color = AppDanger, modifier = Modifier.padding(top = 12.dp)) }
+        if (retrySeconds > 1 && !loading) {
+            Text("Please wait ${retrySeconds}s before trying again.", color = AppGray, modifier = Modifier.padding(top = 12.dp))
+        }
         Spacer(Modifier.height(20.dp))
         if (loading) CircularProgressIndicator(color = AppCyan) else Button(
-            enabled = code.length == 6 && factor != null,
+            enabled = code.length == 6 && factor != null && retrySeconds == 0L,
             onClick = {
+                if (!guard.tryStart()) {
+                    error = "Please wait before trying again."
+                    return@Button
+                }
                 loading = true
+                error = null
                 resolver!!.resolveSignIn(TotpMultiFactorGenerator.getAssertionForSignIn(factor!!.uid, code))
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { loading = false; error = it.localizedMessage ?: "That code could not be verified. Try the current code." }
+                    .addOnSuccessListener { guard.authenticated(); loading = false; onSuccess() }
+                    .addOnFailureListener { loading = false; error = guard.handleFailure(it, secondFactor = true) }
             }, colors = ButtonDefaults.buttonColors(containerColor = AppBlue), modifier = Modifier.fillMaxWidth()
         ) { Text("Verify") }
         TextButton(onClick = onCancel, enabled = !loading) { Text("Cancel", color = AppCyan) }
