@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -214,17 +215,46 @@ fun ProfileCheckScreen(
     failed: Boolean,
     errorDetail: String?,
     onRetry: () -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    slow: Boolean = false
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppNavy)
+            .systemBarsPadding()
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         if (!failed) {
-            CircularProgressIndicator(color = AppCyan)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                AuthBrand()
+                Spacer(modifier = Modifier.height(24.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AppCard),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(color = AppCyan)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(if (slow) "Still checking your student profile" else "Checking your student profile", color = AppWhite, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            if (slow) "This is taking longer than usual. Check your internet connection. You can sign out while we wait."
+                            else "Your learning space will open when your profile is ready.",
+                            color = AppGray, fontSize = 14.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = onSignOut) {
+                    Text("Sign out", color = AppGray)
+                }
+            }
         } else {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(

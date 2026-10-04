@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keep the existing shield inside the system splash icon's safe area. -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/welcome_logo_dark"
+    android:insetLeft="16.67%"
+    android:insetTop="16.67%"
+    android:insetRight="16.67%"
+    android:insetBottom="16.67%" />
