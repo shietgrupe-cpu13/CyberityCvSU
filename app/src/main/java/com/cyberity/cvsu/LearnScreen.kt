@@ -59,6 +59,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -501,6 +502,13 @@ fun LearnScreen(
 
     var showExitConfirm by remember { mutableStateOf(false) }
 
+    // The running level's lesson is shown first while this is set. Its finish
+    // screen lets the student start the level or go back to the path.
+    var showingLesson by remember { mutableStateOf(false) }
+    var lessonsRead by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadLessonsRead(context, it) } ?: emptySet())
+    }
+
     /**
      * Starting or leaving a level also shows or hides the bottom navigation bar,
      * which changes how much room this screen gets. Both have to move together:
@@ -510,6 +518,7 @@ fun LearnScreen(
      * two updates land in the same frame and the screen lays out once.
      */
     fun setRunningLevel(level: LearningLevel?) {
+        if (level == null) showingLesson = false
         runningLevel = level
         onLevelRunningChanged(level != null)
     }
@@ -621,8 +630,28 @@ fun LearnScreen(
             // and for LabScreen whenever its own handler is disabled.
             BackHandler(enabled = true) { requestExit() }
 
+            // Reading costs no hearts, so the lesson comes before the hearts check.
+            val lesson = remember(running.id) { lessonFor(running.id) }
+
             // Out of hearts mid-level: the attempt ends here and progress is lost.
-            if (running.id == 100) {
+            if (showingLesson && lesson != null) {
+                LessonScreen(
+                    lesson = lesson,
+                    startLabel = if (running.status == LevelStatus.COMPLETED) "REVIEW LEVEL" else "START LEVEL",
+                    // Same rule as the level sheet's START button.
+                    canStart = running.id == 200 || running.type == LevelType.REWARD ||
+                            hearts >= MIN_HEARTS_TO_START,
+                    modifier = modifier,
+                    onRead = {
+                        if (running.id !in lessonsRead) {
+                            lessonsRead = lessonsRead + running.id
+                            uid?.let { ProgressCache.saveLessonsRead(context, it, lessonsRead) }
+                        }
+                    },
+                    onBackToPath = { setRunningLevel(null) },
+                    onStartLevel = { showingLesson = false }
+                )
+            } else if (running.id == 100) {
                 LevelZeroTutorialScreen(
                     onCompleteTutorial = {
                         uid?.let { id ->
@@ -809,6 +838,19 @@ fun LearnScreen(
                 heartRefillIn = heartRefillIn,
                 sheetState = sheetState,
                 onDismiss = { selected = null },
+                onReadLesson = if (lessonFor(level.id) == null) null else {
+                    {
+                        scope.launch {
+                            try {
+                                sheetState.hide()
+                            } finally {
+                                selected = null
+                                showingLesson = true
+                                setRunningLevel(level)
+                            }
+                        }
+                    }
+                },
                 onStart = {
                     // The sheet is its own window. Closing that window and
                     // swapping the whole screen underneath it in one frame is
@@ -821,6 +863,12 @@ fun LearnScreen(
                             sheetState.hide()
                         } finally {
                             selected = null
+                            // A first attempt opens with the lesson until it has
+                            // been read once; READ LESSON stays available after.
+                            showingLesson = level.status == LevelStatus.CURRENT &&
+                                    level.id !in lessonsRead &&
+                                    !TutorialManager.isTutorialActive &&
+                                    lessonFor(level.id) != null
                             setRunningLevel(level)
                             onStartLevel(level)
                         }
@@ -1524,7 +1572,9 @@ fun LevelPreviewBottomSheet(
     heartRefillIn: String?,
     sheetState: androidx.compose.material3.SheetState,
     onDismiss: () -> Unit,
-    onStart: () -> Unit
+    onStart: () -> Unit,
+    /** Null when the level has no lesson yet. */
+    onReadLesson: (() -> Unit)? = null
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1583,6 +1633,22 @@ fun LevelPreviewBottomSheet(
                     Icon(Icons.Filled.Favorite, contentDescription = null, tint = AppGray, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(10.dp))
                     Text("Out of hearts. Next heart in ${heartRefillIn ?: "a moment"}.", color = AppGray, fontSize = 13.sp)
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Reading is always free, so this stays enabled when out of hearts.
+            if (onReadLesson != null && level.status != LevelStatus.LOCKED) {
+                OutlinedButton(
+                    onClick = onReadLesson,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, AppCyan),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppCyan)
+                ) {
+                    Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("READ LESSON", fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(12.dp))
             }
