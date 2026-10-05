@@ -15,6 +15,7 @@ object ProgressCache {
     private const val HEARTS_KEY_SUFFIX = ":hearts"
     private const val XP_KEY_SUFFIX = ":levelXp"
     private const val XP_SPENT_KEY_SUFFIX = ":xpSpent"
+    private const val LESSONS_KEY_SUFFIX = ":lessonsRead"
 
     fun load(context: Context, uid: String): Set<Int> {
         val raw = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -56,6 +57,20 @@ object ProgressCache {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putInt(uid + XP_SPENT_KEY_SUFFIX, spent)
+            .apply()
+    }
+
+    /** Level ids whose lesson has been read through on this device. */
+    fun loadLessonsRead(context: Context, uid: String): Set<Int> {
+        val raw = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(uid + LESSONS_KEY_SUFFIX, null) ?: return emptySet()
+        return raw.split(",").mapNotNull { it.toIntOrNull() }.toSet()
+    }
+
+    fun saveLessonsRead(context: Context, uid: String, levelIds: Set<Int>) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(uid + LESSONS_KEY_SUFFIX, levelIds.joinToString(","))
             .apply()
     }
 

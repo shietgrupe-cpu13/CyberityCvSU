@@ -134,7 +134,7 @@ private fun CoachSlot(bounds: CoachBounds?, target: CoachTarget, content: @Compo
  * bold and bright so a skimming reader's eye lands on them. Text with no markers
  * is returned as it was, so existing levels are unaffected.
  */
-private fun emphasised(text: String): AnnotatedString = buildAnnotatedString {
+internal fun emphasised(text: String): AnnotatedString = buildAnnotatedString {
     val bold = SpanStyle(fontWeight = FontWeight.Bold, color = AppWhite)
     text.split("**").forEachIndexed { index, part ->
         if (index % 2 == 1) pushStyle(bold)
