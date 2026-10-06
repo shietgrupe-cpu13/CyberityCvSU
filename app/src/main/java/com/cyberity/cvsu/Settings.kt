@@ -123,6 +123,7 @@ private fun AppearanceSettings() {
         CyberityThemeState.mode) { choice ->
         CyberityThemeState.mode = choice
         prefs.edit().putString(CyberityThemeState.PREF_KEY, choice).apply()
+        CyberityThemeState.rememberSplashTheme(context)
     }
     SettingsPlaceholder("Reduced motion", "Use fewer animations for a calmer experience.")
 }

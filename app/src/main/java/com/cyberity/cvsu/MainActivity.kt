@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
         setTheme(if (CyberityThemeState.isDark) R.style.Theme_Cyberity_Starting else R.style.Theme_Cyberity_Starting_Light)
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
+        CyberityThemeState.rememberSplashTheme(this)
         splash.setOnExitAnimationListener { provider ->
             // ViewPropertyAnimator respects the device's animation scale.
             // Content is already drawn underneath; this never delays routing.

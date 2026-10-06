@@ -14,4 +14,10 @@
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
     </style>
+    <style name="Theme.Cyberity.Starting.System">
+        <item name="windowSplashScreenBackground">@color/cyberity_background_system</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_dark</item>
+        <item name="android:windowLightStatusBar">@bool/cyberity_light_system_bars</item>
+        <item name="android:windowLightNavigationBar">@bool/cyberity_light_system_bars</item>
+    </style>
 </resources>

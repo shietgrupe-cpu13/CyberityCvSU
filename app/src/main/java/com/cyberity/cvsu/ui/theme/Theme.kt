@@ -1,7 +1,10 @@
 package com.cyberity.cvsu.ui.theme
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
+import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -17,6 +20,7 @@ import com.cyberity.cvsu.AppGray
 import com.cyberity.cvsu.AppNavy
 import com.cyberity.cvsu.AppOnBlue
 import com.cyberity.cvsu.AppWhite
+import com.cyberity.cvsu.R
 
 /**
  * App-wide Light / Dark mode.
@@ -47,6 +51,25 @@ object CyberityThemeState {
         mode = prefs.getString(PREF_KEY, DARK) ?: DARK
         systemIsDark = (context.resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    }
+
+    /**
+     * On Android 12+ the system draws the splash before any app code runs, so
+     * picking a theme in onCreate is too late. Android 13+ lets the app say
+     * which splash theme to use from the next launch on; call this at start-up
+     * and whenever the Light / Dark / System choice changes.
+     */
+    fun rememberSplashTheme(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        var c: Context? = context
+        while (c is ContextWrapper && c !is Activity) c = c.baseContext
+        (c as? Activity)?.splashScreen?.setSplashScreenTheme(
+            when (mode) {
+                LIGHT -> R.style.Theme_Cyberity_Starting_Light
+                SYSTEM -> R.style.Theme_Cyberity_Starting_System
+                else -> R.style.Theme_Cyberity_Starting
+            }
+        )
     }
 }
 
