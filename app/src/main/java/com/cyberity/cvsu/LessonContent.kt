@@ -107,6 +107,7 @@ fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     102 -> threatConsoleLesson()
     103 -> ciaTriadLesson()
     104 -> hardeningReviewLesson()
+    106 -> riskRegisterLesson()
     else -> null
 }
 
@@ -1074,6 +1075,235 @@ private fun hardeningReviewLesson(): Lesson = Lesson(
             correctIndex = 3,
             explanation = "The first two are all things you know, so one stolen secret beats them. " +
                     "An MFA app adds something you have, and the alert catches what gets past both."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 106 — Risk Assessment
+// ---------------------------------------------------------------------------
+// Budget season for a student org. The lab scores the Registrar's findings,
+// so none of its findings, controls or treatments appear here.
+
+private fun riskRegisterLesson(): Lesson = Lesson(
+    levelId = 106,
+    title = "Rank It, Fund It, Own What's Left",
+    sources = listOf(
+        LessonSource(
+            id = "sp80030",
+            short = "NIST SP 800-30r1",
+            citation = "Joint Task Force Transformation Initiative (2012). Guide for Conducting " +
+                    "Risk Assessments (NIST SP 800-30 Rev. 1), Ch. 2: risk as a function of " +
+                    "impact and likelihood; threats and vulnerabilities.",
+            url = "https://doi.org/10.6028/NIST.SP.800-30r1"
+        ),
+        LessonSource(
+            id = "ra10173",
+            short = "RA 10173",
+            citation = "Republic of the Philippines. Republic Act No. 10173, Data Privacy " +
+                    "Act of 2012, Sec. 20(c): weighing risks and the cost of security.",
+            url = "https://lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html"
+        ),
+        LessonSource(
+            id = "nist-rr",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"Residual risk.\" Glossary " +
+                    "(definition from NIST SP 800-30 Rev. 1).",
+            url = "https://csrc.nist.gov/glossary/term/residual_risk"
+        ),
+        LessonSource(
+            id = "sp80039",
+            short = "NIST SP 800-39",
+            citation = "Joint Task Force Transformation Initiative (2011). Managing Information " +
+                    "Security Risk (NIST SP 800-39), Ch. 3: risk acceptance, avoidance, " +
+                    "mitigation, and sharing or transfer.",
+            url = "https://doi.org/10.6028/NIST.SP.800-39"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "Risk you can rank",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "Every worry feels urgent to whoever raised it, and there's never money for " +
+                        "all of them. A **risk assessment** turns that pile into an **order you " +
+                        "can defend**.",
+                "The **Data Privacy Act** asks for the same thing: security should weigh the " +
+                        "**risks** and the **cost** of protecting against them."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Risk", "How likely something bad is, combined with how bad it would be."),
+                KeyTerm("Risk register", "The list where every risk, its score, owner and treatment are recorded.")
+            ),
+            sourceIds = listOf("sp80030", "ra10173")
+        ),
+        LessonPage(
+            title = "Asset, threat, vulnerability",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "Split every risk into three parts: the **asset** you protect, the **threat** " +
+                        "that could harm it, and the **vulnerability** it would use.",
+                "Only the **vulnerability** is yours to change. You can't remove thieves, and " +
+                        "you won't stop owning what you need — so every fix targets the weakness."
+            ),
+            visual = LessonVisual.Log(
+                title = "FINDING · AV ROOM",
+                lines = listOf(
+                    "asset          12 borrowed projectors",
+                    "threat         someone walking in",
+                    "vulnerability  lock broken since June"
+                ),
+                highlights = listOf(2),
+                caption = "You can't remove thieves or stop owning projectors. You can fix the lock."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Asset", "Something of value you need to protect."),
+                KeyTerm("Threat", "Who or what could cause harm."),
+                KeyTerm("Vulnerability", "The weakness a threat would use. The part you can fix.")
+            ),
+            sourceIds = listOf("sp80030"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Likelihood × impact",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "A common way to score risk is **likelihood × impact**. Look at **both**: " +
+                        "a frequent but trivial risk and a rare but severe one can tie.",
+                "Score **likelihood** from evidence: has it happened here, and how often? " +
+                        "Score **impact** from how many people it reaches and **how sensitive** " +
+                        "the data is."
+            ),
+            visual = LessonVisual.Log(
+                title = "LIKELIHOOD × IMPACT = RISK",
+                lines = listOf(
+                    "lost org laptop     4 × 3 = 12",
+                    "flooded storeroom   1 × 5 =  5",
+                    "broken projector    5 × 1 =  5"
+                ),
+                highlights = listOf(0),
+                caption = "The risk that's both fairly likely and fairly bad comes first."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Likelihood", "How probable it is, based on what has actually happened."),
+                KeyTerm("Impact", "How bad it would be: how many people, and how sensitive the data.")
+            ),
+            sourceIds = listOf("sp80030"),
+            task = 2
+        ),
+        LessonPage(
+            title = "Most risk removed per peso",
+            icon = LessonIcon.REPORT,
+            paragraphs = listOf(
+                "**Residual risk** is what's left after a fix. The best plan is the one that " +
+                        "leaves the **lowest total** within the budget, not the one that sounds " +
+                        "most impressive.",
+                "The obvious fix is sometimes unaffordable, and a cheaper one can target the " +
+                        "same risk. One big control that **partly** covers two risks can lose " +
+                        "to small fixes that **fully** cover each."
+            ),
+            visual = LessonVisual.Log(
+                title = "BUDGET ₱40,000 · RISK NOW 30",
+                lines = listOf(
+                    "Plan A  one big system  ₱38k  left 19",
+                    "Plan B  3 small fixes   ₱31k  left 11"
+                ),
+                highlights = listOf(1),
+                caption = "Compare what's left after each plan, not how impressive it sounds."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Residual risk", "The part of a risk that remains after controls are applied.")
+            ),
+            sourceIds = listOf("nist-rr", "ra10173"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Four ways to treat a risk",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "Every decision about a risk falls into one of four boxes. Naming the box makes " +
+                        "the decision **clear** and lets someone else **review** it.",
+                "**Mitigate** lowers it, **transfer** moves who pays, **avoid** stops the " +
+                        "activity, and **accept** knowingly lives with it."
+            ),
+            visual = LessonVisual.Log(
+                title = "FOUR WAYS TO TREAT A RISK",
+                lines = listOf(
+                    "mitigate  fix the AV-room lock",
+                    "transfer  venue contract covers damage",
+                    "avoid     cancel the outdoor night event",
+                    "accept    keep old projector, review June"
+                ),
+                caption = "Accepting is a real choice, as long as someone signs it and dates it."
+            ),
+            sourceIds = listOf("sp80039"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Risk never hits zero",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "Some risk always remains, and removing the last of it costs more than it's " +
+                        "worth. What's left is **owned**: a score, a **named owner** who signs " +
+                        "off, and a **date** to review it.",
+                "A treated risk **stays on the register**. Deleting it doesn't reduce it — it " +
+                        "just hides the history the next person needs."
+            ),
+            visual = LessonVisual.DoDont(
+                dos = listOf(
+                    "Write down the score that's left",
+                    "Have the risk owner sign off on it",
+                    "Set a date to look at it again"
+                ),
+                donts = listOf(
+                    "Keep spending until it reaches zero",
+                    "Delete a risk once it's been treated",
+                    "Call a risk nobody looked at \"accepted\""
+                )
+            ),
+            sourceIds = listOf("nist-rr", "sp80039"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "A finding says: \"Exam files are on a shared drive that anyone on campus " +
+                    "can open.\" Which part is the vulnerability?",
+            options = listOf(
+                "The exam files stored on the drive",
+                "Students who would want the answers",
+                "The department that manages the drive",
+                "Open sharing on the drive for all of campus"
+            ),
+            correctIndex = 3,
+            explanation = "The files are the asset and the students are the threat. The open " +
+                    "sharing is the weakness, and it's the only part you can fix."
+        ),
+        LessonQuestion(
+            prompt = "Risk A is likely (4) with minor impact (2). Risk B is unlikely (2) with " +
+                    "severe impact (5). Which ranks higher?",
+            options = listOf(
+                "A, because it happens more often",
+                "B, because 2 × 5 = 10 beats 4 × 2 = 8",
+                "They tie, since each has one high number",
+                "A, because it's cheaper to fix"
+            ),
+            correctIndex = 1,
+            explanation = "Score both halves: 10 beats 8. Ranking by how often something happens, " +
+                    "or by how cheap it is to fix, ignores half the risk."
+        ),
+        LessonQuestion(
+            prompt = "After two thefts, the org stops holding its fundraiser at night. Which " +
+                    "treatment is this?",
+            options = listOf(
+                "Mitigate: it lowers the chance of a theft",
+                "Transfer: someone else now carries the cost",
+                "Avoid: the risky activity no longer happens",
+                "Accept: the org decides to live with thefts"
+            ),
+            correctIndex = 2,
+            explanation = "Stopping the activity removes the risk instead of shrinking it, so " +
+                    "it's avoidance. The cost is what the org gives up: the night event."
         )
     )
 )
