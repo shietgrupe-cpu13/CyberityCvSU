@@ -484,10 +484,10 @@ private fun threatConsoleLesson(): Lesson = Lesson(
             visual = LessonVisual.Log(
                 title = "SIGN-IN LOG",
                 lines = listOf(
-                    "09:14:02 FAIL user=f.lim src=203.0.113.45",
-                    "09:14:03 FAIL user=f.lim src=203.0.113.45",
-                    "09:14:03 FAIL user=f.lim src=203.0.113.45",
-                    "09:14:04 OK   user=f.lim src=203.0.113.45"
+                    "09:14:02 FAIL user=f.lim src=198.51.100.23",
+                    "09:14:03 FAIL user=f.lim src=198.51.100.23",
+                    "09:14:03 FAIL user=f.lim src=198.51.100.23",
+                    "09:14:04 OK   user=f.lim src=198.51.100.23"
                 ),
                 highlights = listOf(3),
                 caption = "src is where an attempt came from: the attacker. user is the account " +
@@ -510,7 +510,7 @@ private fun threatConsoleLesson(): Lesson = Lesson(
                         "matters is rarely the one you were looking for."
             ),
             visual = LessonVisual.Log(
-                title = "SEARCH: 203.0.113.45 · 4 RESULTS",
+                title = "SEARCH: 198.51.100.23 · 4 RESULTS",
                 lines = listOf(
                     "09:14:02 sso   FAIL user=f.lim",
                     "09:14:04 sso   OK   user=f.lim",

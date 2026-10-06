@@ -77,7 +77,7 @@ var FINDINGS = {
     summary: 'Admin roles sign in with a password alone. Admin roles can change any ' +
       'student\'s grade.',
     evidence: [
-      'history : INC-302 (09-13) — stolen password used to change a grade',
+      'history : INC-2612 (09-13) — stolen password used to change a grade',
       'count   : 1 occurrence in the last 12 months',
       'reach   : admin roles can edit grades of every enrolled student',
       'records : ~9,400 students'
@@ -107,7 +107,7 @@ var FINDINGS = {
     owner: 'Registrar Office',
     summary: 'Staff routinely share files with "anyone with the link".',
     evidence: [
-      'history : INC-301 (09-14) — enrollment masterlist exposed',
+      'history : INC-2611 (09-14) — enrollment masterlist exposed',
       'count   : 1 occurrence in the last 12 months',
       'audit   : 37 more files still set to "anyone with the link"',
       'data    : names, student numbers, home addresses — not grades'
@@ -122,7 +122,7 @@ var FINDINGS = {
     owner: 'Registrar IT',
     summary: 'Nothing warns anyone before the database server\'s disk fills up.',
     evidence: [
-      'history : INC-303 (09-15) — disk full, portal down',
+      'history : INC-2613 (09-15) — disk full, portal down',
       'count   : 1 occurrence in the last 12 months',
       'effect  : enrollment portal offline until someone notices',
       'data    : records intact; nothing exposed or changed'

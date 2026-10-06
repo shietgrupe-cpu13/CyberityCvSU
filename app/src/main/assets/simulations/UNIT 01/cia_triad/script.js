@@ -94,7 +94,7 @@ function escapeHtml(text) {
 var TICKETS = {
   inc301: {
     id: 'inc301',
-    code: 'INC-301',
+    code: 'INC-2611',
     severity: 'high',
     time: 'Mon 09:12',
     title: 'Enrollment list is circulating online',
@@ -120,7 +120,7 @@ var TICKETS = {
   },
   inc302: {
     id: 'inc302',
-    code: 'INC-302',
+    code: 'INC-2612',
     severity: 'high',
     time: 'Mon 10:40',
     title: 'Submitted grade is different in the portal',
@@ -154,7 +154,7 @@ var TICKETS = {
   },
   inc303: {
     id: 'inc303',
-    code: 'INC-303',
+    code: 'INC-2613',
     severity: 'medium',
     time: 'Mon 13:05',
     title: 'Portal will not load — enrollment closes Friday',
@@ -300,7 +300,7 @@ function toggleEvidence(boxId, clue) {
 }
 
 /* ---------------------------------------------------------------------------
- * INC-301 · File sharing (confidentiality)
+ * INC-2611 · File sharing (confidentiality)
  * ------------------------------------------------------------------------ */
 var SHARE_MODES = {
   anyone: 'Anyone with the link',
@@ -356,7 +356,7 @@ function paintShare(mode) {
 }
 
 /* ---------------------------------------------------------------------------
- * INC-302 · Integrity checker (integrity)
+ * INC-2612 · Integrity checker (integrity)
  * ------------------------------------------------------------------------ */
 var RECORD_FILES = [
   {
@@ -438,7 +438,7 @@ function rebaseline() {
 }
 
 /* ---------------------------------------------------------------------------
- * INC-303 · Service status (availability)
+ * INC-2613 · Service status (availability)
  * ------------------------------------------------------------------------ */
 var SERVICES = [
   {
