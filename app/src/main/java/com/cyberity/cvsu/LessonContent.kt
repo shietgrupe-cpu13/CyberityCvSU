@@ -108,6 +108,7 @@ fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     103 -> ciaTriadLesson()
     104 -> hardeningReviewLesson()
     106 -> riskRegisterLesson()
+    601 -> securityIncidentsLesson()
     else -> null
 }
 
@@ -1304,6 +1305,241 @@ private fun riskRegisterLesson(): Lesson = Lesson(
             correctIndex = 2,
             explanation = "Stopping the activity removes the risk instead of shrinking it, so " +
                     "it's avoidance. The cost is what the org gives up: the night event."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 601 — Security Incidents
+// ---------------------------------------------------------------------------
+// The briefing before a shift on the ITSO hotline. The lab's reports are
+// Prof. Ramos's mailbox, the OJT forms and a stolen laptop, so the examples
+// here are an org page, grade printouts and an encrypted tablet.
+
+private fun securityIncidentsLesson(): Lesson = Lesson(
+    levelId = 601,
+    title = "The First Hour",
+    sources = listOf(
+        LessonSource(
+            id = "nist-ir",
+            short = "NIST SP 800-61r3",
+            citation = "Nelson, A., Rekhi, S., Souppaya, M. & Scarfone, K. (2025). Incident " +
+                    "Response Recommendations and Considerations for Cybersecurity Risk " +
+                    "Management (NIST SP 800-61 Rev. 3): RS.MA-02, RS.MA-03, RS.CO-02.",
+            url = "https://doi.org/10.6028/NIST.SP.800-61r3"
+        ),
+        LessonSource(
+            id = "nist-incident",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"Event\" (definition from " +
+                    "SP 800-61r3) and \"Incident\" (definition from 44 U.S.C. Sec. 3552). Glossary.",
+            url = "https://csrc.nist.gov/glossary/term/incident"
+        ),
+        LessonSource(
+            id = "sp80086",
+            short = "NIST SP 800-86",
+            citation = "Kent, K., Chevalier, S., Grance, T. & Dang, H. (2006). Guide to " +
+                    "Integrating Forensic Techniques into Incident Response (NIST SP 800-86): " +
+                    "volatile data and preserving evidence.",
+            url = "https://doi.org/10.6028/NIST.SP.800-86"
+        ),
+        LessonSource(
+            id = "ra10173",
+            short = "RA 10173",
+            citation = "Republic of the Philippines. Republic Act No. 10173, Data Privacy " +
+                    "Act of 2012, Sec. 3(l): sensitive personal information; Sec. 20(f): " +
+                    "notification of breach.",
+            url = "https://lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html"
+        ),
+        LessonSource(
+            id = "npc1603",
+            short = "NPC Circular 16-03",
+            citation = "National Privacy Commission (2016). NPC Circular 16-03, Personal Data " +
+                    "Breach Management, Sec. 11 (when notification is required) and Sec. 17(A) " +
+                    "(notify the Commission within 72 hours).",
+            url = "https://privacy.gov.ph/wp-content/uploads/2022/01/sgd-npc-circular-16-03-personal-data-breach-management.pdf"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "Whoever picks up the phone",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "Every defence fails eventually. The first person to hear about it is rarely " +
+                        "an expert — it's **whoever picks up the phone**.",
+                "In Level 102 you triaged alerts from tools. Here the reports come from " +
+                        "**people**, and the first hour decides how bad it gets."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Sort", "Decide which reports are real incidents."),
+                KeyTerm("Preserve", "Keep the evidence exactly as it is."),
+                KeyTerm("Tell", "Report through the official channel to the right people."),
+                KeyTerm("Prioritise", "Work the most urgent incident first."),
+                KeyTerm("Record", "Write down the facts for the people who take over.")
+            ),
+            sourceIds = listOf("nist-ir")
+        ),
+        LessonPage(
+            title = "Event or incident?",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "An **event** is anything that can be observed on a system. An **incident** " +
+                        "actually or nearly harms confidentiality, integrity or availability — " +
+                        "**or breaks a security policy**.",
+                "An attack that was **blocked** means the defence worked. Judge each report by " +
+                        "**what was harmed**, not by how worried the caller sounds."
+            ),
+            visual = LessonVisual.Log(
+                title = "FOUR REPORTS FROM AROUND CAMPUS",
+                lines = listOf(
+                    "EVENT     spam filter caught 40 phish",
+                    "EVENT     planned reboot for patching",
+                    "INCIDENT  grade printouts left in hall",
+                    "INCIDENT  org page posting scam links"
+                ),
+                highlights = listOf(2, 3),
+                caption = "The two incidents involve real harm: data seen, and an account misused."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Event", "Anything observable on a system or network."),
+                KeyTerm("Incident", "An event that harms, or nearly harms, data or systems, or breaks a security policy.")
+            ),
+            sourceIds = listOf("nist-incident"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Don't touch the evidence",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "Investigators rebuild what happened from emails, logs and what's still running. " +
+                        "Deleting erases the **sender and headers**. Restarting wipes **memory** " +
+                        "and changes **timestamps**. Forwarding **spreads the link**.",
+                "In Level 101 you deleted a phishing email **after** reporting it — fine for an " +
+                        "ordinary user. A first responder deletes **nothing** before " +
+                        "investigators have seen it."
+            ),
+            visual = LessonVisual.DoDont(
+                dos = listOf(
+                    "Leave the device and account as they are",
+                    "Write down what you saw, and when",
+                    "Report it through the official channel"
+                ),
+                donts = listOf(
+                    "Delete messages to tidy up",
+                    "Restart or \"clean\" the computer",
+                    "Forward the link as a warning"
+                )
+            ),
+            keyTerms = listOf(
+                KeyTerm("Volatile data", "Information that disappears when a computer is shut down or restarted.")
+            ),
+            sourceIds = listOf("sp80086"),
+            task = 2
+        ),
+        LessonPage(
+            title = "Tell the right people",
+            icon = LessonIcon.EMAIL,
+            paragraphs = listOf(
+                "Report through the **official channel**. Never post about it publicly, and " +
+                        "never confront the person you think caused it.",
+                "If **personal data** is involved, the school's **DPO** must know. A breach of " +
+                        "**sensitive personal information** that could cause serious harm goes " +
+                        "to the **NPC within 72 hours** of the school first knowing."
+            ),
+            keyTerms = listOf(
+                KeyTerm("DPO", "Data Protection Officer: the person responsible for personal data at the school."),
+                KeyTerm("NPC", "National Privacy Commission: the government office that enforces the Data Privacy Act."),
+                KeyTerm("Sensitive personal information", "Includes age or birthday, health, education records and government ID numbers like PhilHealth or SSS.")
+            ),
+            sourceIds = listOf("ra10173", "npc1603", "nist-ir"),
+            task = 3
+        ),
+        LessonPage(
+            title = "What goes first?",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "Ask first: **is it still happening?** Harm that's ongoing comes first, because " +
+                        "every minute adds victims.",
+                "Then weigh **how many people** and **how sensitive** the data is. Last, check " +
+                        "what **already limits the damage**, like encryption or a remote lock."
+            ),
+            visual = LessonVisual.Log(
+                title = "THREE INCIDENTS · WHICH FIRST?",
+                lines = listOf(
+                    "1  org page: scam posts still going up",
+                    "2  grade printouts seen by 200 people",
+                    "3  tablet left in a jeepney, encrypted"
+                ),
+                highlights = listOf(0),
+                caption = "Still happening beats bigger but finished. Encryption buys time."
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Write what you saw",
+            icon = LessonIcon.REPORT,
+            paragraphs = listOf(
+                "The report hands the case over, so write **facts, not guesses**. \"Nothing " +
+                        "done yet\" is a valid answer.",
+                "Two times matter: when it **started** and when it was **discovered**. The gap " +
+                        "between them is how long the attacker went **unseen**."
+            ),
+            visual = LessonVisual.Log(
+                title = "INCIDENT REPORT · ORG PAGE",
+                lines = listOf(
+                    "what        page posting scam links",
+                    "started     Sat 11:05 PM, first post",
+                    "discovered  Mon 7:40 AM, member msg",
+                    "reported by org secretary, 7:52 AM",
+                    "ongoing?    yes, 3 new posts today",
+                    "done        nothing changed yet"
+                ),
+                highlights = listOf(1, 2),
+                caption = "Started to discovered: over 56 hours unseen."
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "The library door logged a badge that was refused entry at 2 AM. Nobody got " +
+                    "in. Event or incident?",
+            options = listOf(
+                "An event: the lock did its job and nothing was harmed",
+                "An incident: someone tried to get in after hours",
+                "An incident: any 2 AM activity must be escalated",
+                "Neither: refused badges aren't worth recording"
+            ),
+            correctIndex = 0,
+            explanation = "The control worked and nothing was harmed, so it's an event. It's still " +
+                    "worth logging: if the same badge keeps trying, the pattern may become an incident."
+        ),
+        LessonQuestion(
+            prompt = "A staff member says their PC is acting strangely since they opened an " +
+                    "attachment. What do you tell them?",
+            options = listOf(
+                "Restart it, so whatever is running stops",
+                "Delete the email so nobody opens it again",
+                "Run a full scan, then restart it tonight",
+                "Stop using it, leave it on, report it now"
+            ),
+            correctIndex = 3,
+            explanation = "Restarting and scanning change what investigators need to see, and " +
+                    "deleting removes the email's evidence. Stop, preserve, report."
+        ),
+        LessonQuestion(
+            prompt = "Which of these is sensitive personal information under the Data Privacy Act?",
+            options = listOf(
+                "A club's weekly meeting schedule",
+                "A student's date of birth",
+                "A section's class timetable",
+                "A student's school email address"
+            ),
+            correctIndex = 1,
+            explanation = "The law lists age as sensitive personal information. A school email is " +
+                    "personal information, but not sensitive, and schedules aren't about one person."
         )
     )
 )
