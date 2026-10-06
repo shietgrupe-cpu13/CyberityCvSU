@@ -337,7 +337,7 @@ fun WelcomeEntryScreen(
     onNewUserSelected: () -> Unit,
     onExistingUserSelected: () -> Unit
 ) {
-    val logo = if (CyberityThemeState.isDark) R.drawable.welcome_logo_dark else R.drawable.welcome_logo_light
+    val logo = R.drawable.cyberity_logo
 
     Column(
         modifier = Modifier
@@ -607,7 +607,7 @@ fun AuthTextField(
 /** The shield and "Cyberity" wordmark, as on the Welcome screen. */
 @Composable
 internal fun AuthBrand(logoSize: Int = 36, fontSize: Int = 22) {
-    val logo = if (CyberityThemeState.isDark) R.drawable.welcome_logo_dark else R.drawable.welcome_logo_light
+    val logo = R.drawable.cyberity_logo
     Row(verticalAlignment = Alignment.CenterVertically) {
         Image(
             painter = painterResource(id = logo),
