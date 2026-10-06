@@ -6,7 +6,7 @@ import org.junit.Test
 class LessonContentTest {
 
     /** Levels that have a lesson so far. Add each new one here. */
-    private val lessonLevels = listOf(101, 102, 103, 104)
+    private val lessonLevels = listOf(101, 102, 103, 104, 106)
 
     @Test
     fun everyLessonCoversEachLabTaskAndCitesItsSources() {
