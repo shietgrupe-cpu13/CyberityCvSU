@@ -105,6 +105,7 @@ data class Lesson(
 fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     101 -> inboxTriageLesson()
     102 -> threatConsoleLesson()
+    103 -> ciaTriadLesson()
     else -> null
 }
 
@@ -599,6 +600,246 @@ private fun threatConsoleLesson(): Lesson = Lesson(
             explanation = "The malware is on that PC, so isolating the PC is what stops it from " +
                     "spreading. Resetting passwords targets something that wasn't taken, and " +
                     "the question can wait until the PC is cut off."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 103 — CIA Triad
+// ---------------------------------------------------------------------------
+// The briefing before enrollment week. The lab's three tickets are all at the
+// Registrar, so every example here comes from another office.
+
+private fun ciaTriadLesson(): Lesson = Lesson(
+    levelId = 103,
+    title = "Seen, Changed, or Unreachable?",
+    sources = listOf(
+        LessonSource(
+            id = "fips199",
+            short = "NIST FIPS 199",
+            citation = "NIST (2004). Standards for Security Categorization of Federal " +
+                    "Information and Information Systems (FIPS 199): definitions of " +
+                    "confidentiality, integrity and availability.",
+            url = "https://doi.org/10.6028/NIST.FIPS.199"
+        ),
+        LessonSource(
+            id = "ra10173",
+            short = "RA 10173",
+            citation = "Republic of the Philippines. Republic Act No. 10173, Data Privacy " +
+                    "Act of 2012, Sec. 20(a): Security of Personal Information.",
+            url = "https://lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html"
+        ),
+        LessonSource(
+            id = "sp80053",
+            short = "NIST SP 800-53r5",
+            citation = "Joint Task Force (2020). Security and Privacy Controls for " +
+                    "Information Systems and Organizations (NIST SP 800-53 Rev. 5): AC-6 " +
+                    "Least Privilege, AU-3 Content of Audit Records, SI-7 Information Integrity.",
+            url = "https://doi.org/10.6028/NIST.SP.800-53r5"
+        ),
+        LessonSource(
+            id = "fips180",
+            short = "NIST FIPS 180-4",
+            citation = "NIST (2015). Secure Hash Standard (FIPS 180-4).",
+            url = "https://doi.org/10.6028/NIST.FIPS.180-4"
+        ),
+        LessonSource(
+            id = "mdn-ua",
+            short = "MDN",
+            citation = "MDN Web Docs. \"User-Agent\" HTTP header. Mozilla.",
+            url = "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/User-Agent"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "The CIA triad",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "Security protects three things about data, and every incident damages at " +
+                        "least one of them. Together they're called the **CIA triad**.",
+                "The Philippines' **Data Privacy Act** puts the same three duties on every " +
+                        "school: protect personal data against unlawful **disclosure**, " +
+                        "**alteration** and **destruction**."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Confidentiality", "Only the people allowed to see the data can see it."),
+                KeyTerm("Integrity", "The data is accurate and hasn't been changed without permission."),
+                KeyTerm("Availability", "The data is there when the people who need it need it.")
+            ),
+            sourceIds = listOf("fips199", "ra10173")
+        ),
+        LessonPage(
+            title = "Seen, changed, or unreachable?",
+            icon = LessonIcon.REPORT,
+            paragraphs = listOf(
+                "Ask one question of every report: was the data **seen** by the wrong " +
+                        "people, **changed** without permission, or **out of reach**?",
+                "One incident can hit more than one pillar, but each report has a **main " +
+                        "pillar**. Notice what the reporter **rules out** — it narrows the " +
+                        "answer as much as what they report."
+            ),
+            visual = LessonVisual.Log(
+                title = "THREE REPORTS FROM AROUND CAMPUS",
+                lines = listOf(
+                    "CLINIC   Student list posted in a",
+                    "         public group chat",
+                    "ORG      Budget total changed overnight",
+                    "LIBRARY  E-book site down since 8 AM"
+                ),
+                caption = "Seen by the wrong people, changed without permission, out of reach: " +
+                        "confidentiality, integrity, availability."
+            ),
+            sourceIds = listOf("fips199"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Share less, not \"safely\"",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "**Least privilege** means giving only the access the work needs. For shared " +
+                        "files, the setting behind most leaks is **\"anyone with the link\"**.",
+                "In an access log, **anonymous** means someone opened the file **without " +
+                        "signing in**. Restricting the link stops new access, but it **can't " +
+                        "recall copies already downloaded**."
+            ),
+            visual = LessonVisual.Log(
+                title = "WHO CAN OPEN THIS FILE?",
+                lines = listOf(
+                    "Anyone with the link   no sign-in",
+                    "Everyone at CvSU       any CvSU account",
+                    "Specific people        named accounts only"
+                ),
+                highlights = listOf(2),
+                caption = "Pick the smallest group that still lets the work get done."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Least privilege", "Giving each person or file only the access the work needs, and nothing more.")
+            ),
+            sourceIds = listOf("sp80053", "ra10173"),
+            task = 2
+        ),
+        LessonPage(
+            title = "A fingerprint for every file",
+            icon = LessonIcon.CODE,
+            paragraphs = listOf(
+                "A **hash** like **SHA-256** is a fingerprint of a file's exact contents. " +
+                        "Change **one character** and the whole fingerprint changes.",
+                "Record the hashes while the files are known to be good. That record is the " +
+                        "**baseline**. **Never re-sign the baseline** during an investigation: " +
+                        "it erases your only proof of what changed."
+            ),
+            visual = LessonVisual.Log(
+                title = "SHA-256 · FIRST 16 CHARACTERS",
+                lines = listOf(
+                    "budget = 15000  6639aff204b6d4b1…",
+                    "budget = 18000  b31687f6395601bd…"
+                ),
+                caption = "One character apart in the file, nothing alike in the fingerprint."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Hash", "A fixed-length fingerprint of data. Any change gives a different hash."),
+                KeyTerm("Baseline", "The trusted record of what something looked like when it was known to be good.")
+            ),
+            sourceIds = listOf("fips180", "sp80053"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Who changed it, and how",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "A **diff** shows **what** changed: the value before and after. An **audit " +
+                        "trail** shows **who** made the change, **when**, **from where** and " +
+                        "**with what tool**.",
+                "The **user-agent** names the program that sent a request. A person editing " +
+                        "in a browser shows a browser. A **script's name** there means no " +
+                        "person was typing."
+            ),
+            visual = LessonVisual.Log(
+                title = "AUDIT TRAIL · BUDGET SHEET",
+                lines = listOf(
+                    "time  : Tue 23:52",
+                    "user  : org.treasurer",
+                    "from  : 198.51.100.77 (off campus)",
+                    "ua    : python-requests/2.31.0"
+                ),
+                highlights = listOf(3),
+                caption = "The account is the treasurer's, but the tool is a script."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Audit trail", "A record of who did what, when, from where and how."),
+                KeyTerm("User-agent", "A label each request carries, naming the program that sent it.")
+            ),
+            sourceIds = listOf("sp80053", "mdn-ua"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Bring it back without breaking it",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "Outages are often **not attacks**: a full disk, an expired certificate, a " +
+                        "setting left on after maintenance. Check whether traffic is really " +
+                        "abnormal before blaming an attacker.",
+                "Fix the **cause**, not the symptom. And **never trade one pillar for " +
+                        "another** — deleting good records to free space breaks integrity."
+            ),
+            visual = LessonVisual.DoDont(
+                dos = listOf(
+                    "Check if the traffic is really unusual",
+                    "Find what ran out: disk, memory, certificate",
+                    "Remove the cause, then restart"
+                ),
+                donts = listOf(
+                    "Assume every outage is an attack",
+                    "Restart again and again without a fix",
+                    "Delete good data to make room"
+                )
+            ),
+            sourceIds = listOf("fips199"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "A student's clinic record now lists an allergy they never had. Nobody " +
+                    "outside the clinic saw it, and the system works fine. Which pillar is broken?",
+            options = listOf(
+                "Confidentiality: the record was seen by the wrong people",
+                "Integrity: the record was changed without permission",
+                "Availability: the right record couldn't be reached",
+                "None of them: the record still opens normally"
+            ),
+            correctIndex = 1,
+            explanation = "The data is wrong, so integrity is broken. Nobody unauthorised saw it " +
+                    "and it's still reachable, so confidentiality and availability are fine. A " +
+                    "record that opens normally can still be wrong."
+        ),
+        LessonQuestion(
+            prompt = "An org's member list was shared with \"Anyone with the link\", and the link " +
+                    "reached a public group chat. You switch it to \"Specific people\". What " +
+                    "does this NOT fix?",
+            options = listOf(
+                "New visitors opening the link from the group chat",
+                "People outside the org opening the file from now on",
+                "Anonymous visitors viewing the file again next week",
+                "Copies people already downloaded before the change"
+            ),
+            correctIndex = 3,
+            explanation = "Restricting the link blocks every new visit, signed in or not. A copy " +
+                    "already downloaded is outside your control, which is why confidentiality " +
+                    "has to be set up front."
+        ),
+        LessonQuestion(
+            prompt = "Which of these proves a file was changed after it was approved?",
+            options = listOf(
+                "Its SHA-256 no longer matches the signed baseline",
+                "Its \"last modified\" date now shows today",
+                "It takes longer to open than it used to",
+                "The person who approved it says it looks different"
+            ),
+            correctIndex = 0,
+            explanation = "A hash that no longer matches a trusted baseline proves the contents " +
+                    "changed. Dates change when files are copied and can be edited, and " +
+                    "memory or speed proves nothing."
         )
     )
 )
