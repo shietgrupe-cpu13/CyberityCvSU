@@ -90,10 +90,10 @@ fun inboxTriageLab(): LabDefinition = LabDefinition(
                 options = listOf(
                     "IT Support",
                     "HR Department",
-                    "Microsoft 365 Security",
-                    "Finance Department"
+                    "Finance Department",
+                    "Microsoft 365 Security"
                 ),
-                correctIndex = 2
+                correctIndex = 3
             ),
             hints = listOf(
                 "Three of these messages ask you to read something. One asks you to act, fast.",

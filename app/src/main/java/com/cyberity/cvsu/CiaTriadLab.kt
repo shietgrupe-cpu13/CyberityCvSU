@@ -74,7 +74,7 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
                 "Use **← Desk** to go back, and do the same for the other two.",
                 "For each one, ask a **single question**: was data seen by the wrong people, " +
                         "changed without permission, or simply out of reach?",
-                "Note what each reporter says did **NOT** happen — INC-303's reporter rules out two " +
+                "Note what each reporter says did **NOT** happen — INC-2613's reporter rules out two " +
                         "of the three pillars for you.",
                 "Come back and **match all three at once**."
             ),
@@ -87,12 +87,12 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
             lockedMessage = "Open all three tickets before you classify them.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "INC-301 Availability · INC-302 Confidentiality · INC-303 Integrity",
-                    "INC-301 Integrity · INC-302 Availability · INC-303 Confidentiality",
-                    "INC-301 Confidentiality · INC-302 Integrity · INC-303 Availability",
-                    "INC-301 Confidentiality · INC-302 Availability · INC-303 Integrity"
+                    "INC-2611 Confidentiality · INC-2612 Integrity · INC-2613 Availability",
+                    "INC-2611 Integrity · INC-2612 Availability · INC-2613 Confidentiality",
+                    "INC-2611 Availability · INC-2612 Confidentiality · INC-2613 Integrity",
+                    "INC-2611 Confidentiality · INC-2612 Availability · INC-2613 Integrity"
                 ),
-                correctIndex = 2
+                correctIndex = 0
             ),
             hints = listOf(
                 "Ask one question per ticket: was data seen, changed, or unreachable?",
@@ -108,7 +108,7 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t2",
             title = "Lock down the leak",
-            objective = "INC-301: the enrollment masterlist is exposed. In the file sharing " +
+            objective = "INC-2611: the enrollment masterlist is exposed. In the file sharing " +
                     "settings, **restrict the file**, then read the **access log** and submit how many " +
                     "times it was accessed by someone who **wasn't signed in**.",
             guide = listOf(
@@ -127,7 +127,7 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
                         "restore afterwards."
             ),
             steps = listOf(
-                "Open the simulation, open **INC-301**, and expand the **file details** evidence.",
+                "Open the simulation, open **INC-2611**, and expand the **file details** evidence.",
                 "Go to **File sharing** — either from the button at the bottom of the ticket, or " +
                         "from Admin tools on the desk.",
                 "Read all three access options, pick the one that gives the **least access** that " +
@@ -158,7 +158,7 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t3",
             title = "Prove the tampering",
-            objective = "INC-302: a grade changed after it was submitted. **Run the integrity " +
+            objective = "INC-2612: a grade changed after it was submitted. **Run the integrity " +
                     "checker** on the record files and submit the **name of the file** that no longer " +
                     "matches its baseline.",
             guide = listOf(
@@ -177,7 +177,7 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
             ),
             steps = listOf(
                 "Open the simulation and open the **Integrity checker** from Admin tools, or from " +
-                        "INC-302's button.",
+                        "INC-2612's button.",
                 "Read the **baseline note** at the top: when the fingerprints were signed, and by " +
                         "what.",
                 "Tap **COMPUTE** on **every file**, not just the first one.",
@@ -218,9 +218,9 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
                 "A **diff** shows the change itself: the value **before** and the value **after**, side by " +
                         "side. Together they answer both questions. What changed, and by whose " +
                         "hand.",
-                "Read the **source address** on this one carefully, and compare it with the " +
-                        "brute-force alert from the Threat Console level. A password stolen in " +
-                        "one incident being used to edit a record in another is exactly how real " +
+                "Read the **source address** and the **account** on this one carefully, and " +
+                        "compare them with the brute-force alert from the Threat Console level. " +
+                        "One attacker working **several stolen accounts** is exactly how real " +
                         "intrusions move: a confidentiality failure becomes the way into an " +
                         "integrity failure. Pillars fall in sequence, not in isolation."
             ),
@@ -244,9 +244,10 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
                 "The diff shows what changed. The audit trail below it shows how.",
                 "Look at the user-agent of the request that made the edit."
             ),
-            successFeedback = "Captured. Notice the source address: it's the same one from last " +
-                    "night's brute-force alert. The stolen password was used to change a grade — " +
-                    "a confidentiality failure turned into an integrity failure.",
+            successFeedback = "Captured. Notice the source address: it's the same attacker from " +
+                    "the brute-force alert, this time signed in as j.dcruz, a second stolen " +
+                    "account. A stolen password was used to change a grade — a " +
+                    "confidentiality failure turned into an integrity failure.",
             failureFeedback = "Not the flag. It's written in full in the audit trail, " +
                     "wrapper included."
         ),
@@ -254,7 +255,7 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t5",
             title = "Restore availability",
-            objective = "INC-303: the portal is down with enrollment closing Friday. **Check the " +
+            objective = "INC-2613: the portal is down with enrollment closing Friday. **Check the " +
                     "service status**, find the **cause**, and choose the **fix**.",
             guide = listOf(
                 "**Availability** is the pillar people forget until it is the only one that " +
@@ -290,12 +291,12 @@ fun ciaTriadLab(): LabDefinition = LabDefinition(
             lockedMessage = "Open the service status and inspect the failing server.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Block all off-campus traffic until enrollment closes",
-                    "Delete the records database and restore last month's backup to free space",
-                    "Turn off the leftover debug logging, archive and clear the log, then restart records-db",
-                    "Tell students to try again after enrollment week"
+                    "Block all off-campus traffic to the portal until enrollment closes",
+                    "Switch off the leftover debug logging, archive the log, restart records-db",
+                    "Restore last month's records backup over the database to free up space",
+                    "Restart records-db each time it stops until enrollment week is over"
                 ),
-                correctIndex = 2
+                correctIndex = 1
             ),
             hints = listOf(
                 "Traffic is normal. Something on the server itself ran out.",

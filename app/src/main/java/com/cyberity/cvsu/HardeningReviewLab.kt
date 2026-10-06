@@ -86,10 +86,10 @@ fun hardeningReviewLab(): LabDefinition = LabDefinition(
                 options = listOf(
                     "registrar.staff — Records Officer",
                     "a.reyes — Faculty",
-                    "j.dcruz — Student Assistant",
-                    "guidance.office — Guidance Counselor"
+                    "guidance.office — Guidance Counselor",
+                    "j.dcruz — Student Assistant"
                 ),
-                correctIndex = 2
+                correctIndex = 3
             ),
             hints = listOf(
                 "Read the job description on each account, then look at the permission list.",
@@ -302,11 +302,11 @@ fun hardeningReviewLab(): LabDefinition = LabDefinition(
             answer = LabAnswer.Choice(
                 options = listOf(
                     "Trim role: defence in depth · Add layers: fail-safe · Lock policy: least privilege",
-                    "Trim role: least privilege · Add layers: defence in depth · Lock policy: fail-safe defaults",
                     "Trim role: fail-safe defaults · Add layers: least privilege · Lock policy: defence in depth",
+                    "Trim role: least privilege · Add layers: defence in depth · Lock policy: fail-safe defaults",
                     "Trim role: least privilege · Add layers: fail-safe defaults · Lock policy: defence in depth"
                 ),
-                correctIndex = 1
+                correctIndex = 2
             ),
             hints = listOf(
                 "Which fix reduced what one account can do? Which fix added more barriers? " +

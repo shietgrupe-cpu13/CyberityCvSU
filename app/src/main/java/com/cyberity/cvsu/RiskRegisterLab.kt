@@ -86,12 +86,12 @@ fun riskRegisterLab(): LabDefinition = LabDefinition(
             lockedMessage = "Open finding F-01 in the register first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Asset: password-only sign-in · Threat: grade records · Vulnerability: attacker with a stolen password",
-                    "Asset: attacker with a stolen password · Threat: password-only sign-in · Vulnerability: grade records",
                     "Asset: grade records · Threat: attacker with a stolen password · Vulnerability: password-only sign-in",
+                    "Asset: attacker with a stolen password · Threat: password-only sign-in · Vulnerability: grade records",
+                    "Asset: password-only sign-in · Threat: grade records · Vulnerability: attacker with a stolen password",
                     "Asset: grade records · Threat: password-only sign-in · Vulnerability: attacker with a stolen password"
                 ),
-                correctIndex = 2
+                correctIndex = 0
             ),
             hints = listOf(
                 "The asset is what you're protecting. The threat is who or what could harm it.",

@@ -128,10 +128,10 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             lockedMessage = "Open alert A3 and read what the evidence actually shows.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Malware infection",
+                    "Malware — hostile code running on the PC",
                     "Credential attack — automated password guessing",
-                    "Denial of service",
-                    "Physical media policy breach"
+                    "Denial of service — flooding the sign-in server",
+                    "Policy breach — a user breaking the PC rules"
                 ),
                 correctIndex = 1
             ),
@@ -244,7 +244,8 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
                         "running on a machine, you **isolate the machine**. If a **credential** was " +
                         "stolen, the machine barely matters — a working password can be used " +
                         "from anywhere in the world, and reimaging the PC it happened to be " +
-                        "typed on takes nothing back from the attacker.",
+                        "typed on takes nothing back from the attacker. And a **reset alone** " +
+                        "doesn't sign out a **session** the attacker already has open.",
                 "Two **traps** worth naming. **Raising a threshold** so the alert stops firing is not " +
                         "containment, it is unplugging the smoke detector. And **asking the " +
                         "account owner to confirm** is a reasonable thing to do later — it is " +
@@ -259,20 +260,23 @@ fun threatConsoleLab(): LabDefinition = LabDefinition(
             entryPage = "console.html",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Wipe and reimage LIB-PC-14",
-                    "Block the source address and reset the compromised account's password",
+                    "Wipe and reimage LIB-PC-14 before anyone uses it again",
                     "Email the student to ask whether the sign-ins were theirs",
-                    "Raise the account's lockout threshold so it stops alerting"
+                    "Raise the account's lockout threshold so it stops alerting",
+                    "Block the source, reset the password and end its sessions"
                 ),
-                correctIndex = 1
+                correctIndex = 3
             ),
             hints = listOf(
                 "The attacker got in. Which asset was actually compromised — the machine, or " +
-                        "the credential?"
+                        "the credential?",
+                "The log shows the attacker already signed in. Does a new password end that?"
             ),
-            successFeedback = "Cut the access, then invalidate what was stolen. Reimaging the " +
-                    "shared PC does nothing here — the attacker holds a working password and " +
-                    "can use it from anywhere.",
+            successFeedback = "Cut the access, then invalidate what was stolen. Blocking the " +
+                    "address and resetting the password stop new sign-ins, and ending the " +
+                    "sessions throws out the one the attacker already has. Reimaging the shared " +
+                    "PC does nothing here — the attacker holds a working password and can use " +
+                    "it from anywhere.",
             failureFeedback = "Think about what the attacker walked away with, and which action " +
                     "actually takes it back from them."
         )

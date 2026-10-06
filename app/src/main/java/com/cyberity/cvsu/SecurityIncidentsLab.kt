@@ -174,7 +174,10 @@ fun securityIncidentsLab(): LabDefinition = LabDefinition(
                 "So the first responder's rule is: **don't change anything**, **write down what " +
                         "you saw and when**, and **report it** through the official channel. " +
                         "Stopping the attacker is **containment**, and that is the incident " +
-                        "team's call (Level 603)."
+                        "team's call (Level 603).",
+                "In Level 101 you deleted a phishing email **after** reporting it. That's right " +
+                        "for an ordinary user once IT has the evidence. Here **nobody has " +
+                        "investigated yet**, so nothing gets deleted."
             ),
             steps = listOf(
                 "Open TKT-0144 and read Prof. Ramos's text.",
