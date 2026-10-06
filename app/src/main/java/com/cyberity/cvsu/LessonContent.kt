@@ -22,7 +22,7 @@ data class LessonSource(
 )
 
 /** Picture at the top of a page. Mapped to an icon by LessonScreen. */
-enum class LessonIcon { PHISHING, WARNING, EMAIL, LINK, CODE, REPORT }
+enum class LessonIcon { PHISHING, WARNING, EMAIL, LINK, CODE, REPORT, SHIELD, SEARCH, LOCK }
 
 @Immutable
 data class KeyTerm(val term: String, val meaning: String)
@@ -59,6 +59,14 @@ sealed interface LessonVisual {
 
     /** What to do, and what not to. */
     data class DoDont(val dos: List<String>, val donts: List<String>) : LessonVisual
+
+    /** A few log or alert lines. [highlights] are 0-based line numbers drawn in the accent colour. */
+    data class Log(
+        val title: String,
+        val lines: List<String>,
+        val highlights: List<Int> = emptyList(),
+        val caption: String
+    ) : LessonVisual
 }
 
 @Immutable
@@ -96,6 +104,7 @@ data class Lesson(
 /** The lesson for a level, or null when that level has none yet. */
 fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     101 -> inboxTriageLesson()
+    102 -> threatConsoleLesson()
     else -> null
 }
 
@@ -337,6 +346,259 @@ private fun inboxTriageLesson(): Lesson = Lesson(
             explanation = "A deadline alone is normal — enrollment really closes. The warning " +
                     "sign is the threat: act right now or lose something. That pressure is " +
                     "designed to stop you checking first."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 102 — Threat Console
+// ---------------------------------------------------------------------------
+// The senior analyst's briefing before the night shift. Same rule as 101: the
+// example alerts, accounts and addresses differ from the console's own.
+
+private fun threatConsoleLesson(): Lesson = Lesson(
+    levelId = 102,
+    title = "Reading a Security Alert",
+    sources = listOf(
+        LessonSource(
+            id = "nist-ir",
+            short = "NIST SP 800-61r3",
+            citation = "Nelson, A., Rekhi, S., Souppaya, M. & Scarfone, K. (2025). Incident " +
+                    "Response Recommendations and Considerations for Cybersecurity Risk " +
+                    "Management (NIST SP 800-61 Rev. 3): DE.AE-02, DE.AE-03, DE.AE-08, " +
+                    "RS.MA-02, RS.MI-01, RS.MI-02.",
+            url = "https://doi.org/10.6028/NIST.SP.800-61r3"
+        ),
+        LessonSource(
+            id = "nist-fp",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"False positive.\" Glossary " +
+                    "(definition from NIST SP 800-86).",
+            url = "https://csrc.nist.gov/glossary/term/false_positive"
+        ),
+        LessonSource(
+            id = "mitre",
+            short = "MITRE ATT&CK",
+            citation = "MITRE ATT&CK. \"Brute Force\" (T1110), including Password Guessing " +
+                    "(T1110.001): detection and mitigations.",
+            url = "https://attack.mitre.org/techniques/T1110/"
+        ),
+        LessonSource(
+            id = "ra10175",
+            short = "RA 10175",
+            citation = "Republic of the Philippines. Republic Act No. 10175, Cybercrime " +
+                    "Prevention Act of 2012, Sec. 4(a)(1): Illegal Access.",
+            url = "https://lawphil.net/statutes/repacts/ra2012/ra_10175_2012.html"
+        ),
+        LessonSource(
+            id = "nist-ioc",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"Indicator.\" Glossary " +
+                    "(definition from NIST SP 800-150).",
+            url = "https://csrc.nist.gov/glossary/term/indicator"
+        ),
+        LessonSource(
+            id = "nist-logs",
+            short = "NIST SP 800-92",
+            citation = "Kent, K. & Souppaya, M. (2006). Guide to Computer Security Log " +
+                    "Management (NIST SP 800-92).",
+            url = "https://doi.org/10.6028/NIST.SP.800-92"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "Welcome to the night shift",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "A **Security Operations Centre (SOC)** watches an organisation's systems " +
+                        "around the clock. Its tools raise **alerts** whenever something " +
+                        "looks unusual.",
+                "Your first job on every alert is **triage**: check whether it's real, then " +
+                        "decide **how urgent** it is. That way the real attacks get attention first."
+            ),
+            keyTerms = listOf(
+                KeyTerm("SOC", "The team that monitors systems and responds to security alerts."),
+                KeyTerm("Alert", "A warning a security tool raises when activity matches one of its rules."),
+                KeyTerm("Triage", "Checking whether an alert is real and deciding how urgent it is.")
+            ),
+            sourceIds = listOf("nist-ir")
+        ),
+        LessonPage(
+            title = "Most alerts are noise",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "A **false positive** is a tool calling normal activity malicious. Alert rules " +
+                        "can't see context, so they fire on backups, updates and scans too.",
+                "You prove one with evidence that explains **all of it** — the host, the " +
+                        "timing and the targets. **Never judge it by the alert's title.**"
+            ),
+            visual = LessonVisual.Log(
+                title = "ALERT · PORT SCAN DETECTED",
+                lines = listOf(
+                    "host    IT-SCAN-01",
+                    "target  every lab subnet",
+                    "time    Mon 09:00 - 09:41",
+                    "notes   IT vulnerability scanner,",
+                    "        weekly job, Mondays 09:00"
+                ),
+                highlights = listOf(3, 4),
+                caption = "The asset notes explain the host, the time and the targets."
+            ),
+            keyTerms = listOf(
+                KeyTerm("False positive", "An alert on activity that turns out to be harmless."),
+                KeyTerm("True positive", "An alert on activity that really is an attack.")
+            ),
+            sourceIds = listOf("nist-fp", "nist-ir"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Name the threat",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "Before you can respond, you have to **name the kind of threat** — that " +
+                        "decides who acts and what gets locked down. **Where the evidence " +
+                        "shows up** usually tells you its name.",
+                "Guessing a password to get into someone's account is **illegal access** under " +
+                        "the Philippines' **Cybercrime Prevention Act**, even if the attempts " +
+                        "come from a script."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Malware", "Hostile code on a computer. Look in its running programs and changed files."),
+                KeyTerm("Credential attack", "Guessing or stealing a login. Look in the sign-in logs."),
+                KeyTerm("Denial of service", "Flooding a service so real users can't reach it. Look for traffic from many sources."),
+                KeyTerm("Policy breach", "A person breaking a security rule. No outside attacker is involved.")
+            ),
+            sourceIds = listOf("nist-ir", "mitre", "ra10175"),
+            task = 2
+        ),
+        LessonPage(
+            title = "Indicators you can search",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "An **indicator of compromise (IOC)** is a fact you can search for, like an " +
+                        "address, an account or a file. Sign-in logs record **where each attempt came from**.",
+                "When a log shows many failures from one source and then a **success**, that " +
+                        "source is the attacker. **Copy it exactly** — one wrong digit and your " +
+                        "search finds nothing."
+            ),
+            visual = LessonVisual.Log(
+                title = "SIGN-IN LOG",
+                lines = listOf(
+                    "09:14:02 FAIL user=f.lim src=203.0.113.45",
+                    "09:14:03 FAIL user=f.lim src=203.0.113.45",
+                    "09:14:03 FAIL user=f.lim src=203.0.113.45",
+                    "09:14:04 OK   user=f.lim src=203.0.113.45"
+                ),
+                highlights = listOf(3),
+                caption = "src is where an attempt came from: the attacker. user is the account " +
+                        "under attack: the victim."
+            ),
+            keyTerms = listOf(
+                KeyTerm("IOC", "Indicator of compromise: a searchable sign that an attack happened."),
+                KeyTerm("Log", "A record a system keeps of events, such as each sign-in attempt.")
+            ),
+            sourceIds = listOf("nist-ioc", "nist-logs", "mitre"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Pivot on what you found",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "An alert shows one system. **Pivoting** means searching for the same IOC " +
+                        "across **every** log, which shows what else the attacker touched.",
+                "**Read every row** that comes back, including the quiet ones. The row that " +
+                        "matters is rarely the one you were looking for."
+            ),
+            visual = LessonVisual.Log(
+                title = "SEARCH: 203.0.113.45 · 4 RESULTS",
+                lines = listOf(
+                    "09:14:02 sso   FAIL user=f.lim",
+                    "09:14:04 sso   OK   user=f.lim",
+                    "09:15:30 files READ grades_2026.xlsx",
+                    "09:17:12 sso   FAIL user=r.cruz"
+                ),
+                highlights = listOf(2, 3),
+                caption = "The alert only showed sign-ins. The search also shows a file being " +
+                        "read and a second account under attack."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Pivoting", "Searching for one IOC across all logs to see everything it touched.")
+            ),
+            sourceIds = listOf("nist-ir", "nist-logs"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Cut off what was taken",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "**Containment** stops an attack from spreading while you investigate. The " +
+                        "right action depends on **what the attacker took**.",
+                "If malware is running, **cut that machine off the network**. If a password " +
+                        "was stolen, it works **from anywhere**, so you **reset it and end its " +
+                        "sessions**."
+            ),
+            visual = LessonVisual.DoDont(
+                dos = listOf(
+                    "Match the action to what was taken",
+                    "Cut off the attacker's access first",
+                    "Use MFA so a guessed password isn't enough"
+                ),
+                donts = listOf(
+                    "Silence the alert so it stops firing",
+                    "Wait for someone's reply before acting",
+                    "Clean up before access has been cut off"
+                )
+            ),
+            keyTerms = listOf(
+                KeyTerm("Containment", "Stopping an attack from spreading or doing more damage."),
+                KeyTerm("MFA", "Multi-factor authentication: a second proof of identity on top of the password.")
+            ),
+            sourceIds = listOf("nist-ir", "mitre"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "A \"port scan\" alert fires every Monday at 9:00 from IT-SCAN-01. Its asset " +
+                    "notes say it's IT's weekly vulnerability scanner. What is the alert?",
+            options = listOf(
+                "A false positive: the scheduled scan explains the host, the time and the targets",
+                "A true positive: port scans are the first step of most network attacks",
+                "Too noisy to judge, so close it without checking because it fires weekly",
+                "A real attack, because the alert title says a port scan was detected"
+            ),
+            correctIndex = 0,
+            explanation = "The notes explain who ran it, when and against what, so it's a " +
+                    "false positive. But you still check it each time: closing alerts just " +
+                    "because they're familiar is how a real attack gets missed."
+        ),
+        LessonQuestion(
+            prompt = "You think someone is guessing a student's password. Which evidence " +
+                    "would show it best?",
+            options = listOf(
+                "The list of programs running on the student's laptop",
+                "A graph of the campus network's total traffic today",
+                "The sign-in log for that student's account",
+                "The history of files changed on the shared drive"
+            ),
+            correctIndex = 2,
+            explanation = "Password guessing shows up where sign-ins are recorded: many " +
+                    "failures from one source, sometimes followed by a success. The other " +
+                    "places show malware or heavy traffic instead."
+        ),
+        LessonQuestion(
+            prompt = "Antivirus finds malware running on a lab PC. No one typed a password " +
+                    "on it. What should happen first?",
+            options = listOf(
+                "Reset every password on campus, just to be safe",
+                "Raise the antivirus alert level so it stops firing",
+                "Ask the last student who used it what they downloaded",
+                "Disconnect that PC from the network to contain it"
+            ),
+            correctIndex = 3,
+            explanation = "The malware is on that PC, so isolating the PC is what stops it from " +
+                    "spreading. Resetting passwords targets something that wasn't taken, and " +
+                    "the question can wait until the PC is cut off."
         )
     )
 )

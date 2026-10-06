@@ -25,11 +25,14 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.NotificationImportant
 import androidx.compose.material.icons.filled.Phishing
 import androidx.compose.material.icons.filled.Report
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
@@ -281,6 +284,9 @@ private fun iconFor(icon: LessonIcon): ImageVector = when (icon) {
     LessonIcon.LINK -> Icons.Filled.Link
     LessonIcon.CODE -> Icons.Filled.Code
     LessonIcon.REPORT -> Icons.Filled.Report
+    LessonIcon.SHIELD -> Icons.Filled.Shield
+    LessonIcon.SEARCH -> Icons.Filled.Search
+    LessonIcon.LOCK -> Icons.Filled.Lock
 }
 
 // ===========================================================================
@@ -311,6 +317,7 @@ private fun LessonPageContent(page: LessonPage, sources: List<LessonSource>) {
             is LessonVisual.Link -> LinkVisual(visual)
             is LessonVisual.Source -> SourceVisual(visual)
             is LessonVisual.DoDont -> DoDontVisual(visual)
+            is LessonVisual.Log -> LogVisual(visual)
         }
     }
 
@@ -665,6 +672,36 @@ private fun SourceVisual(source: LessonVisual.Source) {
         Icon(Icons.Filled.VisibilityOff, contentDescription = null, tint = AppGray, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(8.dp))
         Text("Grey lines are comments — never drawn on screen.", color = AppGray, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun LogVisual(log: LessonVisual.Log) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppCard, RoundedCornerShape(14.dp))
+            .border(1.dp, AppBorder, RoundedCornerShape(14.dp))
+            .padding(14.dp)
+    ) {
+        Text(log.title, color = AppGray, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(8.dp))
+        log.lines.forEachIndexed { i, line ->
+            val marked = i in log.highlights
+            Text(
+                line,
+                color = if (marked) AppCyan else AppWhite,
+                fontSize = 11.sp, lineHeight = 17.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = if (marked) FontWeight.Bold else FontWeight.Normal
+            )
+        }
+    }
+    Spacer(Modifier.height(8.dp))
+    Row(verticalAlignment = Alignment.Top) {
+        Icon(Icons.Filled.Info, contentDescription = null, tint = AppCyan, modifier = Modifier.size(16.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(log.caption, color = AppGray, fontSize = 12.sp, lineHeight = 17.sp)
     }
 }
 
