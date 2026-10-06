@@ -106,6 +106,7 @@ fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     101 -> inboxTriageLesson()
     102 -> threatConsoleLesson()
     103 -> ciaTriadLesson()
+    104 -> hardeningReviewLesson()
     else -> null
 }
 
@@ -840,6 +841,239 @@ private fun ciaTriadLesson(): Lesson = Lesson(
             explanation = "A hash that no longer matches a trusted baseline proves the contents " +
                     "changed. Dates change when files are copied and can be edited, and " +
                     "memory or speed proves nothing."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 104 — Security Principles
+// ---------------------------------------------------------------------------
+// A design review, not an incident. The lab works on the Registrar portal,
+// so the examples come from the library, an org, the Wi-Fi and exam papers.
+
+private fun hardeningReviewLesson(): Lesson = Lesson(
+    levelId = 104,
+    title = "Design It So a Stolen Password Isn't Enough",
+    sources = listOf(
+        LessonSource(
+            id = "saltzer",
+            short = "Saltzer & Schroeder (1975)",
+            citation = "Saltzer, J. H. & Schroeder, M. D. (1975). \"The Protection of " +
+                    "Information in Computer Systems.\" Proceedings of the IEEE, 63(9). Design " +
+                    "principles: fail-safe defaults, least privilege.",
+            url = "https://web.mit.edu/Saltzer/www/publications/protection/"
+        ),
+        LessonSource(
+            id = "sp800160",
+            short = "NIST SP 800-160v1r1",
+            citation = "Ross, R., Winstead, M. & McEvilley, M. (2022). Engineering Trustworthy " +
+                    "Secure Systems (NIST SP 800-160 Vol. 1 Rev. 1), Appendix E: E.9 Defense in " +
+                    "Depth, E.16 Least Privilege, E.22 Protective Defaults, E.23 Protective Failure.",
+            url = "https://doi.org/10.6028/NIST.SP.800-160v1r1"
+        ),
+        LessonSource(
+            id = "sp80053",
+            short = "NIST SP 800-53r5",
+            citation = "Joint Task Force (2020). Security and Privacy Controls for " +
+                    "Information Systems and Organizations (NIST SP 800-53 Rev. 5): AC-6 Least " +
+                    "Privilege, AC-6(7) Review of User Privileges, SC-24 Fail in Known State.",
+            url = "https://doi.org/10.6028/NIST.SP.800-53r5"
+        ),
+        LessonSource(
+            id = "nist-did",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"Defense-in-depth.\" Glossary " +
+                    "(definition from NIST SP 800-53 Rev. 5).",
+            url = "https://csrc.nist.gov/glossary/term/defense_in_depth"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "Fix the design, not just the incident",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "A fix protects one system. A **security principle** is the reason behind the " +
+                        "fix, so it works on **any** system you're asked to protect.",
+                "Passwords get stolen eventually. These three principles don't stop that — " +
+                        "they decide **how much a stolen password is worth**."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Least privilege", "Every account gets only the access its job needs."),
+                KeyTerm("Fail-safe default", "When a check can't finish, the answer is no."),
+                KeyTerm("Defence in depth", "Several different barriers, so no single one has to be perfect.")
+            ),
+            sourceIds = listOf("saltzer", "sp800160")
+        ),
+        LessonPage(
+            title = "Roles drift away from jobs",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "A **permission** is one thing an account can do. A **role** is a bundle of " +
+                        "them handed out together, so it often carries more than the job needs.",
+                "Jobs change, but access stays: that's **privilege creep**. Check the **job " +
+                        "description** against the **permission list**, not how much you trust " +
+                        "the person. Be wary of the word **\"temporary\"**."
+            ),
+            visual = LessonVisual.Log(
+                title = "ACCOUNT REVIEW · LIBRARY",
+                lines = listOf(
+                    "account   lib.assist2",
+                    "job       check books in and out",
+                    "role      Library Admin",
+                    "note      \"temporary, for exam week\"",
+                    "reviewed  never"
+                ),
+                highlights = listOf(2, 3, 4),
+                caption = "The role was meant for one busy week, and nobody took it back."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Permission", "One action an account is allowed to do."),
+                KeyTerm("Role", "A bundle of permissions given out together."),
+                KeyTerm("Privilege creep", "Access that piles up as jobs change and is never removed.")
+            ),
+            sourceIds = listOf("sp80053", "saltzer"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Trim to the job",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "In Level 103 you limited **who can open a file**. Least privilege for " +
+                        "accounts limits **what an account can do**.",
+                "It shrinks the **blast radius**: what a stolen password can reach. But cut " +
+                        "something the job needs and the work stops — and people find ways " +
+                        "around security that blocks them."
+            ),
+            visual = LessonVisual.Log(
+                title = "TRIMMED TO THE JOB",
+                lines = listOf(
+                    "✓ loans.checkout   job: lend books",
+                    "✓ loans.return     job: take returns",
+                    "✗ catalog.edit     not in the job",
+                    "✗ fines.waive      not in the job",
+                    "✗ users.manage     not in the job"
+                ),
+                highlights = listOf(0, 1),
+                caption = "Start from the job description, not from the role."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Blast radius", "How much damage one stolen account can do.")
+            ),
+            sourceIds = listOf("sp80053", "sp800160"),
+            task = 2
+        ),
+        LessonPage(
+            title = "Fail safe, not open",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "Every check fails sometimes. A **fail-safe default** denies when the check " +
+                        "can't finish. A **fail-open** default allows.",
+                "**\"Ask the user\"** isn't a safe middle: during an attack, the user may be the " +
+                        "attacker. And a **warning in a log** records the damage — it doesn't " +
+                        "stop it."
+            ),
+            visual = LessonVisual.Log(
+                title = "WI-FI LOGIN SERVER DOWN · POLICY?",
+                lines = listOf(
+                    "allow_all  any device can join",
+                    "ask_user   the device decides",
+                    "log_only   join, and log a warning",
+                    "deny_new   only signed-in devices stay"
+                ),
+                highlights = listOf(3),
+                caption = "Only deny_new keeps strangers out while the check is down."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Fail-safe default", "A failed check denies access."),
+                KeyTerm("Fail-open", "A failed check allows access, usually so nobody gets locked out.")
+            ),
+            sourceIds = listOf("saltzer", "sp80053", "sp800160"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Layers that fail differently",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "**Defence in depth** only works if the layers are **different**. Four password " +
+                        "rules are one layer: one stolen password beats them all.",
+                "A layer that only **detects** still counts — it turns a breach found days " +
+                        "later into one caught in minutes. Add layers; **never remove one that " +
+                        "works**."
+            ),
+            visual = LessonVisual.Log(
+                title = "EXAM PAPERS · DEPARTMENT OFFICE",
+                lines = listOf(
+                    "Layer 1  locked cabinet",
+                    "Layer 2  chair keeps the only key",
+                    "Layer 3  CCTV watching the cabinet",
+                    "Layer 4  sealed, signed envelopes"
+                ),
+                highlights = listOf(2, 3),
+                caption = "A copied key beats layers 1 and 2. The camera still records it, and a " +
+                        "broken seal still shows it."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Defence in depth", "Several independent barriers, each able to stop or catch an attack.")
+            ),
+            sourceIds = listOf("nist-did", "sp800160"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Three questions, three principles",
+            icon = LessonIcon.REPORT,
+            paragraphs = listOf(
+                "Name a fix's principle by the **question it answers**. That's what lets you " +
+                        "reuse it on the next system.",
+                "Together they make a stolen password a **dead end**: it reaches little, meets " +
+                        "several barriers, and anything that breaks says no."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Least privilege", "Answers: how much can one account do?"),
+                KeyTerm("Defence in depth", "Answers: how many barriers must an attack get past?"),
+                KeyTerm("Fail-safe default", "Answers: what happens when a check breaks?")
+            ),
+            sourceIds = listOf("saltzer", "sp800160"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "A student who graduated last year still has admin rights on the org's page, " +
+                    "kept \"until the new officers settle in\". What is this?",
+            options = listOf(
+                "A fail-open default: access is allowed when nobody checks it",
+                "Missing defence in depth: the page has only one barrier",
+                "Privilege creep: the access outlived the job it was for",
+                "A password problem: the admin password is too old"
+            ),
+            correctIndex = 2,
+            explanation = "The access was right while they were an officer. The job ended and the " +
+                    "access didn't. Regular access reviews catch exactly this."
+        ),
+        LessonQuestion(
+            prompt = "When the campus Wi-Fi login server goes down, the network lets every device " +
+                    "join until it's fixed. Which principle does that break?",
+            options = listOf(
+                "Fail-safe defaults: a failed check should deny, not allow",
+                "Least privilege: staff accounts can do more than they need",
+                "Defence in depth: the Wi-Fi depends on a single barrier",
+                "None: keeping everyone online is the secure choice"
+            ),
+            correctIndex = 0,
+            explanation = "The check failed and the answer became yes. A fail-safe design keeps " +
+                    "new devices out until the check works again."
+        ),
+        LessonQuestion(
+            prompt = "Which set adds the most real depth to staff sign-in?",
+            options = listOf(
+                "A longer password, a special character, and a change every 90 days",
+                "A password, a security question, and a password hint",
+                "A password, a CAPTCHA, and a reminder to sign out",
+                "A password, an MFA app, and an alert on new-country sign-ins"
+            ),
+            correctIndex = 3,
+            explanation = "The first two are all things you know, so one stolen secret beats them. " +
+                    "An MFA app adds something you have, and the alert catches what gets past both."
         )
     )
 )
