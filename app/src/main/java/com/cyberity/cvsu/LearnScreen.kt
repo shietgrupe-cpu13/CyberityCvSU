@@ -185,7 +185,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
             LearningLevel(303, "Social Engineering", "Security lab: review a week of campus incidents — a tailgater, a helpful caller, a found flash drive, and a friend's hijacked account.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(304, "Scam Messages", "Security lab: one week on your own phone — a prize you never entered, a parcel you never ordered, and a bank officer who wants your OTP.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(350, "Quick Quiz", "Six questions, sixty seconds, one clock for the whole set. Everything from Unit 3, and retries cost nothing.", 30, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 3),
-            LearningLevel(305, "Phishing Simulation", "Security lab: one shift on the ITSO help desk — eight unscreened messages, four of them real, and a verdict required on every one.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
+            LearningLevel(305, "Phishing Simulation", "Unit 3 final: one day on your own phone — emails, a chat, a canteen poster and a live call, some real and some not. Every choice follows you to 21:00.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -1778,7 +1778,7 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     302 -> LevelContent.Lab(baitWorkshopLab(), baitWorkshopClueLabels)
     303 -> LevelContent.Lab(socialEngineeringLab(), socialEngClueLabels)
     304 -> LevelContent.Lab(scamMessagesLab(), scamMsgClueLabels)
-    305 -> LevelContent.Lab(phishingSimLab(), phishSimClueLabels)
+    305 -> LevelContent.Lab(oneDayPhoneLab(), oneDayClueLabels)
     350 -> LevelContent.Lab(quickQuizLab(), quickQuizClueLabels)
     401 -> LevelContent.Lab(whatIsMalwareLab(), whatIsMalwareClueLabels)
     402 -> LevelContent.Lab(virusesTrojansLab(), virusesTrojansClueLabels)

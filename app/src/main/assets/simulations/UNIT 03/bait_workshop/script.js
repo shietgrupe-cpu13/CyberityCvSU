@@ -101,8 +101,8 @@ function renderStudio(mountId) {
   $(mountId).innerHTML =
     '<div class="desk-head"><h1>Bait workshop</h1>' +
     '<p>CvSU IT Services Office · awareness team · drill season</p></div>' +
-    '<div class="mentor"><span class="avatar">SA</span><span>' +
-    '<b>Sir Aquino, awareness lead:</b> Next month we send a practice phishing email to the ' +
+    '<div class="mentor"><span class="avatar">SN</span><span>' +
+    '<b>Sir Navarro, awareness lead:</b> Next month we send a practice phishing email to the ' +
     'volunteers who signed up for drills. You build it, one trick per station. Every trick ' +
     'you make work here is one you will never fall for again.</span></div>' +
     '<div class="section-label">Stations</div>' + cards +
@@ -688,7 +688,7 @@ function sendSpoof() {
   if (spoof.to === 'all') {
     Cyberity.clueFound('sent_to_all');
     shake($('send-btn'));
-    banner('spoof-banner', 'bad', '<b>Stopped by Sir Aquino.</b> 14,206 students never agreed to a ' +
+    banner('spoof-banner', 'bad', '<b>Stopped by Sir Navarro.</b> 14,206 students never agreed to a ' +
       'drill. A fake Registrar email sent to all of them is not training, it is an incident: ' +
       'panic about balances, calls to the real Registrar, and a lesson that ITSO itself lies. ' +
       'Drills go only to the volunteers.');
