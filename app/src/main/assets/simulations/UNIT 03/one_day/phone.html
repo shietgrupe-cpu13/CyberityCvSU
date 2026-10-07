@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Your phone</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="sim-ribbon">Simulated phone · fictional people and links · nothing is sent</div>
+  <div class="statusbar"><span id="clock">07:40</span><span class="icons">5G ▮▮▮ 82%</span></div>
+  <div id="screen"></div>
+  <div id="scrim" class="scrim" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet"></div></div>
+  <div id="call" class="call"></div>
+  <div id="notif" class="notif"></div>
+  <div id="toast" class="toast"></div>
+  <script src="script.js"></script>
+  <script>boot();</script>
+</body>
+</html>
