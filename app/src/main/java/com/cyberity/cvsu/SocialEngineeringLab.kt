@@ -6,7 +6,7 @@ package com.cyberity.cvsu
 // Content only. Engine is LabModel.kt / LabScreen.kt, same format as 101-102:
 // every task teaches first (guide), says exactly what to do (steps), then asks.
 //
-// 301 and 302 lived inside a mailbox. This level leaves it: a door, a phone
+// 301 and 302 lived inside email (302 from the sender's side). This level leaves it: a door, a phone
 // call, a flash drive in the canteen, and a chat from a friend. Four incidents
 // that turn out to be one person, working a chain.
 

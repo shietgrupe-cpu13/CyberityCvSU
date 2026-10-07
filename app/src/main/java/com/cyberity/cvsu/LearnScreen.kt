@@ -181,7 +181,7 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         description = "The attacks that target people, not systems",
         levels = listOf(
             LearningLevel(301, "What is Phishing?", "Security lab: sort a week of reported messages, name each phishing type, and find out why the filters let them through.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
-            LearningLevel(302, "Identifying Suspicious Emails", "Security lab: work a forensics bench — read the real domain, expose where links go, and prove a forged sender.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(302, "Identifying Suspicious Emails", "Security lab: join the ITSO awareness team and build a practice phishing email, trick by trick — then catch a teammate's before the clock runs out.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(303, "Social Engineering", "Security lab: review a week of campus incidents — a tailgater, a helpful caller, a found flash drive, and a friend's hijacked account.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(304, "Scam Messages", "Security lab: one week on your own phone — a prize you never entered, a parcel you never ordered, and a bank officer who wants your OTP.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
             LearningLevel(350, "Quick Quiz", "Six questions, sixty seconds, one clock for the whole set. Everything from Unit 3, and retries cost nothing.", 30, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 3),
@@ -1775,7 +1775,7 @@ fun contentFor(levelId: Int): LevelContent? = when (levelId) {
     105 -> LevelContent.Scenarios(spotTheThreatQuiz())
     106 -> LevelContent.Lab(riskRegisterLab(), riskClueLabels)
     301 -> LevelContent.Lab(phishDeskLab(), phishDeskClueLabels)
-    302 -> LevelContent.Lab(mailForensicsLab(), mailForensicsClueLabels)
+    302 -> LevelContent.Lab(baitWorkshopLab(), baitWorkshopClueLabels)
     303 -> LevelContent.Lab(socialEngineeringLab(), socialEngClueLabels)
     304 -> LevelContent.Lab(scamMessagesLab(), scamMsgClueLabels)
     305 -> LevelContent.Lab(phishingSimLab(), phishSimClueLabels)

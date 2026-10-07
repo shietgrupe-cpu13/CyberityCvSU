@@ -3,19 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-  <title>Domain lookup</title>
+  <title>Mask the link</title>
   <!-- Match the app's Light / Dark mode before the page draws. -->
   <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="sim-ribbon">Domain lookup · compares characters side by side</div>
+  <div class="sim-ribbon">Simulated drill · fictional domains · nothing is ever sent</div>
   <div class="topbar">
-    <button class="back-btn" onclick="location.href='mail.html#e2'">&#8592; E2</button>
-    <span class="topbar-title">Domain lookup</span>
+    <button class="back-btn" onclick="location.href='studio.html'">&#8592; Workshop</button>
+    <span class="topbar-title">Station 3 · Mask the link</span>
   </div>
-  <div class="detail" id="detail"></div>
+  <div id="app"></div>
+  <div id="toast" class="toast"></div>
   <script src="script.js"></script>
-  <script>renderLookup('detail');</script>
+  <script>renderMaskStation('app');</script>
 </body>
 </html>
