@@ -13,7 +13,7 @@ class UnitSimulationAssetsTest {
             101 to "UNIT 01/inbox_triage", 102 to "UNIT 01/threat_console",
             103 to "UNIT 01/cia_triad", 104 to "UNIT 01/hardening_review",
             106 to "UNIT 01/risk_register", 301 to "UNIT 03/phish_desk",
-            302 to "UNIT 03/mail_forensics", 303 to "UNIT 03/social_eng",
+            302 to "UNIT 03/bait_workshop", 303 to "UNIT 03/social_eng",
             304 to "UNIT 03/scam_messages", 305 to "UNIT 03/phish_sim",
             350 to "UNIT 03/quick_quiz", 401 to "UNIT 04/quarantine_vault", 402 to "UNIT 04/org_flashdrive",
             403 to "UNIT 04/ransom_night", 404 to "UNIT 04/lab3_hardening",
