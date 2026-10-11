@@ -1,5 +1,6 @@
 package com.cyberity.cvsu
 
+import android.os.SystemClock
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -14,14 +15,18 @@ import com.google.firebase.firestore.Source
 //
 // The countdown still has to tick locally, though, which needs a current time.
 // sync() writes a timestamp the server fills in, reads back what the server
-// actually recorded, and keeps the difference against the device clock. now()
-// then reports server time without a network call per tick.
+// actually recorded, and keeps the difference against the device's uptime
+// counter (SystemClock.elapsedRealtime). now() then reports server time without
+// a network call per tick. Uptime is used rather than the wall clock because
+// changing the phone's date or time doesn't move it, so a student can't speed
+// up heart refill by setting the clock forward after a sync.
 
 object ServerClock {
 
     private const val COLLECTION = "userProgress"
     private const val FIELD_PING = "clockPing"
 
+    /** Server time minus device uptime, measured by the last sync. */
     @Volatile
     private var offsetMillis: Long = 0L
 
@@ -31,7 +36,8 @@ object ServerClock {
         private set
 
     /** Best available estimate of server time, in milliseconds. */
-    fun now(): Long = System.currentTimeMillis() + offsetMillis
+    fun now(): Long =
+        if (isSynced) SystemClock.elapsedRealtime() + offsetMillis else System.currentTimeMillis()
 
     /**
      * Measures the offset between this device's clock and Firestore's.
@@ -46,13 +52,13 @@ object ServerClock {
      */
     fun sync(uid: String, onSynced: () -> Unit = {}) {
         val doc = FirebaseFirestore.getInstance().collection(COLLECTION).document(uid)
-        val sentAt = System.currentTimeMillis()
+        val sentAt = SystemClock.elapsedRealtime()
 
         doc.set(mapOf(FIELD_PING to FieldValue.serverTimestamp()), SetOptions.merge())
             .addOnSuccessListener {
                 doc.get(Source.SERVER).addOnSuccessListener { snapshot ->
                     val serverAt = snapshot.getTimestamp(FIELD_PING)?.toDate()?.time ?: return@addOnSuccessListener
-                    val deviceMidpoint = (sentAt + System.currentTimeMillis()) / 2
+                    val deviceMidpoint = (sentAt + SystemClock.elapsedRealtime()) / 2
                     offsetMillis = serverAt - deviceMidpoint
                     isSynced = true
                     onSynced()

@@ -93,6 +93,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
+import android.content.Context
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
@@ -177,6 +178,8 @@ class MainActivity : ComponentActivity() {
             MyFirstTryTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = AppNavy) {
                     AppNavigator()
+                    // Drawn last, so it sits above every screen while offline.
+                    NoInternetCover()
                 }
             }
         }
@@ -189,12 +192,20 @@ fun AppNavigator() {
     val context = LocalContext.current
 
     var mfaResolver by remember { mutableStateOf<MultiFactorResolver?>(null) }
+    // Opening the app signed in and online: a profile this device already saw
+    // complete goes straight home, and is re-checked in the background below.
+    // Offline, it waits on the profile check under the no-internet cover instead.
+    val openedHome = remember {
+        context.isOnline() &&
+                auth.currentUser?.takeIf { it.isEmailVerified }?.let { ProfileCache.isComplete(context, it.uid) } == true
+    }
     var currentScreen by remember {
         mutableStateOf(
-            if (auth.currentUser?.isEmailVerified == true)
-                "profileCheck"
-            else
-                "entry"
+            when {
+                openedHome -> "loggedIn"
+                auth.currentUser?.isEmailVerified == true -> "profileCheck"
+                else -> "entry"
+            }
         )
     }
 
@@ -202,6 +213,24 @@ fun AppNavigator() {
         AccountSessions.end(context)
         auth.signOut()
         currentScreen = "entry"
+    }
+
+    // The same check the profile screen runs, done quietly. Home only gives way if
+    // it finds something (an interrupted deletion or an incomplete profile).
+    // If the check fails, Home stays; offline, NoInternetCover sits over it.
+    LaunchedEffect(Unit) {
+        if (!openedHome) return@LaunchedEffect
+        val uid = auth.currentUser?.uid ?: return@LaunchedEffect
+        val next = try {
+            signedInDestination(context, uid)
+        } catch (_: TimeoutCancellationException) {
+            return@LaunchedEffect
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            return@LaunchedEffect
+        }
+        if (currentScreen == "loggedIn" && auth.currentUser?.uid == uid) currentScreen = next
     }
 
     // Observe external sign-out and check revocation while authenticated content is open.
@@ -271,8 +300,12 @@ fun AppNavigator() {
                 var errorDetail by remember { mutableStateOf<String?>(null) }
                 var attempt by remember { mutableIntStateOf(0) }
                 var slow by remember { mutableStateOf(false) }
+                val online = rememberIsOnline()
 
-                LaunchedEffect(attempt) {
+                // Offline, the no-internet cover is up: wait, then check by itself
+                // once the connection returns, with no Retry tap needed.
+                LaunchedEffect(attempt, online) {
+                    if (!online) return@LaunchedEffect
                     failed = false
                     slow = false
                     errorDetail = null
@@ -282,32 +315,7 @@ fun AppNavigator() {
                         return@LaunchedEffect
                     }
                     try {
-                        val deleting = withTimeout(30_000L) { PrivacyPreferencesRepository.readDeletionState(uid) }
-                        if (deleting) {
-                            currentScreen = "privacyRecovery"
-                            return@LaunchedEffect
-                        }
-                        // A deadline bounds the wait; it never delays a ready result.
-                        val profile = withTimeout(30_000L) {
-                            suspendCancellableCoroutine<UserProfile?> { continuation ->
-                                UserProfileRepository.load(
-                                    uid,
-                                    onResult = { profile ->
-                                        if (continuation.isActive) continuation.resume(profile)
-                                    },
-                                    onError = { message ->
-                                        if (continuation.isActive) continuation.resumeWithException(IllegalStateException(message))
-                                    }
-                                )
-                            }
-                        }
-                        if (profile?.isComplete == true) {
-                            ProfileCache.markComplete(context, uid)
-                            ProfileCache.saveDetails(context, uid, profile.displayName, profile.studentId)
-                            currentScreen = "loggedIn"
-                        } else {
-                            currentScreen = "completeProfile"
-                        }
+                        currentScreen = signedInDestination(context, uid)
                     } catch (_: TimeoutCancellationException) {
                         errorDetail = "Profile validation timed out."
                         failed = true
@@ -320,9 +328,9 @@ fun AppNavigator() {
                     }
                 }
 
-                LaunchedEffect(attempt, failed) {
+                LaunchedEffect(attempt, failed, online) {
                     slow = false
-                    if (!failed) {
+                    if (!failed && online) {
                         // Feedback timer only: validation can complete at any time.
                         delay(8_000L)
                         slow = true
@@ -349,6 +357,33 @@ fun AppNavigator() {
             )
         }
     }
+}
+
+/**
+ * Where a signed-in student belongs: finishing an interrupted account deletion,
+ * completing their profile, or home. Throws if Firestore can't answer in time.
+ */
+private suspend fun signedInDestination(context: Context, uid: String): String {
+    val deleting = withTimeout(30_000L) { PrivacyPreferencesRepository.readDeletionState(uid) }
+    if (deleting) return "privacyRecovery"
+    // A deadline bounds the wait; it never delays a ready result.
+    val profile = withTimeout(30_000L) {
+        suspendCancellableCoroutine<UserProfile?> { continuation ->
+            UserProfileRepository.load(
+                uid,
+                onResult = { profile ->
+                    if (continuation.isActive) continuation.resume(profile)
+                },
+                onError = { message ->
+                    if (continuation.isActive) continuation.resumeWithException(IllegalStateException(message))
+                }
+            )
+        }
+    }
+    if (profile?.isComplete != true) return "completeProfile"
+    ProfileCache.markComplete(context, uid)
+    ProfileCache.saveDetails(context, uid, profile.displayName, profile.studentId)
+    return "loggedIn"
 }
 
 @Composable
