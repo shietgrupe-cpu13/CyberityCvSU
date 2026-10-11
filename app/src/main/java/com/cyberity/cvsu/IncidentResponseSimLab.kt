@@ -70,47 +70,45 @@ fun incidentResponseSimLab(): LabDefinition = LabDefinition(
         LabTask(
             id = "t1",
             title = "Detect",
-            objective = "Sort the **alert queue**: real threat or noise. Then name **the kind of " +
-                    "attack** the real alerts add up to.",
+            objective = "Sort the **alert queue**: real threat or noise. Then answer **what made " +
+                    "the LOW hosting-provider alert a real threat**.",
             guide = listOf(
-                "**Credential stuffing** is when an attacker takes usernames and passwords " +
-                        "leaked from **another site's breach** and tries them on yours, " +
-                        "automatically, thousands at a time. It works because people **reuse " +
-                        "passwords**. Most attempts fail. The few that succeed are real " +
-                        "accounts with real owners.",
-                "Its signature is a **flood of failed sign-ins across many accounts** from a " +
-                        "small set of addresses, a **handful of successes** hidden inside it, " +
-                        "and then whatever the attacker came for."
+                "You met **credential stuffing** in Unit 2: passwords leaked from another site, " +
+                        "tried on yours at scale. Most attempts fail. The **few that succeed** " +
+                        "are the ones that matter.",
+                "Severity won't tell you which alerts are real. Each alert shows what's " +
+                        "**normal**: compare against it, and check whether a **schedule, ticket " +
+                        "or routine** explains it."
             ),
             steps = listOf(
                 "Open the HQ and tap **ALERT QUEUE**.",
                 "Open each alert's **details**. Mark **REAL THREAT** or **NOISE**.",
                 "Tap **SUBMIT VERDICTS**.",
-                "**Swipe the bar** down and name the attack."
+                "**Swipe the bar** down and answer."
             ),
             entryPage = "alerts.html",
             requiredClues = listOf(IncidentResponseSimClues.ALERTS_DONE),
             lockedMessage = "Get every alert verdict right first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "Credential stuffing: passwords leaked elsewhere, tried on portal accounts at " +
-                            "scale",
-                    "Brute force: one account's password guessed by trying every combination",
-                    "DDoS: the portal flooded with sign-in traffic to knock it offline",
-                    "Phishing: scholars tricked into typing their passwords into a fake portal"
+                    "Hosting providers are blocked by portal policy, so any sign-in from one is a breach",
+                    "57 accounts signed in from a server range that no student had used in 180 days",
+                    "It arrived at 9:31 PM, a time when students on the portal are almost never awake",
+                    "It named an IP range, and any alert that names an IP should count as a real threat"
                 ),
-                correctIndex = 0
+                correctIndex = 1
             ),
             hints = listOf(
-                "Three alerts started on Tuesday night and share one IP range.",
-                "Thousands of failures, a few dozen successes, then GCash numbers change."
+                "Read the last two lines of the hosting-provider alert.",
+                "Compare what happened this week with what's normal for students."
             ),
-            successFeedback = "Credential stuffing. 41,000 failed sign-ins across almost 4,000 " +
-                    "accounts, 57 successes from one hosting provider's range, and payout " +
-                    "numbers changing on stipend week. The CPU spike, the new admin laptop, the " +
-                    "certificate notice and the payroll export were all routine.",
-            failureFeedback = "Not that. Look at what the real alerts have in common: failed " +
-                    "sign-ins at scale, a few successes, then payout changes."
+            successFeedback = "57 accounts signed in from CloudHost's server range, where no " +
+                    "student had signed in for 180 days: a sharp break from normal, marked LOW. " +
+                    "With 41,000 failures and 24 payout changes, it's credential stuffing that " +
+                    "got in. The CPU spike, the new admin laptop, the certificate notice and the " +
+                    "payout file export were all routine.",
+            failureFeedback = "Not that. Read the alert's last lines: what's normal for students, " +
+                    "and what happened this week?"
         ),
 
         LabTask(
