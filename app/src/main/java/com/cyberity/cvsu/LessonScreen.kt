@@ -1,6 +1,13 @@
 package com.cyberity.cvsu
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,7 +54,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -56,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -145,25 +152,37 @@ fun LessonScreen(
             )
         }
 
-        // Keyed so each step starts scrolled to the top.
-        key(index) {
+        // Each step slides in a short way while crossfading: forward from the
+        // right, back from the left. Every step is its own content, so it also
+        // starts scrolled to the top.
+        val shift = with(LocalDensity.current) { 30.dp.roundToPx() }
+        AnimatedContent(
+            targetState = index,
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            transitionSpec = {
+                val dir = if (targetState > initialState) 1 else -1
+                (slideInHorizontally(tween(220)) { dir * shift } + fadeIn(tween(143, delayMillis = 77))) togetherWith
+                    (slideOutHorizontally(tween(220)) { -dir * shift } + fadeOut(tween(77)))
+            },
+            label = "lessonStep"
+        ) { step ->
+            val stepQuestion = step - firstQuestion
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
+                    .fillMaxSize()
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp)
             ) {
                 when {
-                    index < sourcesStep -> LessonPageContent(lesson.pages[index], lesson.sources)
-                    index == sourcesStep -> LessonSourcesPage(lesson.sources)
-                    !finished -> LessonQuestionContent(
-                        question = lesson.questions[questionIndex],
-                        number = questionIndex + 1,
+                    step < sourcesStep -> LessonPageContent(lesson.pages[step], lesson.sources)
+                    step == sourcesStep -> LessonSourcesPage(lesson.sources)
+                    step < total -> LessonQuestionContent(
+                        question = lesson.questions[stepQuestion],
+                        number = stepQuestion + 1,
                         count = lesson.questions.size,
-                        chosen = answers[questionIndex],
-                        selected = pending,
-                        onSelect = { pending = it }
+                        chosen = answers[stepQuestion],
+                        selected = if (step == index) pending else -1,
+                        onSelect = { if (step == index) pending = it }
                     )
                     else -> LessonFinish(
                         correct = lesson.questions.indices.count { answers[it] == lesson.questions[it].correctIndex },

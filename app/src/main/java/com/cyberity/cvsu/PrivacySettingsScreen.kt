@@ -147,7 +147,8 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
                 try {
                     PrivacyAccountData.delete(uid, beforeAuthDeletion = { runCatching {
                         context.getSharedPreferences("account_sessions", Context.MODE_PRIVATE).edit().remove(uid).apply()
-                        context.getSharedPreferences("cyberity_profile_cache", Context.MODE_PRIVATE).edit().remove(uid).apply()
+                        context.getSharedPreferences("cyberity_profile_cache", Context.MODE_PRIVATE).edit()
+                            .remove(uid).remove("$uid:name").remove("$uid:studentId").apply()
                         val progressCache = context.getSharedPreferences("cyberity_progress_cache", Context.MODE_PRIVATE)
                         val progressEditor = progressCache.edit()
                         progressCache.all.keys.filter { it == uid || it.startsWith("$uid:") }.forEach { progressEditor.remove(it) }

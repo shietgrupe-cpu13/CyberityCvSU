@@ -281,4 +281,19 @@ object ProfileCache {
             .putBoolean(uid, true)
             .apply()
     }
+
+    /** Name and student ID for the Profile tab, so it shows them on its first frame. */
+    fun saveDetails(context: Context, uid: String, name: String, studentId: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString("$uid:name", name)
+            .putString("$uid:studentId", studentId)
+            .apply()
+    }
+
+    fun loadName(context: Context, uid: String): String? =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString("$uid:name", null)
+
+    fun loadStudentId(context: Context, uid: String): String? =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString("$uid:studentId", null)
 }
