@@ -202,8 +202,8 @@ function savePerms(userId) {
 
   if (missing.length > 0) {
     banner.classList.add('bad');
-    banner.textContent = 'Not saved — this person can no longer do their job without: ' +
-      missing.join(', ') + '.';
+    boldLead(banner, 'Not saved — this person can no longer do their job without: ' +
+      missing.join(', ') + '.');
     return;
   }
 
@@ -211,16 +211,16 @@ function savePerms(userId) {
 
   if (extra.length > 0) {
     banner.classList.add('warn');
-    banner.textContent = 'Saved, but ' + extra.length + ' permission(s) go beyond what the ' +
-      'job description needs.';
+    boldLead(banner, 'Saved, but ' + extra.length + ' permission(s) go beyond what the ' +
+      'job description needs.');
     return;
   }
 
   banner.classList.add('good');
   if (sameSet(list, u.perms)) {
-    banner.textContent = 'Saved. No change — this account already matches the job.';
+    boldLead(banner, 'Saved. No change — this account already matches the job.');
   } else {
-    banner.textContent = 'Saved. The account now has exactly what the job needs.';
+    boldLead(banner, 'Saved. The account now has exactly what the job needs.');
     if (userId === 'jdcruz') Cyberity.clueFound('least_privilege_applied');
   }
 }
@@ -265,7 +265,7 @@ function saveAndTest() {
   var p = LOCK_POLICIES[value];
   var banner = document.getElementById('policy-banner');
   banner.className = 'banner show ' + p.tone;
-  banner.textContent = p.text;
+  boldLead(banner, p.text);
 
   if (value === 'deny_edit') Cyberity.clueFound('failsafe_set');
 }
@@ -342,8 +342,8 @@ function toggleLayer(id) {
   var banner = document.getElementById('layer-banner');
   if (l.danger && !on) {
     banner.className = 'banner show bad';
-    banner.textContent = 'You just switched off the only layer that caught the real attack. ' +
-      'Removing a working control never adds depth.';
+    boldLead(banner, 'You just switched off the only layer that caught the real attack. ' +
+      'Removing a working control never adds depth.');
     Cyberity.clueFound('integrity_layer_disabled');
   } else {
     banner.className = 'banner';
@@ -376,4 +376,18 @@ function replayAttack() {
   document.getElementById('replay-box').style.display = 'block';
   Cyberity.clueFound('attack_replayed');
   if (holding === LAYERS.length) Cyberity.flagDiscovered('replay_report');
+}
+
+/** Feedback line with its outcome in bold: the text up to the first ". ", ": " or " — ". */
+function boldLead(el, text) {
+  var cut = -1, keep = 0;
+  [['. ', 1], [': ', 1], [' \u2014 ', 0]].forEach(function (s) {
+    var i = text.indexOf(s[0]);
+    if (i > 0 && (cut < 0 || i < cut)) { cut = i; keep = s[1]; }
+  });
+  el.textContent = '';
+  var b = document.createElement('b');
+  b.textContent = cut < 0 ? text : text.slice(0, cut + keep);
+  el.appendChild(b);
+  if (cut >= 0) el.appendChild(document.createTextNode(text.slice(cut + keep)));
 }

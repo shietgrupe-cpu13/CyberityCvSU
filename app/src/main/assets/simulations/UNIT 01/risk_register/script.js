@@ -220,8 +220,8 @@ function renderFinding(mountId) {
 function hideRisk() {
   var banner = document.getElementById('hide-banner');
   banner.className = 'banner show bad';
-  banner.textContent = 'Blocked by the simulation. Deleting a risk doesn\'t reduce it — it ' +
-    'only guarantees nobody is watching when it happens again.';
+  boldLead(banner, 'Blocked by the simulation. Deleting a risk doesn\'t reduce it — it ' +
+    'only guarantees nobody is watching when it happens again.');
   Cyberity.clueFound('risk_hidden');
 }
 
@@ -295,10 +295,10 @@ function renderMatrix() {
     fb.className = 'banner';
   } else if (placedCorrectly(activeFinding)) {
     fb.className = 'banner show good';
-    fb.textContent = f.code + ' placed at likelihood ' + p.l + ' × impact ' + p.i + ' = ' + (p.l * p.i) + '. Matches the rubric.';
+    boldLead(fb, 'Matches the rubric. ' + f.code + ' placed at likelihood ' + p.l + ' × impact ' + p.i + ' = ' + (p.l * p.i) + '.');
   } else {
     fb.className = 'banner show warn';
-    fb.textContent = f.code + ' at ' + p.l + ' × ' + p.i + " doesn't match what the rubric says about this evidence. Re-read both.";
+    boldLead(fb, "Doesn't match the rubric. " + f.code + ' at ' + p.l + ' × ' + p.i + " doesn't fit what it says about this evidence. Re-read both.");
   }
 
   // Ranking of everything placed so far
@@ -408,7 +408,7 @@ function submitPlan() {
 
   if (s > BUDGET) {
     banner.className = 'banner show bad';
-    banner.textContent = 'Rejected: the plan is ' + peso(s - BUDGET) + ' over budget.';
+    boldLead(banner, 'Rejected: the plan is ' + peso(s - BUDGET) + ' over budget.');
     memo.style.display = 'none';
     return;
   }
@@ -419,7 +419,7 @@ function submitPlan() {
 
   if (total <= BEST_TOTAL) {
     banner.className = 'banner show good';
-    banner.textContent = 'Approved. Nothing inside this budget removes more risk.';
+    boldLead(banner, 'Approved. Nothing inside this budget removes more risk.');
     document.getElementById('memo-body').innerHTML =
       'FROM   : CISO, CvSU\n' +
       'RE     : FY treatment plan — Registrar\n' +
@@ -431,8 +431,22 @@ function submitPlan() {
     Cyberity.flagDiscovered('ciso_memo');
   } else {
     banner.className = 'banner show warn';
-    banner.textContent = 'Within budget, total residual ' + total + '. The CISO sends it back: ' +
-      'another combination leaves less risk for the same money.';
+    boldLead(banner, 'Within budget, total residual ' + total + '. The CISO sends it back: ' +
+      'another combination leaves less risk for the same money.');
     memo.style.display = 'none';
   }
+}
+
+/** Feedback line with its outcome in bold: the text up to the first ". ", ": " or " — ". */
+function boldLead(el, text) {
+  var cut = -1, keep = 0;
+  [['. ', 1], [': ', 1], [' \u2014 ', 0]].forEach(function (s) {
+    var i = text.indexOf(s[0]);
+    if (i > 0 && (cut < 0 || i < cut)) { cut = i; keep = s[1]; }
+  });
+  el.textContent = '';
+  var b = document.createElement('b');
+  b.textContent = cut < 0 ? text : text.slice(0, cut + keep);
+  el.appendChild(b);
+  if (cut >= 0) el.appendChild(document.createTextNode(text.slice(cut + keep)));
 }

@@ -334,16 +334,16 @@ function applyShare() {
 
   if (mode === 'restricted') {
     banner.classList.add('good');
-    banner.textContent = 'Saved. Only the Registrar staff added to this file can open it. ' +
-      'The public link now returns "access denied".';
+    boldLead(banner, 'Saved. Only the Registrar staff added to this file can open it. ' +
+      'The public link now returns "access denied".');
     Cyberity.clueFound('sharing_restricted');
   } else if (mode === 'campus') {
     banner.classList.add('warn');
-    banner.textContent = 'Saved — but every CvSU account, including every student, can still ' +
-      'open 1,284 home addresses. That is narrower, not closed.';
+    boldLead(banner, 'Saved — but every CvSU account, including every student, can still ' +
+      'open 1,284 home addresses. That is narrower, not closed.');
   } else {
     banner.classList.add('bad');
-    banner.textContent = 'Nothing changed. The link is still public.';
+    boldLead(banner, 'Nothing changed. The link is still public.');
   }
 }
 
@@ -432,8 +432,8 @@ function showDiff() {
 function rebaseline() {
   var banner = document.getElementById('rebase-banner');
   banner.className = 'banner show bad';
-  banner.textContent = 'Blocked by the simulation — but in a real system you just signed the ' +
-    'tampered grade as "trusted". The only proof it was changed would be gone.';
+  boldLead(banner, 'Blocked by the simulation — but in a real system you just signed the ' +
+    'tampered grade as "trusted". The only proof it was changed would be gone.');
   Cyberity.clueFound('baseline_overwritten');
 }
 
@@ -513,4 +513,18 @@ function renderStatus(mountId) {
       '</div>';
   }).join('');
   document.getElementById(mountId).innerHTML = html;
+}
+
+/** Feedback line with its outcome in bold: the text up to the first ". ", ": " or " — ". */
+function boldLead(el, text) {
+  var cut = -1, keep = 0;
+  [['. ', 1], [': ', 1], [' \u2014 ', 0]].forEach(function (s) {
+    var i = text.indexOf(s[0]);
+    if (i > 0 && (cut < 0 || i < cut)) { cut = i; keep = s[1]; }
+  });
+  el.textContent = '';
+  var b = document.createElement('b');
+  b.textContent = cut < 0 ? text : text.slice(0, cut + keep);
+  el.appendChild(b);
+  if (cut >= 0) el.appendChild(document.createTextNode(text.slice(cut + keep)));
 }
