@@ -494,6 +494,7 @@ fun ProfileTab(
     if (showSettings) {
         SettingsDialog(
             onDismiss = { showSettings = false },
+            xp = totalXp,
             onReplayTutorial = {
                 showSettings = false
                 onReplayTutorial()

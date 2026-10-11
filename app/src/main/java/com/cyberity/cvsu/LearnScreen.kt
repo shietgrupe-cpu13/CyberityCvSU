@@ -976,6 +976,7 @@ fun LearnHeader(
         if (showSettings) {
             SettingsDialog(
                 onDismiss = { showSettings = false },
+                xp = xp,
                 onSignOut = {
                     showSettings = false
                     authInst.signOut()

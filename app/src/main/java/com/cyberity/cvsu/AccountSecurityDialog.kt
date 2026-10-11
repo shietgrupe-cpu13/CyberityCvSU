@@ -2,16 +2,26 @@ package com.cyberity.cvsu
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.GppMaybe
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.PhonelinkLock
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
-import com.google.firebase.FirebaseTooManyRequestsException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
@@ -29,8 +39,6 @@ internal fun AccountSecurityDialog(onDismiss: () -> Unit, onSignOut: () -> Unit,
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     val accountUid = remember { auth.currentUser?.uid }
-    val resetGuard = remember { AuthAttemptGuard.get(context, passwordReset = true) }
-    val resetRetry = rememberRetrySeconds(resetGuard)
     var factors by remember { mutableStateOf(auth.currentUser?.multiFactor?.enrolledFactors.orEmpty()) }
     val totpFactors = factors.filter { it.factorId == TotpMultiFactorGenerator.FACTOR_ID }
     var sessions by remember { mutableStateOf<List<AccountSession>>(emptyList()) }
@@ -43,7 +51,6 @@ internal fun AccountSecurityDialog(onDismiss: () -> Unit, onSignOut: () -> Unit,
     var removeFactor by remember { mutableStateOf<MultiFactorInfo?>(null) }
     var showEnrollment by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
-    var confirmLocalLogout by remember { mutableStateOf(false) }
     var operationBusy by remember { mutableStateOf(false) }
     var verificationBusy by remember { mutableStateOf(false) }
     var enrollmentBusy by remember { mutableStateOf(false) }
@@ -84,74 +91,67 @@ internal fun AccountSecurityDialog(onDismiss: () -> Unit, onSignOut: () -> Unit,
     }
 
     SettingsPage(title = "Security", onBack = onDismiss, onClose = onClose, canDismiss = !busy) {
-        SettingsIntro("Protect your account", "Manage your password, authenticator and signed-in devices.")
-        Card(colors = CardDefaults.cardColors(containerColor = AppCard)) {
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(auth.currentUser?.email ?: "Sign in to manage security", color = AppWhite, fontWeight = FontWeight.SemiBold)
-                Text(if (auth.currentUser?.isEmailVerified == true) "Email verified" else "Email verification needed", color = AppCyan)
-                Text(if (totpFactors.isEmpty()) "Authenticator protection is off" else "Authenticator protection is on · ${totpFactors.size} enrolled", color = AppGray)
-            }
+        SettingsCard {
+            val verified = auth.currentUser?.isEmailVerified == true
+            SecurityStatus(if (verified) Icons.Default.Verified else Icons.Default.ErrorOutline,
+                if (verified) "Email verified" else "Email not verified", ok = verified)
+            SecurityStatus(if (totpFactors.isEmpty()) Icons.Default.GppMaybe else Icons.Default.VerifiedUser,
+                if (totpFactors.isEmpty()) "Authenticator off" else "Authenticator on · ${totpFactors.size} " +
+                    if (totpFactors.size == 1) "app" else "apps", ok = totpFactors.isNotEmpty())
         }
 
-        Text("Password", color = AppCyan, fontWeight = FontWeight.SemiBold)
-        Button(enabled = signedIn && !busy, onClick = { start(SecurityAction.CHANGE_PASSWORD) }, modifier = Modifier.fillMaxWidth()) {
-            Text("Change password")
-        }
-        OutlinedButton(enabled = signedIn && !busy && resetRetry == 0L, onClick = {
-            val email = auth.currentUser?.email
-            if (email != null && resetGuard.tryStart()) {
-                operationBusy = true; message = null
-                auth.sendPasswordResetEmail(email).addOnSuccessListener {
-                    resetGuard.finished(); operationBusy = false; message = "Password reset email sent. Check your inbox."
-                }.addOnFailureListener {
-                    if (it is FirebaseTooManyRequestsException) resetGuard.serverThrottled() else resetGuard.finished()
-                    operationBusy = false; message = "Couldn't send the reset email. Try again later."
-                }
-            }
-        }, modifier = Modifier.fillMaxWidth()) { Text("Send password reset email") }
-        if (resetRetry > 0) Text("You can request another reset email in ${resetRetry}s.", color = AppGray)
+        SettingsLabel("Password")
+        SettingsActionCard(Icons.Default.Key, "Change password", "You'll sign in again afterwards",
+            enabled = signedIn && !busy) { start(SecurityAction.CHANGE_PASSWORD) }
 
-        HorizontalDivider(color = AppBorder)
-        Text("Authenticator apps", color = AppCyan, fontWeight = FontWeight.SemiBold)
-        Text("An authenticator code protects sign-in after your password. Add a backup on a separate device before removing an old authenticator.", color = AppGray)
-        totpFactors.forEachIndexed { index, factor ->
-            Card(colors = CardDefaults.cardColors(containerColor = AppCard)) {
-                Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text("${factor.displayName ?: "Authenticator"} (${index + 1})", color = AppWhite)
-                    Text("Added ${DateFormat.getDateInstance().format(Date(factor.enrollmentTimestamp))}", color = AppGray)
+        SettingsLabel("Authenticator")
+        SettingsCard {
+            if (totpFactors.isEmpty()) Text("Add a code from an authenticator app after your password.", color = AppGray, fontSize = 13.sp)
+            totpFactors.forEachIndexed { index, factor ->
+                if (index > 0) HorizontalDivider(color = AppBorder)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.PhonelinkLock, contentDescription = null, tint = AppCyan)
+                    Column(Modifier.weight(1f)) {
+                        Text("${factor.displayName ?: "Authenticator"} (${index + 1})", color = AppWhite, fontWeight = FontWeight.Medium)
+                        Text("Added ${DateFormat.getDateInstance().format(Date(factor.enrollmentTimestamp))}", color = AppGray, fontSize = 13.sp)
+                    }
                     TextButton(enabled = !busy, onClick = { removeFactor = factor; start(SecurityAction.REMOVE_AUTHENTICATOR) }) {
-                        Text("Remove authenticator", color = AppDanger)
+                        Text("Remove", color = AppDanger)
                     }
                 }
             }
+            OutlinedButton(enabled = signedIn && !busy && factors.size < 5, onClick = { start(SecurityAction.ADD_AUTHENTICATOR) },
+                modifier = Modifier.fillMaxWidth()) { Text(if (totpFactors.isEmpty()) "Set up authenticator" else "Add backup authenticator") }
+            if (factors.size >= 5) Text("You've reached the limit. Remove one before adding another.", color = AppGray, fontSize = 13.sp)
         }
-        Button(enabled = signedIn && !busy && factors.size < 5, onClick = { start(SecurityAction.ADD_AUTHENTICATOR) },
-            modifier = Modifier.fillMaxWidth()) { Text(if (totpFactors.isEmpty()) "Set up authenticator" else "Add backup authenticator") }
-        if (factors.size >= 5) Text("The account has reached its authenticator limit. Remove an unused method before adding another.", color = AppGray)
-        Text("Recovery: keep access to a backup authenticator or your authenticator app's backup. Cyberity does not issue recovery codes. A password reset does not remove the authenticator requirement. If all codes are lost, your project administrator must verify your identity before restoring access.", color = AppGray)
+        SettingsNote("Keep a backup authenticator. If you lose every code, ask your project administrator.")
 
-        HorizontalDivider(color = AppBorder)
-        Text("Where you're logged in", color = AppCyan, fontWeight = FontWeight.SemiBold)
-        Text("Up to 50 recently tracked devices with activity in the last 90 days. Device names are reported by the app; older app versions may not appear.", color = AppGray)
-        if (loading) CircularProgressIndicator(color = AppCyan)
-        if (slow && loading) Text("Loading is taking longer than expected. Check your connection or retry below.", color = AppGray)
-        devicesError?.let { Text(it, color = AppDanger) }
-        sessions.forEach { session ->
-            Card(colors = CardDefaults.cardColors(containerColor = AppCard)) {
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(session.device, color = AppWhite, fontWeight = FontWeight.Medium)
-                    if (session.current) Text("This device", color = AppCyan)
-                    Text("Last active: ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(session.lastActive))}", color = AppGray)
+        SettingsLabel("Signed-in devices")
+        SettingsCard {
+            if (loading) CircularProgressIndicator(color = AppCyan)
+            if (slow && loading) Text("Still loading. Check your connection.", color = AppGray, fontSize = 13.sp)
+            devicesError?.let {
+                Text(it, color = AppDanger, fontSize = 13.sp)
+                TextButton(enabled = !busy, onClick = { refresh++ }) { Text("Try again") }
+            }
+            sessions.forEachIndexed { index, session ->
+                if (index > 0) HorizontalDivider(color = AppBorder)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Icon(Icons.Default.Smartphone, contentDescription = null, tint = AppGray)
+                    Column(Modifier.weight(1f)) {
+                        Text(session.device, color = AppWhite, fontWeight = FontWeight.Medium)
+                        Text(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(session.lastActive)),
+                            color = AppGray, fontSize = 13.sp)
+                    }
+                    if (session.current) Text("This device", color = AppCyan, fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 }
             }
+            if (!loading && sessions.isEmpty() && devicesError == null) Text("No devices listed yet.", color = AppGray, fontSize = 13.sp)
         }
-        if (!loading && sessions.isEmpty() && devicesError == null) Text("No tracked devices yet.", color = AppGray)
-        OutlinedButton(enabled = !busy, onClick = { refresh++ }, modifier = Modifier.fillMaxWidth()) { Text("Refresh security status") }
         // Global cutoff protects old, unlisted devices too; do not gate this on list availability.
         Button(enabled = signedIn && !busy, onClick = { start(SecurityAction.LOGOUT_ALL) }, modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = AppDanger)) { Text("Sign out all devices") }
-        Text("Includes this device. Connected apps return to sign-in within about a minute; offline devices are checked when they reconnect.", color = AppGray)
-        OutlinedButton(enabled = !busy, onClick = { confirmLocalLogout = true }, modifier = Modifier.fillMaxWidth()) { Text("Sign out of this device") }
+            colors = ButtonDefaults.buttonColors(containerColor = AppDanger, contentColor = AppOnBlue)) { Text("Sign out all devices") }
+        SettingsNote("Includes this device. Offline devices are signed out when they reconnect.")
         message?.let { Text(it, color = AppCyan) }
     }
 
@@ -208,10 +208,14 @@ internal fun AccountSecurityDialog(onDismiss: () -> Unit, onSignOut: () -> Unit,
         })
     if (showPassword) NewPasswordDialog(onCancel = { showPassword = false }, onBusyChanged = { operationBusy = it },
         expectedUid = accountUid, onChanged = { showPassword = false; finishSignOut("Password changed. Sign in with your new password.") })
-    if (confirmLocalLogout) AlertDialog(onDismissRequest = { confirmLocalLogout = false },
-        title = { Text("Sign out of this device?") }, text = { Text("Your other devices will stay signed in.") },
-        confirmButton = { TextButton(onClick = { confirmLocalLogout = false; onSignOut() }) { Text("Sign out") } },
-        dismissButton = { TextButton(onClick = { confirmLocalLogout = false }) { Text("Cancel") } })
+}
+
+@Composable
+private fun SecurityStatus(icon: ImageVector, text: String, ok: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Icon(icon, contentDescription = null, tint = if (ok) AppSuccess else AppDanger, modifier = Modifier.size(20.dp))
+        Text(text, color = AppWhite)
+    }
 }
 
 @Composable
