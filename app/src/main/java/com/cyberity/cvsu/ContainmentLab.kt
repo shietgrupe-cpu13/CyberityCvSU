@@ -77,17 +77,16 @@ fun containmentLab(): LabDefinition = LabDefinition(
             id = "t1",
             title = "Stop the sending",
             objective = "Prof. Ramos's account is still sending phishing. **Read her active " +
-                    "sessions**, then use the action panel to **stop it**. Then answer **why a " +
-                    "password reset alone doesn't work**.",
+                    "sessions**, then use the action panel to **stop it**. Then answer **what " +
+                    "made your action the right one**.",
             guide = listOf(
                 "**Containment** is the step between finding an incident and fixing it: **stop " +
                         "the damage from spreading** so the problem stops growing. The first " +
                         "question is always **what is causing harm right now**, and the answer " +
                         "here is a counter that keeps going up.",
-                "When you sign in, you get a **session**: a token that keeps you signed in " +
-                        "without typing your password again. **Changing the password doesn't " +
-                        "end sessions that already exist.** An attacker whose mail app is " +
-                        "already signed in keeps working until those sessions are **revoked**.",
+                "You met **sessions** in Unit 2: a **new password doesn't end the ones that " +
+                        "already exist**. So containing an account means **revoking** its " +
+                        "sessions and blocking sign-in, not just resetting the password.",
                 "Choose the **smallest action that fully works**. Shutting email down for the " +
                         "whole campus stops the attacker, but also stops 20,000 people who did " +
                         "nothing wrong. Wiping a PC hits the **wrong target** (the attacker is " +
@@ -99,33 +98,31 @@ fun containmentLab(): LabDefinition = LabDefinition(
                 "Read **ACTIVE SESSIONS**. Find the one that isn't hers.",
                 "Use the **CONTAIN** actions. Watch the **phishing sent** counter: did it stop?",
                 "**Don't** shut down campus email or wipe her PC. Each costs a heart.",
-                "**Swipe the bar** down and answer why a password reset alone fails."
+                "**Swipe the bar** down and answer what made your action the right one."
             ),
             entryPage = "account.html#ramos",
             requiredClues = listOf(ContainmentClues.CONTAINED_RAMOS),
             lockedMessage = "Stop the sending from Prof. Ramos's account first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "The attacker's mail app was already signed in, and a new password doesn't " +
-                            "end that",
-                    "Password resets only apply at the next mail sync, which runs every 30 minutes",
-                    "The attacker was sending the same emails from a second stolen account",
-                    "The attacker guessed the new password, because resets follow a set pattern"
+                    "It was the quickest button on the panel, and speed matters more than scope here",
+                    "It also signed the attacker out of the three other staff accounts at once",
+                    "It stopped the sending without cutting off anyone else or wiping her PC's evidence",
+                    "It pulled back the phishing already sent, so no student can open those emails"
                 ),
-                correctIndex = 0
+                correctIndex = 2
             ),
             hints = listOf(
-                "Look at the session from 203.0.113.47. When was it created, and how long is " +
-                        "it valid?",
-                "Only one action in the panel ends that session."
+                "Compare what each action touches: one account, the whole campus, or a computer.",
+                "Read the banner after the counter stopped. Who else lost their email?"
             ),
             successFeedback = "Sending stopped. The attacker's mail app had been signed in since " +
-                    "2:10 AM Saturday on a token valid for 90 days. A new password does nothing " +
-                    "to a session that already exists. Revoking every session, blocking sign-in " +
-                    "and then resetting the password cut it off in one move, without touching " +
-                    "anyone else's email.",
-            failureFeedback = "Not that. Look at the active sessions: the attacker never needed " +
-                    "her password again after Saturday."
+                    "2:10 AM Saturday on a token valid for 90 days. Revoking every session, " +
+                    "blocking sign-in and resetting the password cut it off in one move: one " +
+                    "account, nobody else's email touched, and her PC left alone as evidence. " +
+                    "The emails already sent and the other three accounts are still out there.",
+            failureFeedback = "Not that. Look at what your action touched, and what it didn't: " +
+                    "the other accounts, the emails already sent, the rest of campus, her PC."
         ),
 
         LabTask(
