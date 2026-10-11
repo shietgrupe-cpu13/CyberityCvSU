@@ -1677,8 +1677,8 @@ private fun detectionLesson(): Lesson = Lesson(
                 title = "SIGN-IN LOG · m.reyes",
                 lines = listOf(
                     "usual  Davao · phone, laptop · 7AM-6PM",
-                    "07:41 OK  Davao      phone   192.0.2.14",
-                    "08:01 OK  Singapore  new PC  192.0.2.88"
+                    "07:41 OK Davao      phone   198.51.100.14",
+                    "08:01 OK Singapore  new PC  198.51.100.188"
                 ),
                 highlights = listOf(2),
                 caption = "Twenty minutes after the phone signed in from Davao, a device the " +
@@ -1702,7 +1702,7 @@ private fun detectionLesson(): Lesson = Lesson(
                         "know about it."
             ),
             visual = LessonVisual.Log(
-                title = "SEARCH: 192.0.2.88 · 5 RESULTS",
+                title = "SEARCH: 198.51.100.188 · 5 RESULTS",
                 lines = listOf(
                     "08:01 OK    user=m.reyes",
                     "08:09 FAIL  user=p.garcia",
@@ -1976,7 +1976,7 @@ private fun containmentLesson(): Lesson = Lesson(
             visual = LessonVisual.Log(
                 title = "TWO BLOCKS · WHAT EACH STOPS",
                 lines = listOf(
-                    "FIREWALL  192.0.2.150",
+                    "FIREWALL  198.51.100.150",
                     "  stops   it reaching campus systems",
                     "DNS       free-load.example",
                     "  stops   campus devices finding it"
