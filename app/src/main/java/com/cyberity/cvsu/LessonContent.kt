@@ -112,6 +112,7 @@ fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     602 -> detectionLesson()
     603 -> containmentLesson()
     604 -> recoveryLesson()
+    605 -> incidentResponseSimLesson()
     else -> null
 }
 
@@ -2365,6 +2366,223 @@ private fun recoveryLesson(): Lesson = Lesson(
             correctIndex = 3,
             explanation = "Anything added after the attacker got in is a way back in, not the " +
                     "way in. Look at what allowed the 1:02 sign-in."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 605 — Incident Response Simulation
+// ---------------------------------------------------------------------------
+// A pre-flight checklist, not new teaching: 605 is where the unit's habits get
+// used without being walked through. Each page recalls one habit and where it
+// was learned. Nothing here uses the lab's stipends, GCash, IP range or counts.
+
+private fun incidentResponseSimLesson(): Lesson = Lesson(
+    levelId = 605,
+    title = "Your Turn to Lead",
+    sources = listOf(
+        LessonSource(
+            id = "nist-ir",
+            short = "NIST SP 800-61r3",
+            citation = "Nelson, A., Rekhi, S., Souppaya, M. & Scarfone, K. (2025). Incident " +
+                    "Response Recommendations and Considerations for Cybersecurity Risk " +
+                    "Management (NIST SP 800-61 Rev. 3): DE.AE-02, RS.AN-03, RS.AN-06, " +
+                    "RS.AN-08, RS.MI-01, RS.CO-02, RC.RP-06.",
+            url = "https://doi.org/10.6028/NIST.SP.800-61r3"
+        ),
+        LessonSource(
+            id = "sp80053",
+            short = "NIST SP 800-53r5",
+            citation = "Joint Task Force (2020). Security and Privacy Controls for Information " +
+                    "Systems and Organizations (NIST SP 800-53 Rev. 5): SI-4(13), Analyze " +
+                    "Traffic and Event Patterns.",
+            url = "https://doi.org/10.6028/NIST.SP.800-53r5"
+        ),
+        LessonSource(
+            id = "nist-ioc",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"Indicator.\" Glossary " +
+                    "(definition from NIST SP 800-150).",
+            url = "https://csrc.nist.gov/glossary/term/indicator"
+        ),
+        LessonSource(
+            id = "ra10173",
+            short = "RA 10173",
+            citation = "Republic of the Philippines. Republic Act No. 10173, Data Privacy " +
+                    "Act of 2012, Sec. 20(f): notification of breach.",
+            url = "https://lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html"
+        ),
+        LessonSource(
+            id = "npc1603",
+            short = "NPC Circular 16-03",
+            citation = "National Privacy Commission (2016). NPC Circular 16-03, Personal Data " +
+                    "Breach Management, Sec. 17(A): notification of the Commission.",
+            url = "https://privacy.gov.ph/wp-content/uploads/2022/01/sgd-npc-circular-16-03-personal-data-breach-management.pdf"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "Your turn to lead",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "Nobody walks you through 605. You're the **incident lead**, and the clock " +
+                        "is running.",
+                "Use this as a **pre-flight checklist**: six habits from Levels 601 to 604, " +
+                        "in the order you'll need them."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Incident lead", "The person who runs the response and decides what happens next.")
+            ),
+            sourceIds = listOf("nist-ir")
+        ),
+        LessonPage(
+            title = "Detect: trust normal, not severity",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "Severity is the tool's guess. Check each alert against what's **normal**, " +
+                        "and whether a **schedule, ticket or routine** explains it. In a flood " +
+                        "of failures, the **few successes** matter most. (Level 602)"
+            ),
+            keyTerms = listOf(
+                KeyTerm("Baseline", "What's normal for an account or system: its usual places, devices and hours.")
+            ),
+            sourceIds = listOf("nist-ir", "sp80053"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Scope: pivot, then check owners",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "Search the indicator across **everything**, then check each match against " +
+                        "its **owner's baseline**. A real person can make the same change for " +
+                        "a real reason. (Levels 602 and 603)"
+            ),
+            keyTerms = listOf(
+                KeyTerm("Scope", "How far an incident reached: which accounts, machines and data.")
+            ),
+            sourceIds = listOf("nist-ioc", "nist-ir"),
+            task = 2
+        ),
+        LessonPage(
+            title = "Contain: stop the bleeding first",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "Stop what's **still causing harm** before anything else, in an order that " +
+                        "doesn't let it grow while you work. Keep it **proportionate**: act " +
+                        "only on what the attacker touched. (Level 603)"
+            ),
+            visual = LessonVisual.DoDont(
+                dos = listOf(
+                    "Stop new harm before listing old harm",
+                    "Act only on what the attacker touched",
+                    "Keep the evidence as you go"
+                ),
+                donts = listOf(
+                    "Shut a service down for everyone",
+                    "Post the details publicly",
+                    "Wait until you know everything"
+                )
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Notify: who must act",
+            icon = LessonIcon.EMAIL,
+            paragraphs = listOf(
+                "Tell the people who **must act**: the DPO, the office that runs what was " +
+                        "hit, the victims, and anyone who can stop the harm at the other end.",
+                "Use **official channels**, and never send a message that looks like the " +
+                        "attack. If the breach must be reported, remember the **NPC deadline** " +
+                        "from Level 601, and **when its clock starts**."
+            ),
+            keyTerms = listOf(
+                KeyTerm("DPO", "Data Protection Officer: the person responsible for personal data at the school.")
+            ),
+            sourceIds = listOf("nist-ir", "ra10173", "npc1603"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Root cause: what made it work",
+            icon = LessonIcon.CODE,
+            paragraphs = listOf(
+                "Ask what the attack **needed** to work, and which of those things your " +
+                        "system **allowed**. Fix what the attacker actually used, and add a " +
+                        "second check before anything that **moves money or data**. (Level 604)"
+            ),
+            keyTerms = listOf(
+                KeyTerm("Root cause", "The weakness that let the attack work in the first place.")
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 5
+        ),
+        LessonPage(
+            title = "Write-up: facts and edge cases",
+            icon = LessonIcon.REPORT,
+            paragraphs = listOf(
+                "Write **facts, not guesses**: when it started, when it was discovered, how " +
+                        "many, how much, and what was done. Say plainly when something **looked " +
+                        "like the attack but wasn't**. (Levels 601 and 604)"
+            ),
+            visual = LessonVisual.Log(
+                title = "INCIDENT REPORT · FIELDS",
+                lines = listOf(
+                    "started     first sign of the attacker",
+                    "discovered  when ITSO first knew",
+                    "affected    entered, not just tried",
+                    "impact      what was taken or moved",
+                    "exceptions  look-alikes that weren't"
+                ),
+                highlights = listOf(4),
+                caption = "Every line is a fact you can point to in the logs."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Edge case", "Something that looks like the attack but has an innocent explanation.")
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 6
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "Malware is copying files from a shared drive to an outside server right " +
+                    "now. What comes first?",
+            options = listOf(
+                "List every file copied so far for the report",
+                "Block the connection to the outside server",
+                "Email all staff a warning about the malware",
+                "Find out who opened the infected attachment"
+            ),
+            correctIndex = 1,
+            explanation = "The copying is still happening, so stopping it comes first. The " +
+                    "list, the warning and the question can all wait a few minutes; the files " +
+                    "can't."
+        ),
+        LessonQuestion(
+            prompt = "ITSO must warn 300 students whose accounts were entered. Which message " +
+                    "is safest?",
+            options = listOf(
+                "An official portal notice to reset through the portal",
+                "A text asking them to reply with a new password",
+                "A Messenger blast with a link to a new reset form",
+                "A public post naming them so they notice quickly"
+            ),
+            correctIndex = 0,
+            explanation = "Students can check a notice inside the portal itself. A text or " +
+                    "Messenger link looks exactly like phishing, and a public post exposes " +
+                    "the victims."
+        ),
+        LessonQuestion(
+            prompt = "Which line belongs in an incident report?",
+            options = listOf(
+                "The attacker was probably a student who failed the course",
+                "Most accounts were likely safe, so impact seems low",
+                "The IT team responded quickly and did a great job",
+                "First failed sign-in from the attacker's range: Sat 3:12 AM"
+            ),
+            correctIndex = 3,
+            explanation = "Only that line is a fact you can point to in the logs. The others " +
+                    "are guesses or opinions, and they can mislead whoever acts on the report."
         )
     )
 )
