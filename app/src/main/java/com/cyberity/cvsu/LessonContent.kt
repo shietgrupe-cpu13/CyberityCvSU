@@ -111,6 +111,7 @@ fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     601 -> securityIncidentsLesson()
     602 -> detectionLesson()
     603 -> containmentLesson()
+    604 -> recoveryLesson()
     else -> null
 }
 
@@ -1498,7 +1499,7 @@ private fun securityIncidentsLesson(): Lesson = Lesson(
                     "done        nothing changed yet"
                 ),
                 highlights = listOf(1, 2),
-                caption = "Started to discovered: over 56 hours unseen."
+                caption = "Started to discovered: over 32 hours unseen."
             ),
             sourceIds = listOf("nist-ir"),
             task = 5
@@ -2089,6 +2090,281 @@ private fun containmentLesson(): Lesson = Lesson(
             explanation = "A new password leaves sessions and added devices in place, owners " +
                     "can't see hidden rules, and a quiet alert proves nothing. Only testing " +
                     "every way back in shows the attacker is out."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 604 — Recovery
+// ---------------------------------------------------------------------------
+// The briefing before Tuesday's recovery. The lab's case is the Prof. Ramos
+// impostor call, her lost sent mail, a supplier payment and legacy sign-in, so
+// the examples here close 601-603's org page story, plus one thesis folder.
+
+private fun recoveryLesson(): Lesson = Lesson(
+    levelId = 604,
+    title = "Back to Normal, Safely",
+    sources = listOf(
+        LessonSource(
+            id = "nist-ir",
+            short = "NIST SP 800-61r3",
+            citation = "Nelson, A., Rekhi, S., Souppaya, M. & Scarfone, K. (2025). Incident " +
+                    "Response Recommendations and Considerations for Cybersecurity Risk " +
+                    "Management (NIST SP 800-61 Rev. 3): RS.AN-03, RC.RP-02, RC.RP-03, " +
+                    "RC.RP-05, RC.RP-06, ID.IM-03.",
+            url = "https://doi.org/10.6028/NIST.SP.800-61r3"
+        ),
+        LessonSource(
+            id = "sp800184",
+            short = "NIST SP 800-184",
+            citation = "Bartock, M., Cichonski, J., Souppaya, M., Smith, M., Witte, G. & " +
+                    "Scarfone, K. (2016). Guide for Cybersecurity Event Recovery (NIST SP " +
+                    "800-184): recovery planning, lessons learned and metrics.",
+            url = "https://doi.org/10.6028/NIST.SP.800-184"
+        ),
+        LessonSource(
+            id = "nist-63b",
+            short = "NIST SP 800-63B-4",
+            citation = "Temoshok, D. et al. (2025). Digital Identity Guidelines: " +
+                    "Authentication and Authenticator Management (NIST SP 800-63B-4), Sec. " +
+                    "4.2.1: account recovery methods, including issued recovery codes and " +
+                    "repeated identity proofing.",
+            url = "https://pages.nist.gov/800-63-4/sp800-63b.html"
+        ),
+        LessonSource(
+            id = "cisa-ss",
+            short = "CISA",
+            citation = "CISA & FBI (2023, revised 2025). Scattered Spider, Cybersecurity " +
+                    "Advisory AA23-320A: actors posing as employees to get help desk staff " +
+                    "to reset passwords and move MFA.",
+            url = "https://www.cisa.gov/news-events/cybersecurity-advisories/aa23-320a"
+        ),
+        LessonSource(
+            id = "fbi-bec",
+            short = "FBI IC3",
+            citation = "Federal Bureau of Investigation, Internet Crime Complaint Center " +
+                    "(2024). Business Email Compromise: The $55 Billion Scam, I-091124-PSA.",
+            url = "https://www.ic3.gov/PSA/2024/PSA240911"
+        ),
+        LessonSource(
+            id = "mitre-isp",
+            short = "MITRE ATT&CK",
+            citation = "MITRE ATT&CK. \"Internal Spearphishing\" (T1534): using a trusted " +
+                    "compromised account to trick more victims.",
+            url = "https://attack.mitre.org/techniques/T1534/"
+        ),
+        LessonSource(
+            id = "ra12010",
+            short = "RA 12010",
+            citation = "Republic of the Philippines. Republic Act No. 12010, Anti-Financial " +
+                    "Account Scamming Act (2024), Sec. 3(d): e-wallets as financial accounts; " +
+                    "Sec. 4(a): money muling.",
+            url = "https://lawphil.net/statutes/repacts/ra2024/ra_12010_2024.html"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "Back to normal, safely",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "In Level 603's lesson, the org page was **contained**: the attacker is out " +
+                        "and can't get back in. That isn't the same as **recovered**.",
+                "Recovery gets the **right people** back in, brings data back **without the " +
+                        "attacker's changes**, finds damage nobody has seen yet, **closes the " +
+                        "hole**, and ends with lessons learned."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Recovery", "Getting back to normal safely after an incident has been contained.")
+            ),
+            sourceIds = listOf("nist-ir", "sp800184")
+        ),
+        LessonPage(
+            title = "Prove it's you",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "Handing an account back is when attackers try again, often by **calling the " +
+                        "help desk** as the owner. They've read the victim's messages, so " +
+                        "**knowing details proves nothing**.",
+                "Recover only through something set up **before** the attack, like a number " +
+                        "or email **already on file**, or by checking identity again, like an " +
+                        "**ID in person**. Never send a password: the owner sets their own."
+            ),
+            visual = LessonVisual.Log(
+                title = "ADMIN ACCESS REQUESTS · ORG PAGE",
+                lines = listOf(
+                    "FB msg, new account  \"it's me, the pres\"",
+                    "  checked  knew this week's schedule",
+                    "walk-in, school ID   org treasurer",
+                    "  checked  ID matches officer list"
+                ),
+                highlights = listOf(2, 3),
+                caption = "The attacker read every message, so knowing the schedule proves " +
+                        "nothing. An ID checked against records does."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Trusted channel", "A way to check identity that the attacker can't control, like an ID in person or the number on file.")
+            ),
+            sourceIds = listOf("cisa-ss", "nist-63b"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Restore data, not settings",
+            icon = LessonIcon.CODE,
+            paragraphs = listOf(
+                "Level 403 taught you to restore from **before the break-in**. But a snapshot " +
+                        "copies **everything**, settings included, and a full rollback also " +
+                        "deletes everything **newer**.",
+                "So keep today's clean **settings**, and bring back **only what's missing**. " +
+                        "Check what a restore removes, not just what it brings back."
+            ),
+            visual = LessonVisual.Log(
+                title = "RESTORE OPTIONS · THESIS FOLDER",
+                lines = listOf(
+                    "full rollback to last Friday",
+                    "  back  chapter 3",
+                    "  lost  5 days of work by 4 people",
+                    "chapter 3 only, Thursday's version",
+                    "  back  chapter 3",
+                    "  lost  nothing"
+                ),
+                highlights = listOf(3, 4, 5),
+                caption = "Both bring chapter 3 back. Only one keeps everyone else's work."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Snapshot", "A copy of everything at one moment, settings included."),
+                KeyTerm("Selective restore", "Bringing back only the items that were lost.")
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 2
+        ),
+        LessonPage(
+            title = "The damage you didn't see",
+            icon = LessonIcon.EMAIL,
+            paragraphs = listOf(
+                "Attackers **use the trust** a real account has. **Business email compromise " +
+                        "(BEC)** is sending requests from a real account, usually to **redirect " +
+                        "money**. So check what the account **sent**, and whether anyone **acted**.",
+                "Verify **out of band**: through a channel you already trust, like a number in " +
+                        "your own records, never one in the message. Knowingly letting an " +
+                        "e-wallet receive scam money is **money muling** under **RA 12010**."
+            ),
+            visual = LessonVisual.Log(
+                title = "SENT BY THE PAGE · SUN TO MON",
+                lines = listOf(
+                    "to 214 members: \"jersey fund moved,",
+                    "  GCash ₱300 to 0999 555 0142\"",
+                    "replies: \"sent!\" from 7 members"
+                ),
+                highlights = listOf(2),
+                caption = "Members trusted it because it came from the real page. Seven of " +
+                        "them paid."
+            ),
+            keyTerms = listOf(
+                KeyTerm("BEC", "Using a real, hijacked account to ask others to send money or change payment details."),
+                KeyTerm("Out of band", "Checking through a separate channel you already trust, not the one the request came on.")
+            ),
+            sourceIds = listOf("fbi-bec", "mitre-isp", "ra12010"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Find the real hole",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "The **root cause** is the weakness that let the attack work. Fix only the " +
+                        "symptoms, and the same trick works next week.",
+                "Rebuild the **sequence**: anything the attacker added **after** getting in " +
+                        "can't be how they got in. Then fix **in proportion**: close that hole, " +
+                        "and plan for the people the fix affects."
+            ),
+            visual = LessonVisual.Log(
+                title = "ORG PAGE · HOW DID THEY GET IN?",
+                lines = listOf(
+                    "Sat 22:51  sign-in to officers@ login",
+                    "           no MFA, password from 2023",
+                    "Sun 01:14  PostPal app connected"
+                ),
+                highlights = listOf(0, 1),
+                caption = "PostPal came after they were in, so it isn't the way in. The old " +
+                        "shared login is."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Root cause", "The weakness that let the attack work in the first place.")
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Close the case",
+            icon = LessonIcon.REPORT,
+            paragraphs = listOf(
+                "Every incident ends with a **post-incident review**: no blame, just the " +
+                        "**timeline** of what happened, when it was noticed, what was done, and " +
+                        "**what will change**.",
+                "Measure **time to detect** and **time to contain**. The changes feed back " +
+                        "into **preparation**, so the next incident is caught sooner."
+            ),
+            visual = LessonVisual.Log(
+                title = "POST-INCIDENT REVIEW · ORG PAGE",
+                lines = listOf(
+                    "Sat 22:51  shared login used, no MFA",
+                    "Sat 23:05  first scam post",
+                    "Mon 07:40  member reports it",
+                    "Mon 08:07  page contained",
+                    "detect ~33 h · contain 27 min"
+                ),
+                highlights = listOf(4),
+                caption = "Next time: each officer gets their own login with MFA, and new " +
+                        "apps raise an alert."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Lessons learned", "A no-blame review of what happened and what will change."),
+                KeyTerm("Time to contain", "How long it took to stop the harm once it was noticed.")
+            ),
+            sourceIds = listOf("nist-ir", "sp800184"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "An email from a Gmail address says: \"It's Dean Lim. I'm abroad and " +
+                    "locked out. Here's my employee number.\" What do you do?",
+            options = listOf(
+                "Restore access, since the employee number matches records",
+                "Reply with a temporary password so the dean can sign in",
+                "Call the dean on the number on file before doing anything",
+                "Ask a security question that only the real dean would know"
+            ),
+            correctIndex = 2,
+            explanation = "Employee numbers and personal details can be found or stolen, and a " +
+                    "password sent by email goes to whoever controls that inbox. A callback to " +
+                    "the number on file uses a channel the attacker doesn't control."
+        ),
+        LessonQuestion(
+            prompt = "The org adviser's real account messages the treasurer: \"Send ₱5,000 by " +
+                    "GCash for the venue today. I'm in a meeting.\" What should the treasurer do?",
+            options = listOf(
+                "Send it, since it came from the adviser's real account",
+                "Call the adviser on the number in the org's records",
+                "Reply to the message and ask if it's really the adviser",
+                "Send half now and the rest once the adviser confirms"
+            ),
+            correctIndex = 1,
+            explanation = "A real account can be hijacked, so the sender's name proves nothing. " +
+                    "A reply goes straight back to the attacker, and half is still lost. A call " +
+                    "on a number you already had is out of band."
+        ),
+        LessonQuestion(
+            prompt = "Logs show an attacker signed in at 1:02 AM, then added a recovery email at " +
+                    "1:05 AM. What does the 1:05 change tell you about the root cause?",
+            options = listOf(
+                "It is the root cause: the recovery email let them in",
+                "The attacker must have guessed a recovery question",
+                "MFA must have been switched off for every account",
+                "Nothing directly: it came after they were already in"
+            ),
+            correctIndex = 3,
+            explanation = "Anything added after the attacker got in is a way back in, not the " +
+                    "way in. Look at what allowed the 1:02 sign-in."
         )
     )
 )
