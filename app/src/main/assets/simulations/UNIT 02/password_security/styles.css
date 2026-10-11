@@ -10,12 +10,12 @@
 }
 html[data-theme=light] {
   color-scheme: light;
-  --bg: #D8E3E2;
-  --card: #F1F6F5;
+  --bg: #AECDC7;
+  --card: #D4E8E3;
   --text: #0A1A1E;
-  --muted: #455A61;
-  --accent: #0B6560;
-  --border: #B1C6C4;
+  --muted: #40555C;
+  --accent: #095B58;
+  --border: #82B2A9;
 }
 [hidden] { display: none !important; }
 html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }

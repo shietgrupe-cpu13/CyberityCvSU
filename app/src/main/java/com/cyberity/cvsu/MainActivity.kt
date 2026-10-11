@@ -104,13 +104,13 @@ const val DEBUG_FORCE_ONBOARDING = false
 // CyberityThemeState decides which one is returned.
 private val isDarkMode: Boolean get() = CyberityThemeState.isDark
 
-val AppBlue: Color get() = if (isDarkMode) Color(0xFF14B8A6) else Color(0xFF0F766E)   // primary (teal): buttons, unit banner
-val AppNavy: Color get() = if (isDarkMode) Color(0xFF0A1016) else Color(0xFFD8E3E2)   // screen background
-val AppCard: Color get() = if (isDarkMode) Color(0xFF17222E) else Color(0xFFF1F6F5)   // cards, header, nav bar
-val AppCyan: Color get() = if (isDarkMode) Color(0xFF5EEAD4) else Color(0xFF0B6560)   // brand, links, highlights
+val AppBlue: Color get() = if (isDarkMode) Color(0xFF14B8A6) else Color(0xFF085B56)   // primary (teal): buttons, unit banner
+val AppNavy: Color get() = if (isDarkMode) Color(0xFF0A1016) else Color(0xFFAECDC7)   // screen background
+val AppCard: Color get() = if (isDarkMode) Color(0xFF17222E) else Color(0xFFD4E8E3)   // cards, header, nav bar
+val AppCyan: Color get() = if (isDarkMode) Color(0xFF5EEAD4) else Color(0xFF095B58)   // brand, links, highlights
 val AppWhite: Color get() = if (isDarkMode) Color(0xFFE8EEF3) else Color(0xFF0A1A1E)  // main text
-val AppGray: Color get() = if (isDarkMode) Color(0xFF8FA0B2) else Color(0xFF455A61)   // secondary text
-val AppBorder: Color get() = if (isDarkMode) Color(0xFF2A3B4D) else Color(0xFFB1C6C4) // outlines, dividers
+val AppGray: Color get() = if (isDarkMode) Color(0xFF8FA0B2) else Color(0xFF40555C)   // secondary text
+val AppBorder: Color get() = if (isDarkMode) Color(0xFF2A3B4D) else Color(0xFF82B2A9) // outlines, dividers
 
 // Text and icons placed on a solid AppBlue (teal) surface.
 // Dark Mode teal is bright, so its text is dark; Light Mode teal is deep, so its text is white.
@@ -119,13 +119,13 @@ val AppOnBlue: Color get() = if (isDarkMode) Color(0xFF04211E) else Color(0xFFFF
 val AppOnBlueAccent: Color get() = if (isDarkMode) Color(0xFF0B3B36) else Color(0xFFCCF5EE)
 
 // Feedback colors
-val AppSuccess: Color get() = if (isDarkMode) Color(0xFF3FD68A) else Color(0xFF146A34)
-val AppDanger: Color get() = if (isDarkMode) Color(0xFFF2606C) else Color(0xFFBF2A47)
+val AppSuccess: Color get() = if (isDarkMode) Color(0xFF3FD68A) else Color(0xFF0A5F2A)
+val AppDanger: Color get() = if (isDarkMode) Color(0xFFF2606C) else Color(0xFFA40F2C)
 
 // Game colors
-val AppXp: Color get() = if (isDarkMode) Color(0xFFF2B84B) else Color(0xFF8C5C00)     // XP and bonus rewards
-val AppStreak: Color get() = if (isDarkMode) Color(0xFFFF9A52) else Color(0xFFAD4E0A) // day streak
-val AppHeart: Color get() = if (isDarkMode) Color(0xFFFF6B81) else Color(0xFFC8304C)  // hearts / lives
+val AppXp: Color get() = if (isDarkMode) Color(0xFFF2B84B) else Color(0xFF6C4C00)     // XP and bonus rewards
+val AppStreak: Color get() = if (isDarkMode) Color(0xFFFF9A52) else Color(0xFF8A3901) // day streak
+val AppHeart: Color get() = if (isDarkMode) Color(0xFFFF6B81) else Color(0xFFA50D29)  // hearts / lives
 val AppReward: Color get() = AppXp
 
 class MainActivity : ComponentActivity() {

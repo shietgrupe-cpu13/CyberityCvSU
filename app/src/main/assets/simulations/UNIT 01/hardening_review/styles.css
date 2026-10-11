@@ -34,33 +34,33 @@
 }
 /* Light Mode */
 :root[data-theme="light"] {
-  --navy: #D8E3E2;
-  --card: #F1F6F5;
-  --blue: #0F766E;
-  --blue-dark: #C6DAD8;
-  --cyan: #0B6560;
+  --navy: #AECDC7;
+  --card: #D4E8E3;
+  --blue: #085B56;
+  --blue-dark: #A4CFC4;
+  --cyan: #095B58;
   --white: #0A1A1E;
-  --gray: #455A61;
-  --red: #BF2A47;
-  --green: #146A34;
-  --amber: #8C5C00;
-  --violet: #6647C2;
-  --surface: #E7EFEE;
-  --code-bg: #E9F0EF;
+  --gray: #40555C;
+  --red: #A40F2C;
+  --green: #0A5F2A;
+  --amber: #6C4C00;
+  --violet: #5637BC;
+  --surface: #BFDCD5;
+  --code-bg: #BFCEDC;
   --on-blue: #FFFFFF;
   --on-accent: #FFFFFF;
-  --navy-rgb: 216, 227, 226;
-  --card-rgb: 241, 246, 245;
-  --blue-rgb: 15, 118, 110;
-  --blue-dark-rgb: 198, 218, 216;
-  --cyan-rgb: 11, 101, 96;
+  --navy-rgb: 174, 205, 199;
+  --card-rgb: 212, 232, 227;
+  --blue-rgb: 8, 91, 86;
+  --blue-dark-rgb: 164, 207, 196;
+  --cyan-rgb: 9, 91, 88;
   --white-rgb: 10, 26, 30;
-  --gray-rgb: 69, 90, 97;
-  --red-rgb: 191, 42, 71;
-  --green-rgb: 20, 106, 52;
-  --amber-rgb: 140, 92, 0;
-  --violet-rgb: 102, 71, 194;
-  --surface-rgb: 231, 239, 238;
+  --gray-rgb: 64, 85, 92;
+  --red-rgb: 164, 15, 44;
+  --green-rgb: 10, 95, 42;
+  --amber-rgb: 108, 76, 0;
+  --violet-rgb: 86, 55, 188;
+  --surface-rgb: 191, 220, 213;
 }
 
 /* Cyberity — Hardening Review (level 104). Same palette and base components
@@ -609,3 +609,82 @@ body { padding-bottom: 28px; }
 /* Long records wrap instead of running off a phone screen (matches the other
    simulations; previously these needed a sideways scroll). */
 .rows { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+
+/* ==========================================================================
+   UNIT 1 LIGHT-MODE POLISH — light mode only, theme tokens only.
+   Separates the page header, section labels, the list the student works
+   through, and the desk's own tools. Never marks which item is dangerous:
+   every card in a list gets the same treatment.
+   ========================================================================== */
+
+:root[data-theme="light"] .desk-head,
+:root[data-theme="light"] .console-head,
+:root[data-theme="light"] .mail-head {
+  background: var(--card);
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.28);
+  padding: 14px 16px 12px;
+}
+
+:root[data-theme="light"] .topbar {
+  background: var(--card);
+  border-bottom-color: rgba(var(--cyan-rgb), 0.28);
+}
+
+:root[data-theme="light"] .section-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  padding: 18px 16px 8px;
+}
+
+:root[data-theme="light"] .section-label::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: rgba(var(--cyan-rgb), 0.28);
+}
+
+/* Tools are the desk's own UI, not evidence: dashed like .appui, with an open cue. */
+:root[data-theme="light"] .tool {
+  position: relative;
+  background: rgba(var(--blue-dark-rgb), 0.55);
+  border: 1px dashed rgba(var(--cyan-rgb), 0.45);
+  padding-right: 38px;
+}
+
+:root[data-theme="light"] .tool::after {
+  content: "\203A";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-52%);
+  font-size: 24px;
+  line-height: 1;
+  color: var(--cyan);
+}
+
+:root[data-theme="light"] .tool-name { color: var(--cyan); }
+
+/* IDs read as reference codes. */
+:root[data-theme="light"] .ticket-id,
+:root[data-theme="light"] .alert-id {
+  font-family: "Roboto Mono", monospace;
+  background: rgba(var(--cyan-rgb), 0.12);
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+
+/* "Still to do" pills are solid, so progress is visible at a glance. */
+:root[data-theme="light"] .seen-chip.new,
+:root[data-theme="light"] .alert-row.new .alert-badge,
+:root[data-theme="light"] .mail-item.unread .mail-badge {
+  background: var(--cyan);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+
+:root[data-theme="light"] .sev-bar { width: 6px; }
+
+/* The job description box had a hard-coded dark navy background, unreadable in light mode. */
+:root[data-theme="light"] .evidence[id^="job-"] { background: var(--surface) !important; }
