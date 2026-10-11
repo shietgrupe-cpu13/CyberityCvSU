@@ -110,6 +110,7 @@ fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     106 -> riskRegisterLesson()
     601 -> securityIncidentsLesson()
     602 -> detectionLesson()
+    603 -> containmentLesson()
     else -> null
 }
 
@@ -1822,6 +1823,272 @@ private fun detectionLesson(): Lesson = Lesson(
             explanation = "Tuning removes the known, approved noise and keeps watching every " +
                     "other drive. Muting or deleting leaves a blind spot, and a LOW label " +
                     "just buries it."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 603 — Containment
+// ---------------------------------------------------------------------------
+// The briefing before Monday's containment. The lab's case is four hijacked
+// staff accounts, a forwarding rule and a rogue MFA device, so the examples
+// here carry on 601's hijacked org page: scheduled posts and a connected app.
+
+private fun containmentLesson(): Lesson = Lesson(
+    levelId = 603,
+    title = "Stop It Spreading",
+    sources = listOf(
+        LessonSource(
+            id = "nist-ir",
+            short = "NIST SP 800-61r3",
+            citation = "Nelson, A., Rekhi, S., Souppaya, M. & Scarfone, K. (2025). Incident " +
+                    "Response Recommendations and Considerations for Cybersecurity Risk " +
+                    "Management (NIST SP 800-61 Rev. 3): RS.MI, RS.MI-01, RS.MI-02, RS.AN-07, " +
+                    "RS.AN-08.",
+            url = "https://doi.org/10.6028/NIST.SP.800-61r3"
+        ),
+        LessonSource(
+            id = "sp80086",
+            short = "NIST SP 800-86",
+            citation = "Kent, K., Chevalier, S., Grance, T. & Dang, H. (2006). Guide to " +
+                    "Integrating Forensic Techniques into Incident Response (NIST SP 800-86): " +
+                    "preserving integrity and maintaining the chain of custody.",
+            url = "https://doi.org/10.6028/NIST.SP.800-86"
+        ),
+        LessonSource(
+            id = "ree",
+            short = "Rules on Electronic Evidence",
+            citation = "Supreme Court of the Philippines (2001). Rules on Electronic Evidence, " +
+                    "A.M. No. 01-7-01-SC, Rule 5 Sec. 2 (manner of authentication) and Rule 7 " +
+                    "Sec. 1 (factors for assessing evidentiary weight).",
+            url = "https://lawphil.net/courts/supreme/am/am_01-7-01_2001.html"
+        ),
+        LessonSource(
+            id = "mitre-filter",
+            short = "MITRE ATT&CK",
+            citation = "MITRE ATT&CK. \"Filter Network Traffic\" (M1037): firewall rules and " +
+                    "blocking traffic to known malicious IP addresses and domains.",
+            url = "https://attack.mitre.org/mitigations/M1037/"
+        ),
+        LessonSource(
+            id = "mitre-web",
+            short = "MITRE ATT&CK",
+            citation = "MITRE ATT&CK. \"Restrict Web-Based Content\" (M1021): restricting " +
+                    "access to domains associated with phishing campaigns, and DNS filtering.",
+            url = "https://attack.mitre.org/mitigations/M1021/"
+        ),
+        LessonSource(
+            id = "mitre-am",
+            short = "MITRE ATT&CK",
+            citation = "MITRE ATT&CK. \"Account Manipulation\" (T1098), a persistence " +
+                    "technique, including Device Registration (T1098.005).",
+            url = "https://attack.mitre.org/techniques/T1098/"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "Stop it spreading",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "Remember the org page from Level 601's lesson? It's **still posting** scam " +
+                        "links. **Containment** stops harm like that from **spreading** while " +
+                        "the rest is worked out. Cleanup and blame come later.",
+                "Level 102 matched the action to what was taken. With the harm still running, " +
+                        "weigh each action three ways: **what it stops**, **who else it hits**, " +
+                        "and **what evidence it destroys**."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Containment", "Stopping an incident from spreading or doing more harm."),
+                KeyTerm("Eradication", "Removing what the attacker left behind, like malware or hidden access.")
+            ),
+            sourceIds = listOf("nist-ir")
+        ),
+        LessonPage(
+            title = "Right size, right target",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "Pick the **smallest action that fully stops** the harm. Too big, and innocent " +
+                        "people pay for it. Aimed at the **wrong target**, it stops nothing and " +
+                        "can wipe out evidence.",
+                "If the harm comes from an account, act on the **account**. As in Levels 204 " +
+                        "and 205, that means ending its **sessions** too, because a new " +
+                        "password alone leaves them open."
+            ),
+            visual = LessonVisual.Log(
+                title = "ORG PAGE STILL POSTING · OPTIONS",
+                lines = listOf(
+                    "TOO BIG  delete the whole page",
+                    "WRONG    reformat the officer's laptop",
+                    "RIGHT    sign out every session, then",
+                    "         reset the page's password"
+                ),
+                highlights = listOf(2, 3),
+                caption = "Deleting the page loses the evidence and every follower. The " +
+                        "attacker isn't on the laptop."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Proportionate", "No bigger than the harm it has to stop.")
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Snapshot, then scrub",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "In Level 601 a first responder touched **nothing**. Containment has to " +
+                        "change things, so **save the evidence first**: copy it somewhere " +
+                        "safe, then remove what the attacker set up.",
+                "Note **who saved it and when**. Under the **Rules on Electronic Evidence**, " +
+                        "whoever presents digital evidence must prove it's **authentic**, and " +
+                        "courts weigh how it was **stored and handled**."
+            ),
+            visual = LessonVisual.Log(
+                title = "EVIDENCE LOCKER · ORG PAGE",
+                lines = listOf(
+                    "item   12 scheduled scam posts",
+                    "saved  Mon 8:05 AM by j.navarro",
+                    "where  ITSO evidence locker",
+                    "then   posts deleted Mon 8:07 AM"
+                ),
+                highlights = listOf(1, 3),
+                caption = "Saved first, deleted second, each with a time and a name."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Chain of custody", "A record of who handled evidence, when, and what they did with it.")
+            ),
+            sourceIds = listOf("sp80086", "nist-ir", "ree"),
+            task = 2
+        ),
+        LessonPage(
+            title = "Every door, then the source",
+            icon = LessonIcon.LINK,
+            paragraphs = listOf(
+                "Contain **every** affected account **at the same time**. Close one door at a " +
+                        "time and the attacker notices, then hurries through the rest.",
+                "Then block the **IOCs**. A **firewall block** stops an IP address reaching " +
+                        "your systems. A **DNS block** stops your own devices finding a domain. " +
+                        "Block exactly what the attacker used: a whole country also cuts off " +
+                        "people who are abroad."
+            ),
+            visual = LessonVisual.Log(
+                title = "TWO BLOCKS · WHAT EACH STOPS",
+                lines = listOf(
+                    "FIREWALL  192.0.2.150",
+                    "  stops   it reaching campus systems",
+                    "DNS       free-load.example",
+                    "  stops   campus devices finding it"
+                ),
+                highlights = listOf(0, 2),
+                caption = "Each block covers a different direction: traffic coming in, and " +
+                        "lookups going out."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Firewall block", "Stops traffic to or from an IP address at the edge of the network."),
+                KeyTerm("DNS block", "Stops devices on your network from looking up a domain, so its links go nowhere.")
+            ),
+            sourceIds = listOf("mitre-filter", "mitre-web", "nist-ir"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Pull back the bait",
+            icon = LessonIcon.EMAIL,
+            paragraphs = listOf(
+                "A DNS block only helps devices on **your network**. The phishing message " +
+                        "itself must be **purged**: found in every inbox by sender, subject " +
+                        "and link, and removed.",
+                "Then see who **acted**. A click alone is rarely a compromise; **typing a " +
+                        "password** into the fake page is. Each new victim gets **the same " +
+                        "containment**, so the scope grows as you learn."
+            ),
+            visual = LessonVisual.Log(
+                title = "LINK LOG · free-load.example",
+                lines = listOf(
+                    "09:02  CLICKED    s.rivera",
+                    "09:05  CLICKED    m.tan",
+                    "09:06  SUBMITTED  m.tan",
+                    "09:11  CLICKED    a.cruz"
+                ),
+                highlights = listOf(2),
+                caption = "Three people clicked. One typed a password, so that account needs " +
+                        "containing too."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Purge", "Removing every copy of a message from all the mailboxes it reached.")
+            ),
+            sourceIds = listOf("nist-ir"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Test the way back in",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "Attackers expect to be found, so they leave a **way back in**: " +
+                        "**persistence**. Level 204 showed forwarding rules and recovery " +
+                        "addresses. Also check for an extra **MFA device** or a **connected app**.",
+                "NIST calls removing these **eradication**, but do it now: until they're " +
+                        "gone, the attacker can walk back in. You're done when a **test** " +
+                        "proves it, not when it feels done."
+            ),
+            visual = LessonVisual.Log(
+                title = "SIGN-IN METHODS · ORG PAGE",
+                lines = listOf(
+                    "phone  j.navarro's, added 2024",
+                    "email  officers@cvsu.example, 2024",
+                    "app    PostPal scheduler, Sun 1:14 AM"
+                ),
+                highlights = listOf(2),
+                caption = "Nobody in the org added PostPal. With it, the attacker can keep " +
+                        "posting after the reset."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Persistence", "A hidden way back in that an attacker leaves behind.")
+            ),
+            sourceIds = listOf("mitre-am", "nist-ir"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "A student's LMS account is posting scam links in 30 class forums. What's " +
+                    "the right-sized first move?",
+            options = listOf(
+                "Take the LMS offline for everyone until it's cleaned",
+                "Delete all 30 forums so the links vanish at once",
+                "Ask the student to change their password tonight",
+                "End the account's sessions and block sign-in now"
+            ),
+            correctIndex = 3,
+            explanation = "The harm comes from one account, so act on it now. Taking the LMS " +
+                    "offline punishes everyone, deleting the forums destroys evidence and class " +
+                    "work, and a password change tonight leaves the sessions running."
+        ),
+        LessonQuestion(
+            prompt = "On a hijacked account you find a hidden rule that deletes security " +
+                    "warnings as they arrive. What comes first?",
+            options = listOf(
+                "Save the rule and its logs, noting who saved them and when",
+                "Delete the rule at once, since every minute it runs counts",
+                "Leave it running so investigators can watch the attacker",
+                "Screenshot it on your phone and post it to the group chat"
+            ),
+            correctIndex = 0,
+            explanation = "Saving takes seconds, then the rule goes. Deleting first destroys " +
+                    "the evidence, leaving it running lets the harm continue, and a group-chat " +
+                    "screenshot leaks the case and proves nothing about who handled it."
+        ),
+        LessonQuestion(
+            prompt = "When is an account takeover fully contained?",
+            options = listOf(
+                "When the password has been changed to a strong new one",
+                "When the owner says everything looks normal again",
+                "When a test shows every way back in has been closed",
+                "When the alert that first found it has stopped firing"
+            ),
+            correctIndex = 2,
+            explanation = "A new password leaves sessions and added devices in place, owners " +
+                    "can't see hidden rules, and a quiet alert proves nothing. Only testing " +
+                    "every way back in shows the attacker is out."
         )
     )
 )
