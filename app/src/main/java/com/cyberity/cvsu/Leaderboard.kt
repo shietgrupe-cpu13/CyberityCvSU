@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,8 +20,10 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,8 +35,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
@@ -120,11 +129,26 @@ object LeaderboardRepository {
                     .take(TOP_N)
                 onResult(entries)
             }
+
+    /** Listens to this student's own XP on the board, for the "your rank" bar when they're outside the top. */
+    fun listenOwnXp(uid: String, onResult: (Int?) -> Unit): ListenerRegistration =
+        db.collection(COLLECTION).document(uid).addSnapshotListener { snapshot, _ ->
+            onResult(snapshot?.getLong(FIELD_XP)?.toInt())
+        }
 }
 
 // ===========================================================================
 // SCREEN
 // ===========================================================================
+// The top three stand on a podium; everyone from #4 down is a list. The
+// student's own rank is pinned at the bottom with the XP gap to the next spot,
+// worked out from the list itself — no extra data is stored.
+
+private fun formatXp(xp: Int): String = "%,d".format(xp)
+
+private fun initials(name: String): String =
+    name.split(" ", ".", "_").filter { it.isNotBlank() }.take(2)
+        .joinToString("") { it.first().uppercase() }.ifBlank { "?" }
 
 @Composable
 fun LeaderboardScreen(modifier: Modifier = Modifier) {
@@ -133,6 +157,7 @@ fun LeaderboardScreen(modifier: Modifier = Modifier) {
     var entries by remember { mutableStateOf<List<LeaderboardEntry>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var publiclyVisible by remember(myUid) { mutableStateOf(true) }
+    var myXp by remember(myUid) { mutableStateOf<Int?>(null) }
 
     DisposableEffect(myUid) {
         val registration = myUid?.let { uid ->
@@ -141,7 +166,8 @@ fun LeaderboardScreen(modifier: Modifier = Modifier) {
                     if (snapshot != null) publiclyVisible = snapshot.getBoolean("leaderboardVisible") != false
                 }
         }
-        onDispose { registration?.remove() }
+        val own = myUid?.let { LeaderboardRepository.listenOwnXp(it) { xp -> myXp = xp } }
+        onDispose { registration?.remove(); own?.remove() }
     }
 
     DisposableEffect(Unit) {
@@ -153,66 +179,114 @@ fun LeaderboardScreen(modifier: Modifier = Modifier) {
     }
 
     Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
-        Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)) {
-            Text("Leaderboard", color = AppWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text(
-                "Top ${LeaderboardRepository.TOP_N} students, ranked by XP",
-                color = AppGray,
-                fontSize = 13.sp
-            )
-        }
-
         val list = entries
         when {
-            error != null && list == null -> LeaderboardMessage(
-                title = "Leaderboard unavailable",
-                body = "Check your connection and try again in a moment."
-            )
-            list == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = AppCyan)
+            error != null && list == null -> {
+                LeaderboardTitle()
+                LeaderboardMessage(
+                    title = "Leaderboard unavailable",
+                    body = "Check your connection and try again in a moment."
+                )
             }
-            list.isEmpty() -> LeaderboardMessage(
-                title = "No rankings yet",
-                body = "Finish a level to earn XP and claim the first spot."
-            )
+            list == null -> {
+                LeaderboardTitle()
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = AppCyan)
+                }
+            }
+            list.isEmpty() -> {
+                LeaderboardTitle()
+                LeaderboardMessage(
+                    title = "No rankings yet",
+                    body = "Finish a level to earn XP and claim the first spot."
+                )
+            }
             else -> {
-                val myIndex = list.indexOfFirst { it.uid == myUid }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    itemsIndexed(list, key = { _, e -> e.uid }) { index, entry ->
-                        LeaderboardRow(rank = index + 1, entry = entry, isMe = entry.uid == myUid)
+                    item(key = "title") { LeaderboardTitle(padding = false) }
+                    item(key = "podium") { Podium(list.take(3), myUid) }
+                    itemsIndexed(list.drop(3), key = { _, e -> e.uid }) { index, entry ->
+                        LeaderboardRow(rank = index + 4, entry = entry, isMe = entry.uid == myUid)
                     }
                 }
-                // Outside the top: say so, rather than leaving the student hunting for themselves.
-                if (myIndex < 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(AppCard)
-                            .padding(horizontal = 24.dp, vertical = 14.dp)
-                    ) {
-                        Text(
-                            if (!publiclyVisible) "Your leaderboard entry is hidden. Change this in Settings > Privacy."
-                            else "You're not in the top ${LeaderboardRepository.TOP_N} yet. Keep finishing levels to climb.",
-                            color = AppGray,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
+                YourRankBar(list, myUid, myXp, publiclyVisible)
             }
         }
     }
 }
 
 @Composable
+private fun LeaderboardTitle(padding: Boolean = true) {
+    Column(
+        modifier = if (padding) Modifier.padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 12.dp)
+        else Modifier.padding(start = 8.dp, end = 8.dp, top = 24.dp)
+    ) {
+        Text("Leaderboard", color = AppWhite, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Text("Top ${LeaderboardRepository.TOP_N} students by XP", color = AppGray, fontSize = 13.sp)
+    }
+}
+
+@Composable
+private fun Podium(top: List<LeaderboardEntry>, myUid: String?) {
+    // Second, first, third: the winner stands in the middle, highest.
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        PodiumSpot(top.getOrNull(1), place = 2, medal = AppGray, avatar = 50.dp, block = 56.dp, myUid = myUid, modifier = Modifier.weight(1f))
+        PodiumSpot(top.getOrNull(0), place = 1, medal = AppXp, avatar = 62.dp, block = 78.dp, myUid = myUid, modifier = Modifier.weight(1.15f))
+        PodiumSpot(top.getOrNull(2), place = 3, medal = AppStreak, avatar = 50.dp, block = 42.dp, myUid = myUid, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun PodiumSpot(entry: LeaderboardEntry?, place: Int, medal: Color, avatar: Dp, block: Dp, myUid: String?,
+    modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (entry != null) {
+            if (place == 1) Icon(Icons.Filled.EmojiEvents, contentDescription = "First place", tint = AppXp, modifier = Modifier.size(24.dp))
+            Box(
+                modifier = Modifier.size(avatar).clip(CircleShape).background(AppBlue).border(3.dp, medal, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(initials(entry.displayName), color = AppOnBlue, fontWeight = FontWeight.Bold,
+                    fontSize = if (place == 1) 22.sp else 18.sp)
+            }
+            Text(entry.displayName, color = AppWhite, fontSize = 13.sp, fontWeight = FontWeight.Medium,
+                maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (entry.uid == myUid) YouChip()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(XpBolt, contentDescription = null, tint = AppXp, modifier = Modifier.size(14.dp))
+                Spacer(Modifier.width(2.dp))
+                Text(formatXp(entry.xp), color = AppWhite, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        // The step itself: a medal-coloured top edge over a card, with the place number.
+        val shape = RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp, bottomStart = 4.dp, bottomEnd = 4.dp)
+        Column(Modifier.fillMaxWidth().height(block).clip(shape).border(1.dp, AppBorder, shape)) {
+            Box(Modifier.fillMaxWidth().height(4.dp).background(medal))
+            Box(Modifier.fillMaxSize().background(AppCard), contentAlignment = Alignment.Center) {
+                Text("$place", color = medal, fontSize = 20.sp, fontWeight = FontWeight.Black)
+            }
+        }
+    }
+}
+
+@Composable
+private fun YouChip() {
+    Box(modifier = Modifier.background(AppCyan, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp)) {
+        Text("YOU", color = AppNavy, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
 private fun LeaderboardRow(rank: Int, entry: LeaderboardEntry, isMe: Boolean) {
     val shape = RoundedCornerShape(14.dp)
-    // The top three get a filled rank badge; everyone else a plain number.
-    val podium = rank <= 3
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -221,36 +295,14 @@ private fun LeaderboardRow(rank: Int, entry: LeaderboardEntry, isMe: Boolean) {
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .background(if (podium) AppXp else AppNavy, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                "$rank",
-                color = if (podium) AppNavy else AppGray,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Box(modifier = Modifier.size(32.dp).background(AppNavy, CircleShape), contentAlignment = Alignment.Center) {
+            Text("$rank", color = AppGray, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
-
         Spacer(Modifier.width(12.dp))
-
-        Box(
-            modifier = Modifier.size(36.dp).background(AppBlue, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                entry.displayName.firstOrNull()?.uppercase() ?: "?",
-                color = AppOnBlue,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Box(modifier = Modifier.size(36.dp).background(AppBlue, CircleShape), contentAlignment = Alignment.Center) {
+            Text(initials(entry.displayName), color = AppOnBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
         }
-
         Spacer(Modifier.width(12.dp))
-
         Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 entry.displayName,
@@ -263,22 +315,84 @@ private fun LeaderboardRow(rank: Int, entry: LeaderboardEntry, isMe: Boolean) {
             )
             if (isMe) {
                 Spacer(Modifier.width(8.dp))
-                Box(
-                    modifier = Modifier
-                        .background(AppCyan, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 6.dp, vertical = 1.dp)
-                ) {
-                    Text("YOU", color = AppNavy, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                }
+                YouChip()
             }
         }
-
         Spacer(Modifier.width(8.dp))
-
         Icon(XpBolt, contentDescription = null, tint = AppXp, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(4.dp))
-        Text("${entry.xp}", color = AppWhite, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        Text(formatXp(entry.xp), color = AppWhite, fontSize = 15.sp, fontWeight = FontWeight.Bold)
     }
+}
+
+/**
+ * The student's own standing, pinned under the list. In the top: rank, XP and
+ * the XP needed to pass the student above. Outside it: how far to the top, or
+ * why they aren't listed.
+ */
+@Composable
+private fun YourRankBar(list: List<LeaderboardEntry>, myUid: String?, myXp: Int?, publiclyVisible: Boolean) {
+    val index = list.indexOfFirst { it.uid == myUid }
+    HorizontalDivider(color = AppBorder)
+    Column(
+        modifier = Modifier.fillMaxWidth().background(AppCard).padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (index >= 0) {
+            val me = list[index]
+            val rank = index + 1
+            val above = list.getOrNull(index - 1)
+            val below = list.getOrNull(index + 1)
+            // Where the student sits between the one below and the one above.
+            val progress = when {
+                above == null -> 1f
+                above.xp <= (below?.xp ?: 0) -> 1f
+                else -> ((me.xp - (below?.xp ?: 0)).toFloat() / (above.xp - (below?.xp ?: 0))).coerceIn(0f, 1f)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("#$rank", color = AppCyan, fontSize = 20.sp, fontWeight = FontWeight.Black)
+                Box(Modifier.size(34.dp).background(AppBlue, CircleShape), contentAlignment = Alignment.Center) {
+                    Text(initials(me.displayName), color = AppOnBlue, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+                Text("You · ${me.displayName}", color = AppWhite, fontWeight = FontWeight.Medium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                Icon(XpBolt, contentDescription = null, tint = AppXp, modifier = Modifier.size(16.dp))
+                Text(formatXp(me.xp), color = AppWhite, fontWeight = FontWeight.Bold)
+            }
+            RankProgress(progress)
+            if (above == null) {
+                Text("You're #1 on the board. Keep finishing levels to stay there.", color = AppGray, fontSize = 13.sp)
+            } else {
+                GapText(above.xp - me.xp + 1, "to pass #${rank - 1} ${above.displayName}")
+            }
+        } else {
+            val last = list.lastOrNull()
+            when {
+                !publiclyVisible -> Text("Your leaderboard entry is hidden. Change this in Settings → Privacy.",
+                    color = AppGray, fontSize = 13.sp)
+                myXp != null && last != null && list.size >= LeaderboardRepository.TOP_N -> {
+                    RankProgress((myXp.toFloat() / last.xp.coerceAtLeast(1)).coerceIn(0f, 1f))
+                    GapText(last.xp - myXp + 1, "to reach the top ${LeaderboardRepository.TOP_N}")
+                }
+                else -> Text("You're not on the board yet. Finish a level to earn XP.", color = AppGray, fontSize = 13.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RankProgress(progress: Float) {
+    Box(Modifier.fillMaxWidth().height(7.dp).clip(RoundedCornerShape(4.dp)).background(AppNavy)) {
+        Box(Modifier.fillMaxWidth(progress).fillMaxHeight().clip(RoundedCornerShape(4.dp)).background(AppBlue))
+    }
+}
+
+@Composable
+private fun GapText(xp: Int, rest: String) {
+    Text(buildAnnotatedString {
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = AppWhite)) { append("${formatXp(xp)} XP") }
+        append(" $rest")
+    }, color = AppGray, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
 }
 
 @Composable
