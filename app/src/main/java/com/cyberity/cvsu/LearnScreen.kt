@@ -1,5 +1,6 @@
 package com.cyberity.cvsu
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -9,8 +10,11 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -68,6 +72,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -435,7 +440,9 @@ fun LearnScreen(
         val cached = uid?.let { ProgressCache.load(context, it) } ?: emptySet()
         mutableStateOf(sampleLearningUnits().withLevelsCompleted(cached))
     }
-    var hasCompletedOnboarding by remember(uid) { mutableStateOf(false) }
+    // Null until the profile answers, so the "New to Cyberity" banner never flashes
+    // up before we know. Saveable, so coming back from another tab keeps the answer.
+    var hasCompletedOnboarding by rememberSaveable(uid) { mutableStateOf<Boolean?>(null) }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
 
     // Developer switch (see DEV_UNLOCK_ALL_LEVELS). Only what's shown changes;
@@ -592,289 +599,307 @@ fun LearnScreen(
 
     val pathListState = rememberLazyListState()
 
-    val running = runningLevel
-    if (running != null) {
-        val requestExit = { showExitConfirm = true }
+    // Opening a level or lesson pushes it in from the right over the path;
+    // leaving slides it back out and the path returns from the left.
+    AnimatedContent(
+        targetState = runningLevel,
+        transitionSpec = {
+            if (targetState != null) {
+                slideInHorizontally(tween(250)) { it } togetherWith
+                    slideOutHorizontally(tween(250)) { -it / 4 }
+            } else {
+                (slideInHorizontally(tween(250)) { -it / 4 } togetherWith
+                    slideOutHorizontally(tween(250)) { it }).apply { targetContentZIndex = -1f }
+            }
+        },
+        label = "level"
+    ) { running ->
+        // Opaque, so the screen sliding over never shows the one underneath.
+        Box(Modifier.fillMaxSize().background(AppNavy)) {
+            if (running != null) {
+                val requestExit = { showExitConfirm = true }
 
-        val levelPrefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
-        var fontSizeChoice by remember {
-            mutableStateOf(levelPrefs.getString("font_size", "medium") ?: "medium")
-        }
-
-        DisposableEffect(levelPrefs) {
-            val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
-                if (key == "font_size") {
-                    fontSizeChoice = p.getString("font_size", "medium") ?: "medium"
+                val levelPrefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
+                var fontSizeChoice by remember {
+                    mutableStateOf(levelPrefs.getString("font_size", "medium") ?: "medium")
                 }
-            }
-            levelPrefs.registerOnSharedPreferenceChangeListener(listener)
-            onDispose {
-                levelPrefs.unregisterOnSharedPreferenceChangeListener(listener)
-            }
-        }
 
-        val fontScaleFactor = when (fontSizeChoice.lowercase()) {
-            "small" -> 0.85f
-            "large" -> 1.25f
-            else -> 1.0f
-        }
-        val currentDensity = LocalDensity.current
-        val levelDensity = remember(currentDensity, fontScaleFactor) {
-            Density(density = currentDensity.density, fontScale = currentDensity.fontScale * fontScaleFactor)
-        }
-
-        CompositionLocalProvider(LocalDensity provides levelDensity) {
-            // Hardware/gesture back always asks for confirmation too. LabScreen has its
-            // own BackHandler for stepping back inside its WebView first — that one takes
-            // priority while active; this one is the fallback for every other level type
-            // and for LabScreen whenever its own handler is disabled.
-            BackHandler(enabled = true) { requestExit() }
-
-            // Reading costs no hearts, so the lesson comes before the hearts check.
-            val lesson = remember(running.id) { lessonFor(running.id) }
-
-            // Out of hearts mid-level: the attempt ends here and progress is lost.
-            if (showingLesson && lesson != null) {
-                LessonScreen(
-                    lesson = lesson,
-                    startLabel = if (running.status == LevelStatus.COMPLETED) "REVIEW LEVEL" else "START LEVEL",
-                    // Same rule as the level sheet's START button.
-                    canStart = running.id == 200 || running.type == LevelType.REWARD ||
-                            hearts >= MIN_HEARTS_TO_START,
-                    modifier = modifier,
-                    onRead = {
-                        if (running.id !in lessonsRead) {
-                            lessonsRead = lessonsRead + running.id
-                            uid?.let { ProgressCache.saveLessonsRead(context, it, lessonsRead) }
+                DisposableEffect(levelPrefs) {
+                    val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+                        if (key == "font_size") {
+                            fontSizeChoice = p.getString("font_size", "medium") ?: "medium"
                         }
-                    },
-                    onBackToPath = { setRunningLevel(null) },
-                    onStartLevel = { showingLesson = false }
-                )
-            } else if (running.id == 100) {
-                LevelZeroTutorialScreen(
-                    onCompleteTutorial = {
-                        uid?.let { id ->
-                            UserProfileRepository.load(
-                                id,
-                                onResult = { profile ->
-                                    UserProfileRepository.setOnboardingCompleted(id, profile?.studentId) { success, _ ->
-                                        if (success) hasCompletedOnboarding = true
+                    }
+                    levelPrefs.registerOnSharedPreferenceChangeListener(listener)
+                    onDispose {
+                        levelPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                    }
+                }
+
+                val fontScaleFactor = when (fontSizeChoice.lowercase()) {
+                    "small" -> 0.85f
+                    "large" -> 1.25f
+                    else -> 1.0f
+                }
+                val currentDensity = LocalDensity.current
+                val levelDensity = remember(currentDensity, fontScaleFactor) {
+                    Density(density = currentDensity.density, fontScale = currentDensity.fontScale * fontScaleFactor)
+                }
+
+                CompositionLocalProvider(LocalDensity provides levelDensity) {
+                    // Hardware/gesture back always asks for confirmation too. LabScreen has its
+                    // own BackHandler for stepping back inside its WebView first — that one takes
+                    // priority while active; this one is the fallback for every other level type
+                    // and for LabScreen whenever its own handler is disabled.
+                    BackHandler(enabled = runningLevel != null) { requestExit() }
+
+                    // Reading costs no hearts, so the lesson comes before the hearts check.
+                    val lesson = remember(running.id) { lessonFor(running.id) }
+
+                    // Out of hearts mid-level: the attempt ends here and progress is lost.
+                    if (showingLesson && lesson != null) {
+                        LessonScreen(
+                            lesson = lesson,
+                            startLabel = if (running.status == LevelStatus.COMPLETED) "REVIEW LEVEL" else "START LEVEL",
+                            // Same rule as the level sheet's START button.
+                            canStart = running.id == 200 || running.type == LevelType.REWARD ||
+                                    hearts >= MIN_HEARTS_TO_START,
+                            modifier = modifier,
+                            onRead = {
+                                if (running.id !in lessonsRead) {
+                                    lessonsRead = lessonsRead + running.id
+                                    uid?.let { ProgressCache.saveLessonsRead(context, it, lessonsRead) }
+                                }
+                            },
+                            onBackToPath = { setRunningLevel(null) },
+                            onStartLevel = { showingLesson = false }
+                        )
+                    } else if (running.id == 100) {
+                        LevelZeroTutorialScreen(
+                            onCompleteTutorial = {
+                                uid?.let { id ->
+                                    UserProfileRepository.load(
+                                        id,
+                                        onResult = { profile ->
+                                            UserProfileRepository.setOnboardingCompleted(id, profile?.studentId) { success, _ ->
+                                                if (success) hasCompletedOnboarding = true
+                                            }
+                                        },
+                                        onError = {
+                                            UserProfileRepository.setOnboardingCompleted(id) { success, _ ->
+                                                if (success) hasCompletedOnboarding = true
+                                            }
+                                        }
+                                    )
+                                }
+                                setRunningLevel(null)
+                            },
+                            onExit = requestExit
+                        )
+                    } else if (running.id == 200) {
+                        UnitTwoWalkthroughScreen(
+                            onExit = { setRunningLevel(null) },
+                            onComplete = {
+                                units = units.withLevelCompleted(running.id)
+                                uid?.let {
+                                    ProgressRepository.markLevelCompleted(it, running.id)
+                                    ProgressCache.save(context, it, completedIdsOf(units))
+                                }
+                                setRunningLevel(null)
+                            }
+                        )
+                    } else if (hearts < MIN_HEARTS_TO_START) {
+                        OutOfHeartsLevel(
+                            level = running,
+                            refillIn = heartRefillIn,
+                            modifier = modifier,
+                            onBack = { setRunningLevel(null) }
+                        )
+                    }
+                    // Replaying an already-completed level pays out no further XP — that
+                    // happened on the first clear — so the screens below need to know not
+                    // to show XP as still up for grabs.
+                    else {
+                        val isReplay = running.status == LevelStatus.COMPLETED
+                        // Remembered per level: building a lab allocates its whole definition
+                        // — every task, hint and guide string — and a fresh instance each
+                        // recomposition would also stop the level screen below from skipping.
+                        val content = remember(running.id) { contentFor(running.id) }
+                        when (content) {
+                            is LevelContent.Inbox -> InboxSimulationScreen(
+                                simulation = content.simulation,
+                                xpReward = MAX_LEVEL_XP,
+                                modifier = modifier,
+                                onExit = requestExit,
+                                onComplete = { _, _, _ ->
+                                    units = units.withLevelCompleted(running.id)
+                                    uid?.let {
+                                        ProgressRepository.markLevelCompleted(it, running.id)
+                                        ProgressCache.save(context, it, completedIdsOf(units))
                                     }
-                                },
-                                onError = {
-                                    UserProfileRepository.setOnboardingCompleted(id) { success, _ ->
-                                        if (success) hasCompletedOnboarding = true
-                                    }
+                                    setRunningLevel(null)
                                 }
                             )
+
+                            is LevelContent.Scenarios -> ScenarioQuizScreen(
+                                quiz = content.quiz,
+                                xpReward = MAX_LEVEL_XP,
+                                modifier = modifier,
+                                onExit = requestExit,
+                                onMistake = { spendHeart() },
+                                hearts = hearts,
+                                xpBalance = totalXp,
+                                isReplay = isReplay,
+                                onComplete = { earned, _, _ ->
+                                    val firstClear = running.status != LevelStatus.COMPLETED
+                                    units = units.withLevelCompleted(running.id)
+                                    uid?.let {
+                                        ProgressRepository.markLevelCompleted(it, running.id)
+                                        ProgressCache.save(context, it, completedIdsOf(units))
+                                        if (firstClear) {
+                                            val updated = levelXp + (running.id to earned)
+                                            levelXp = updated
+                                            ProgressCache.saveLevelXp(context, it, updated)
+                                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                                        }
+                                    }
+                                    setRunningLevel(null)
+                                }
+                            )
+
+                            is LevelContent.Lab -> LabScreen(
+                                lab = content.lab,
+                                xpReward = MAX_LEVEL_XP,
+                                modifier = modifier,
+                                clueLabels = content.clueLabels,
+                                onExit = requestExit,
+                                onMistake = { spendHeart() },
+                                hearts = hearts,
+                                xpBalance = totalXp,
+                                onSpendXp = { spendXp(it) },
+                                isReplay = isReplay,
+                                onComplete = { earned, _, _ ->
+                                    val firstClear = running.status != LevelStatus.COMPLETED
+                                    units = units.withLevelCompleted(running.id)
+                                    uid?.let {
+                                        ProgressRepository.markLevelCompleted(it, running.id)
+                                        ProgressCache.save(context, it, completedIdsOf(units))
+                                        if (firstClear) {
+                                            val updated = levelXp + (running.id to earned)
+                                            levelXp = updated
+                                            ProgressCache.saveLevelXp(context, it, updated)
+                                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                                        }
+                                    }
+                                    setRunningLevel(null)
+                                }
+
+                            )
+
+                            null -> ComingSoonLevel(
+                                level = running,
+                                modifier = modifier,
+                                onBack = { setRunningLevel(null) }
+                            )
                         }
-                        setRunningLevel(null)
-                    },
-                    onExit = requestExit
-                )
-            } else if (running.id == 200) {
-                UnitTwoWalkthroughScreen(
-                    onExit = { setRunningLevel(null) },
-                    onComplete = {
-                        units = units.withLevelCompleted(running.id)
-                        uid?.let {
-                            ProgressRepository.markLevelCompleted(it, running.id)
-                            ProgressCache.save(context, it, completedIdsOf(units))
-                        }
-                        setRunningLevel(null)
                     }
-                )
-            } else if (hearts < MIN_HEARTS_TO_START) {
-                OutOfHeartsLevel(
-                    level = running,
-                    refillIn = heartRefillIn,
-                    modifier = modifier,
-                    onBack = { setRunningLevel(null) }
-                )
-            }
-            // Replaying an already-completed level pays out no further XP — that
-            // happened on the first clear — so the screens below need to know not
-            // to show XP as still up for grabs.
-            else {
-                val isReplay = running.status == LevelStatus.COMPLETED
-                // Remembered per level: building a lab allocates its whole definition
-                // — every task, hint and guide string — and a fresh instance each
-                // recomposition would also stop the level screen below from skipping.
-                val content = remember(running.id) { contentFor(running.id) }
-                when (content) {
-                    is LevelContent.Inbox -> InboxSimulationScreen(
-                        simulation = content.simulation,
-                        xpReward = MAX_LEVEL_XP,
-                        modifier = modifier,
-                        onExit = requestExit,
-                        onComplete = { _, _, _ ->
-                            units = units.withLevelCompleted(running.id)
-                            uid?.let {
-                                ProgressRepository.markLevelCompleted(it, running.id)
-                                ProgressCache.save(context, it, completedIdsOf(units))
+
+                    if (showExitConfirm) {
+                        ExitLevelDialog(
+                            onDismiss = { showExitConfirm = false },
+                            onConfirm = {
+                                showExitConfirm = false
+                                setRunningLevel(null)
                             }
-                            setRunningLevel(null)
+                        )
+                    }
+                }
+            } else {
+                Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
+                    LearnHeader(
+                        streak = 0,
+                        xp = totalXp,
+                        hearts = hearts,
+                        heartRefillIn = heartRefillIn,
+                        onReplayTutorial = {
+                            startTutorial()
                         }
                     )
 
-                    is LevelContent.Scenarios -> ScenarioQuizScreen(
-                        quiz = content.quiz,
-                        xpReward = MAX_LEVEL_XP,
-                        modifier = modifier,
-                        onExit = requestExit,
-                        onMistake = { spendHeart() },
+                    if (hasCompletedOnboarding == false) {
+                        NewToCyberityBanner(
+                            onStartTutorial = {
+                                startTutorial()
+                            }
+                        )
+                    }
+
+                    if (devUnlockAll) {
+                        Text(
+                            "DEV: all levels unlocked",
+                            color = AppCyan,
+                            fontSize = 12.sp,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+
+                    LearningPath(
+                        units = shownUnits,
+                        modifier = Modifier.weight(1f),
+                        listState = pathListState,
+                        onLevelClick = { unit, level -> selected = unit to level }
+                    )
+                }
+
+                selected?.let { (unit, level) ->
+                    LevelPreviewBottomSheet(
+                        unit = unit,
+                        level = level,
+                        prerequisiteTitle = prerequisiteFor(shownUnits, level),
                         hearts = hearts,
-                        xpBalance = totalXp,
-                        isReplay = isReplay,
-                        onComplete = { earned, _, _ ->
-                            val firstClear = running.status != LevelStatus.COMPLETED
-                            units = units.withLevelCompleted(running.id)
-                            uid?.let {
-                                ProgressRepository.markLevelCompleted(it, running.id)
-                                ProgressCache.save(context, it, completedIdsOf(units))
-                                if (firstClear) {
-                                    val updated = levelXp + (running.id to earned)
-                                    levelXp = updated
-                                    ProgressCache.saveLevelXp(context, it, updated)
-                                    ProgressRepository.saveLevelXp(it, running.id, earned)
+                        heartRefillIn = heartRefillIn,
+                        sheetState = sheetState,
+                        onDismiss = { selected = null },
+                        onReadLesson = if (lessonFor(level.id) == null) null else {
+                            {
+                                scope.launch {
+                                    try {
+                                        sheetState.hide()
+                                    } finally {
+                                        selected = null
+                                        showingLesson = true
+                                        setRunningLevel(level)
+                                    }
                                 }
                             }
-                            setRunningLevel(null)
-                        }
-                    )
-
-                    is LevelContent.Lab -> LabScreen(
-                        lab = content.lab,
-                        xpReward = MAX_LEVEL_XP,
-                        modifier = modifier,
-                        clueLabels = content.clueLabels,
-                        onExit = requestExit,
-                        onMistake = { spendHeart() },
-                        hearts = hearts,
-                        xpBalance = totalXp,
-                        onSpendXp = { spendXp(it) },
-                        isReplay = isReplay,
-                        onComplete = { earned, _, _ ->
-                            val firstClear = running.status != LevelStatus.COMPLETED
-                            units = units.withLevelCompleted(running.id)
-                            uid?.let {
-                                ProgressRepository.markLevelCompleted(it, running.id)
-                                ProgressCache.save(context, it, completedIdsOf(units))
-                                if (firstClear) {
-                                    val updated = levelXp + (running.id to earned)
-                                    levelXp = updated
-                                    ProgressCache.saveLevelXp(context, it, updated)
-                                    ProgressRepository.saveLevelXp(it, running.id, earned)
+                        },
+                        onStart = {
+                            // The sheet is its own window. Closing that window and
+                            // swapping the whole screen underneath it in one frame is
+                            // the hitch you see on START LEVEL — so let the sheet
+                            // animate away first, then bring the level up.
+                            scope.launch {
+                                // finally, so an interrupted hide still starts the level
+                                // rather than leaving the tap doing nothing.
+                                try {
+                                    sheetState.hide()
+                                } finally {
+                                    selected = null
+                                    // A first attempt opens with the lesson until it has
+                                    // been read once; READ LESSON stays available after.
+                                    showingLesson = level.status == LevelStatus.CURRENT &&
+                                            level.id !in lessonsRead &&
+                                            !TutorialManager.isTutorialActive &&
+                                            lessonFor(level.id) != null
+                                    setRunningLevel(level)
+                                    onStartLevel(level)
                                 }
                             }
-                            setRunningLevel(null)
                         }
-
-                    )
-
-                    null -> ComingSoonLevel(
-                        level = running,
-                        modifier = modifier,
-                        onBack = { setRunningLevel(null) }
                     )
                 }
             }
-
-            if (showExitConfirm) {
-                ExitLevelDialog(
-                    onDismiss = { showExitConfirm = false },
-                    onConfirm = {
-                        showExitConfirm = false
-                        setRunningLevel(null)
-                    }
-                )
-            }
-        }
-    } else {
-        Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
-            LearnHeader(
-                streak = 0,
-                xp = totalXp,
-                hearts = hearts,
-                heartRefillIn = heartRefillIn,
-                onReplayTutorial = {
-                    startTutorial()
-                }
-            )
-
-            if (!hasCompletedOnboarding) {
-                NewToCyberityBanner(
-                    onStartTutorial = {
-                        startTutorial()
-                    }
-                )
-            }
-
-            if (devUnlockAll) {
-                Text(
-                    "DEV: all levels unlocked",
-                    color = AppCyan,
-                    fontSize = 12.sp,
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-            }
-
-            LearningPath(
-                units = shownUnits,
-                modifier = Modifier.weight(1f),
-                listState = pathListState,
-                onLevelClick = { unit, level -> selected = unit to level }
-            )
-        }
-
-        selected?.let { (unit, level) ->
-            LevelPreviewBottomSheet(
-                unit = unit,
-                level = level,
-                prerequisiteTitle = prerequisiteFor(shownUnits, level),
-                hearts = hearts,
-                heartRefillIn = heartRefillIn,
-                sheetState = sheetState,
-                onDismiss = { selected = null },
-                onReadLesson = if (lessonFor(level.id) == null) null else {
-                    {
-                        scope.launch {
-                            try {
-                                sheetState.hide()
-                            } finally {
-                                selected = null
-                                showingLesson = true
-                                setRunningLevel(level)
-                            }
-                        }
-                    }
-                },
-                onStart = {
-                    // The sheet is its own window. Closing that window and
-                    // swapping the whole screen underneath it in one frame is
-                    // the hitch you see on START LEVEL — so let the sheet
-                    // animate away first, then bring the level up.
-                    scope.launch {
-                        // finally, so an interrupted hide still starts the level
-                        // rather than leaving the tap doing nothing.
-                        try {
-                            sheetState.hide()
-                        } finally {
-                            selected = null
-                            // A first attempt opens with the lesson until it has
-                            // been read once; READ LESSON stays available after.
-                            showingLesson = level.status == LevelStatus.CURRENT &&
-                                    level.id !in lessonsRead &&
-                                    !TutorialManager.isTutorialActive &&
-                                    lessonFor(level.id) != null
-                            setRunningLevel(level)
-                            onStartLevel(level)
-                        }
-                    }
-                }
-            )
         }
     }
 }

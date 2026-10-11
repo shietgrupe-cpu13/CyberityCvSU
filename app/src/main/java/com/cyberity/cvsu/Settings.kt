@@ -2,6 +2,11 @@ package com.cyberity.cvsu
 
 import android.content.Context
 import android.text.format.DateFormat
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -68,21 +73,30 @@ fun SettingsDialog(onDismiss: () -> Unit, onSignOut: () -> Unit = {}, onReplayTu
             else if (selected != null) selected = null else onDismiss()
         }
     }, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
-    if (section == SettingsSection.SECURITY) {
-        AccountSecurityDialog(onDismiss = { selected = null }, onClose = onDismiss,
-            onBusyChanged = { securityBusy = it }, onSignOut = { onDismiss(); onSignOut() })
-    } else {
-        SettingsPage(title = section?.title ?: "Settings", onBack = if (section != null && !startInPrivacy) ({ selected = null }) else null,
-            onClose = onDismiss, canDismiss = !securityBusy) {
-            when (section) {
-                null -> SettingsHome(xp = xp, onOpen = { selected = it.name }, onSignOut = { confirmSignOut = true })
-                SettingsSection.APPEARANCE -> AppearanceSettings()
-                SettingsSection.LEARNING -> LearningSettings { onDismiss(); onReplayTutorial() }
-                SettingsSection.NOTIFICATIONS -> NotificationSettings()
-                SettingsSection.PRIVACY -> PrivacySettingsScreen(onSignOut = { onDismiss(); onSignOut() },
-                    onBusyChanged = { securityBusy = it })
-                SettingsSection.HELP -> HelpSettingsScreen()
-                SettingsSection.SECURITY -> Unit
+    // Opaque behind the fade, so the app below never shows through mid-change.
+    Box(Modifier.fillMaxSize().background(AppNavy)) {
+        AnimatedContent(
+            targetState = section,
+            transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(200)) },
+            label = "settingsSection"
+        ) { shown ->
+            if (shown == SettingsSection.SECURITY) {
+                AccountSecurityDialog(onDismiss = { selected = null }, onClose = onDismiss,
+                    onBusyChanged = { securityBusy = it }, onSignOut = { onDismiss(); onSignOut() })
+            } else {
+                SettingsPage(title = shown?.title ?: "Settings", onBack = if (shown != null && !startInPrivacy) ({ selected = null }) else null,
+                    onClose = onDismiss, canDismiss = !securityBusy) {
+                    when (shown) {
+                        null -> SettingsHome(xp = xp, onOpen = { selected = it.name }, onSignOut = { confirmSignOut = true })
+                        SettingsSection.APPEARANCE -> AppearanceSettings()
+                        SettingsSection.LEARNING -> LearningSettings { onDismiss(); onReplayTutorial() }
+                        SettingsSection.NOTIFICATIONS -> NotificationSettings()
+                        SettingsSection.PRIVACY -> PrivacySettingsScreen(onSignOut = { onDismiss(); onSignOut() },
+                            onBusyChanged = { securityBusy = it })
+                        SettingsSection.HELP -> HelpSettingsScreen()
+                        SettingsSection.SECURITY -> Unit
+                    }
+                }
             }
         }
     }

@@ -1,6 +1,11 @@
 package com.cyberity.cvsu
 
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +58,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -158,18 +164,24 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-            tabStates.SaveableStateProvider(selectedTab) {
-                when (selectedTab) {
-                    0 -> LearnScreen(
-                        onLevelRunningChanged = { levelRunning = it },
-                        tutorialRequest = tutorialRequest,
-                        onTutorialRequestHandled = { tutorialRequest = 0 }
-                    )
-                    1 -> LeaderboardTab()
-                    2 -> ProfileTab(onLogout = onLogout, onReplayTutorial = {
-                        tutorialRequest++
-                        selectedTab = 0
-                    })
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                label = "tab"
+            ) { tab ->
+                tabStates.SaveableStateProvider(tab) {
+                    when (tab) {
+                        0 -> LearnScreen(
+                            onLevelRunningChanged = { levelRunning = it },
+                            tutorialRequest = tutorialRequest,
+                            onTutorialRequestHandled = { tutorialRequest = 0 }
+                        )
+                        1 -> LeaderboardTab()
+                        2 -> ProfileTab(onLogout = onLogout, onReplayTutorial = {
+                            tutorialRequest++
+                            selectedTab = 0
+                        })
+                    }
                 }
             }
         }
@@ -347,18 +359,27 @@ fun ProfileTab(
     val user = auth.currentUser
     val email = user?.email ?: "No email"
 
-    // Registered username and student ID from users/{uid}; until they load,
-    // fall back to the name on the Firebase account, then the email.
-    var profile by remember { mutableStateOf<UserProfile?>(null) }
-    LaunchedEffect(user?.uid) {
-        val uid = user?.uid ?: return@LaunchedEffect
-        UserProfileRepository.load(uid, onResult = { profile = it }, onError = {})
+    val context = LocalContext.current
+    val uid = user?.uid
+
+    // Registered username and student ID from users/{uid}. Seeded from the
+    // on-device copy saved at sign-in, so they show on the first frame, then
+    // refreshed from Firestore. Without either, fall back to the name on the
+    // Firebase account, then the email. Saveable, so returning from another
+    // tab shows them straight away.
+    var profileName by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadName(context, it) }) }
+    var studentId by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadStudentId(context, it) }) }
+    LaunchedEffect(uid) {
+        if (uid == null) return@LaunchedEffect
+        UserProfileRepository.load(uid, onResult = { profile ->
+            profileName = profile?.displayName
+            studentId = profile?.studentId
+            profile?.let { ProfileCache.saveDetails(context, uid, it.displayName, it.studentId) }
+        }, onError = {})
     }
 
     // Progress stats. Read from the on-device cache first (the same numbers the
     // Learn header shows), then refreshed from Firestore.
-    val context = LocalContext.current
-    val uid = user?.uid
     var completedIds by remember(uid) {
         mutableStateOf(uid?.let { ProgressCache.load(context, it) } ?: emptySet())
     }
@@ -383,7 +404,7 @@ fun ProfileTab(
     // Day streak isn't tracked yet; the Learn header also shows 0.
     val dayStreak = 0
 
-    val username = profile?.displayName
+    val username = profileName
         ?: user?.displayName?.takeIf { it.isNotBlank() }
         ?: email.substringBefore("@")
 
@@ -484,7 +505,7 @@ fun ProfileTab(
             Column(modifier = Modifier.padding(20.dp)) {
                 ProfileInfoRow(icon = Icons.Filled.Email, label = "CvSU Email", value = email)
 
-                profile?.studentId?.let { id ->
+                studentId?.let { id ->
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 16.dp),
                         thickness = 1.dp,

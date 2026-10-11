@@ -1,6 +1,11 @@
 package com.cyberity.cvsu
 
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -221,121 +226,128 @@ fun AppNavigator() {
         }
     }
 
-    when (currentScreen) {
-        "entry" -> WelcomeEntryScreen(
-            onNewUserSelected = { currentScreen = "register" },
-            onExistingUserSelected = { currentScreen = "login" }
-        )
-        "home" -> Greeting(
-            name = "-CYBERITY-",
-            onLoginClick = { currentScreen = "login" }
-        )
-        "login" -> LoginScreen(
-            onBackClick = { currentScreen = "entry" },
-            onRegisterClick = { currentScreen = "register" },
-            onLoginSuccess = { currentScreen = "profileCheck" },
-            onMfaRequired = { resolver ->
-                mfaResolver = resolver
-                currentScreen = "mfa"
-            }
-        )
-        "mfa" -> TotpSignInScreen(
-            resolver = mfaResolver,
-            onSuccess = {
-                currentScreen = "profileCheck"
-            },
-            onCancel = {
-                signOut()
-            }
-        )
-        "register" -> RegisterScreen(
-            onBackClick = { currentScreen = "entry" },
-            onLoginClick = { currentScreen = "login" },
-            onRegisterSuccess = { currentScreen = "checkEmail" }
-        )
-        "checkEmail" -> CheckEmailScreen(
-            onBackToLogin = { currentScreen = "login" }
-        )
-        "profileCheck" -> {
-            var failed by remember { mutableStateOf(false) }
-            var errorDetail by remember { mutableStateOf<String?>(null) }
-            var attempt by remember { mutableIntStateOf(0) }
-            var slow by remember { mutableStateOf(false) }
-
-            LaunchedEffect(attempt) {
-                failed = false
-                slow = false
-                errorDetail = null
-                val uid = auth.currentUser?.uid
-                if (uid == null) {
-                    currentScreen = "entry"
-                    return@LaunchedEffect
+    AnimatedContent(
+        targetState = currentScreen,
+        transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(200)) },
+        label = "screen"
+    ) { screen ->
+        when (screen) {
+            "entry" -> WelcomeEntryScreen(
+                onNewUserSelected = { currentScreen = "register" },
+                onExistingUserSelected = { currentScreen = "login" }
+            )
+            "home" -> Greeting(
+                name = "-CYBERITY-",
+                onLoginClick = { currentScreen = "login" }
+            )
+            "login" -> LoginScreen(
+                onBackClick = { currentScreen = "entry" },
+                onRegisterClick = { currentScreen = "register" },
+                onLoginSuccess = { currentScreen = "profileCheck" },
+                onMfaRequired = { resolver ->
+                    mfaResolver = resolver
+                    currentScreen = "mfa"
                 }
-                try {
-                    val deleting = withTimeout(30_000L) { PrivacyPreferencesRepository.readDeletionState(uid) }
-                    if (deleting) {
-                        currentScreen = "privacyRecovery"
+            )
+            "mfa" -> TotpSignInScreen(
+                resolver = mfaResolver,
+                onSuccess = {
+                    currentScreen = "profileCheck"
+                },
+                onCancel = {
+                    signOut()
+                }
+            )
+            "register" -> RegisterScreen(
+                onBackClick = { currentScreen = "entry" },
+                onLoginClick = { currentScreen = "login" },
+                onRegisterSuccess = { currentScreen = "checkEmail" }
+            )
+            "checkEmail" -> CheckEmailScreen(
+                onBackToLogin = { currentScreen = "login" }
+            )
+            "profileCheck" -> {
+                var failed by remember { mutableStateOf(false) }
+                var errorDetail by remember { mutableStateOf<String?>(null) }
+                var attempt by remember { mutableIntStateOf(0) }
+                var slow by remember { mutableStateOf(false) }
+
+                LaunchedEffect(attempt) {
+                    failed = false
+                    slow = false
+                    errorDetail = null
+                    val uid = auth.currentUser?.uid
+                    if (uid == null) {
+                        currentScreen = "entry"
                         return@LaunchedEffect
                     }
-                    // A deadline bounds the wait; it never delays a ready result.
-                    val profile = withTimeout(30_000L) {
-                        suspendCancellableCoroutine<UserProfile?> { continuation ->
-                            UserProfileRepository.load(
-                                uid,
-                                onResult = { profile ->
-                                    if (continuation.isActive) continuation.resume(profile)
-                                },
-                                onError = { message ->
-                                    if (continuation.isActive) continuation.resumeWithException(IllegalStateException(message))
-                                }
-                            )
+                    try {
+                        val deleting = withTimeout(30_000L) { PrivacyPreferencesRepository.readDeletionState(uid) }
+                        if (deleting) {
+                            currentScreen = "privacyRecovery"
+                            return@LaunchedEffect
                         }
+                        // A deadline bounds the wait; it never delays a ready result.
+                        val profile = withTimeout(30_000L) {
+                            suspendCancellableCoroutine<UserProfile?> { continuation ->
+                                UserProfileRepository.load(
+                                    uid,
+                                    onResult = { profile ->
+                                        if (continuation.isActive) continuation.resume(profile)
+                                    },
+                                    onError = { message ->
+                                        if (continuation.isActive) continuation.resumeWithException(IllegalStateException(message))
+                                    }
+                                )
+                            }
+                        }
+                        if (profile?.isComplete == true) {
+                            ProfileCache.markComplete(context, uid)
+                            ProfileCache.saveDetails(context, uid, profile.displayName, profile.studentId)
+                            currentScreen = "loggedIn"
+                        } else {
+                            currentScreen = "completeProfile"
+                        }
+                    } catch (_: TimeoutCancellationException) {
+                        errorDetail = "Profile validation timed out."
+                        failed = true
+                    } catch (cancelled: CancellationException) {
+                        // Leaving this screen cancels its callbacks and timers.
+                        throw cancelled
+                    } catch (error: Exception) {
+                        errorDetail = error.message
+                        failed = true
                     }
-                    if (profile?.isComplete == true) {
-                        ProfileCache.markComplete(context, uid)
-                        currentScreen = "loggedIn"
-                    } else {
-                        currentScreen = "completeProfile"
+                }
+
+                LaunchedEffect(attempt, failed) {
+                    slow = false
+                    if (!failed) {
+                        // Feedback timer only: validation can complete at any time.
+                        delay(8_000L)
+                        slow = true
                     }
-                } catch (_: TimeoutCancellationException) {
-                    errorDetail = "Profile validation timed out."
-                    failed = true
-                } catch (cancelled: CancellationException) {
-                    // Leaving this screen cancels its callbacks and timers.
-                    throw cancelled
-                } catch (error: Exception) {
-                    errorDetail = error.message
-                    failed = true
                 }
-            }
 
-            LaunchedEffect(attempt, failed) {
-                slow = false
-                if (!failed) {
-                    // Feedback timer only: validation can complete at any time.
-                    delay(8_000L)
-                    slow = true
+                ProfileCheckScreen(
+                    failed = failed,
+                    errorDetail = errorDetail,
+                    onRetry = { attempt++ },
+                    onSignOut = signOut,
+                    slow = slow
+                )
+            }
+            "privacyRecovery" -> SettingsDialog(onDismiss = signOut, onSignOut = signOut, startInPrivacy = true)
+            "completeProfile" -> CompleteProfileScreen(
+                onProfileSaved = { currentScreen = "profileCheck" },
+                onSignOut = signOut
+            )
+            "loggedIn" -> HomeScreen(
+                onLogout = {
+                    currentScreen = "entry"
                 }
-            }
-
-            ProfileCheckScreen(
-                failed = failed,
-                errorDetail = errorDetail,
-                onRetry = { attempt++ },
-                onSignOut = signOut,
-                slow = slow
             )
         }
-        "privacyRecovery" -> SettingsDialog(onDismiss = signOut, onSignOut = signOut, startInPrivacy = true)
-        "completeProfile" -> CompleteProfileScreen(
-            onProfileSaved = { currentScreen = "profileCheck" },
-            onSignOut = signOut
-        )
-        "loggedIn" -> HomeScreen(
-            onLogout = {
-                currentScreen = "entry"
-            }
-        )
     }
 }
 
