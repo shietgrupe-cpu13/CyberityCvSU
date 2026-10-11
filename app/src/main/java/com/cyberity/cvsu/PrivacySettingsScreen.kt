@@ -3,11 +3,19 @@ package com.cyberity.cvsu
 import android.content.Context
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.CancellationException
@@ -32,7 +40,7 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
 
     fun errorText(error: Exception): String = when {
         error is FirebaseFirestoreException && error.code == FirebaseFirestoreException.Code.PERMISSION_DENIED ->
-            "Privacy access was denied. Sign in again or update the Firestore rules for Privacy."
+            "You don't have access right now. Sign out, sign in again, then retry."
         else -> "Couldn't complete this action. Check your connection and try again."
     }
 
@@ -66,32 +74,32 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
     }
 
     LaunchedEffect(uid) { refresh() }
-    SettingsIntro("Your information", "Control your public profile and download or delete your account data.")
-    Text("Your account stores your email, student ID and display name, lesson progress, XP and hearts. The leaderboard shares your display name and XP with signed-in students. Device management stores model, Android version and sign-in/activity times; it does not collect GPS location. Passwords and authenticator secrets are not included in data exports.", color = AppGray)
-    if (preferences?.deleting == true || deletionFailed) {
-        Text("Account deletion is unfinished. Some records may already be removed. Verify again to retry cleanup and finish deleting your sign-in account. Learning and leaderboard updates are blocked during deletion.", color = AppDanger)
-    } else {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(Modifier.weight(1f)) {
-                Text("Show me on the leaderboard", color = AppWhite)
-                Text("Hiding removes your public entry. Your learning progress stays private and saved.", color = AppGray)
+    val unfinishedDeletion = preferences?.deleting == true || deletionFailed
+    if (!unfinishedDeletion) {
+        SettingsCard {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Show me on the leaderboard", color = AppWhite, fontWeight = FontWeight.SemiBold)
+                    Text("Shares your display name and XP with other students.", color = AppGray, fontSize = 13.sp)
+                }
+                Switch(checked = preferences?.leaderboardVisible ?: false, enabled = preferences != null && !busy,
+                    onCheckedChange = { visible ->
+                        if (uid != null) scope.launch {
+                            busy = true; message = null
+                            try {
+                                PrivacyPreferencesRepository.setLeaderboardVisible(uid, visible)
+                                preferences = PrivacyPreferences(visible, false)
+                                message = if (visible) "You're on the leaderboard." else "Your leaderboard entry is hidden."
+                            } catch (error: Exception) {
+                                if (error is CancellationException) throw error
+                                message = errorText(error)
+                            } finally { busy = false }
+                        }
+                    })
             }
-            Switch(checked = preferences?.leaderboardVisible ?: false, enabled = preferences != null && !busy,
-                onCheckedChange = { visible ->
-                    if (uid != null) scope.launch {
-                        busy = true; message = null
-                        try {
-                            PrivacyPreferencesRepository.setLeaderboardVisible(uid, visible)
-                            preferences = PrivacyPreferences(visible, false)
-                            message = if (visible) "Leaderboard visibility enabled." else "Your leaderboard entry is hidden."
-                        } catch (error: Exception) {
-                            if (error is CancellationException) throw error
-                            message = errorText(error)
-                        } finally { busy = false }
-                    }
-                })
         }
-        OutlinedButton(enabled = !busy && preferences != null, modifier = Modifier.fillMaxWidth(), onClick = {
+        SettingsActionCard(Icons.Default.Download, "Download your data", "Profile, progress and devices as a JSON file",
+            enabled = !busy && preferences != null) {
             if (uid != null) scope.launch {
                 busy = true; message = "Preparing your data…"
                 try {
@@ -102,19 +110,31 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
                     pendingExport = null; busy = false; message = errorText(error)
                 }
             }
-        }) { Text("Download your data (JSON)") }
-        Text("The export includes your profile, progress, leaderboard entry, student ID claims, device records and privacy preferences. It requires an internet connection.", color = AppGray)
+        }
+        SettingsCard {
+            Text("What we store", color = AppWhite, fontWeight = FontWeight.SemiBold)
+            Text("Email, student ID, display name, progress, XP and hearts, and the model of devices you sign in on. No location. Passwords are never exported.",
+                color = AppGray, fontSize = 13.sp)
+        }
     }
-    OutlinedButton(enabled = !busy && uid != null && preferences != null, modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppDanger), onClick = { verifying = true }) {
-        Text(if (preferences?.deleting == true || deletionFailed) "Finish account deletion" else "Delete account")
-    }
-    Text("Deletion permanently removes your profile, progress, leaderboard entry, student ID claims, tracked device records and Firebase sign-in account. Small access-blocking records remain to prevent old sessions accessing data. Files you already exported remain wherever you saved them.", color = AppGray)
-    if (busy) CircularProgressIndicator()
+    if (busy) CircularProgressIndicator(color = AppCyan)
     message?.let { Text(it, color = AppCyan) }
-    if (preferences == null && !busy) TextButton(onClick = { refresh() }) { Text("Retry loading Privacy") }
-    Text("Privacy policy", color = AppWhite)
-    Text("An approved institutional privacy policy has not been supplied in this app. The information above describes the current features; it is not a legal policy.", color = AppGray)
+    if (preferences == null && !busy) TextButton(onClick = { refresh() }) { Text("Try again") }
+
+    Surface(color = AppCard, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, AppDanger)) {
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(if (unfinishedDeletion) "Finish deleting your account" else "Delete account",
+                color = AppDanger, fontWeight = FontWeight.SemiBold)
+            Text(if (unfinishedDeletion) "Deletion didn't finish and some data may already be gone. Verify again to finish. Learning is paused until then."
+                else "Permanently removes your profile, progress, leaderboard entry and sign-in. This can't be undone.",
+                color = AppGray, fontSize = 13.sp)
+            OutlinedButton(enabled = !busy && uid != null && preferences != null, modifier = Modifier.fillMaxWidth(),
+                border = BorderStroke(1.dp, AppDanger),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = AppDanger), onClick = { verifying = true }) {
+                Text(if (unfinishedDeletion) "Finish account deletion" else "Delete account")
+            }
+        }
+    }
 
     if (verifying) AccountVerificationDialog("Verify account deletion", "Enter your current password and authenticator code if requested.",
         onVerified = { verifying = false; confirmation = true }, onCancel = { verifying = false }, onBusyChanged = {})

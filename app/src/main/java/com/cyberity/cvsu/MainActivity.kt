@@ -128,6 +128,12 @@ val AppStreak: Color get() = if (isDarkMode) Color(0xFFFF9A52) else Color(0xFF8A
 val AppHeart: Color get() = if (isDarkMode) Color(0xFFFF6B81) else Color(0xFFA50D29)  // hearts / lives
 val AppReward: Color get() = AppXp
 
+// Fixed previews of each theme for the Appearance picker, whichever theme is active.
+// Same values as AppNavy / AppCard / AppBlue above.
+data class ThemeSwatch(val background: Color, val card: Color, val accent: Color)
+val DarkThemeSwatch = ThemeSwatch(Color(0xFF0A1016), Color(0xFF17222E), Color(0xFF14B8A6))
+val LightThemeSwatch = ThemeSwatch(Color(0xFFAECDC7), Color(0xFFD4E8E3), Color(0xFF085B56))
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Only local theme restoration belongs on the splash path; network work
