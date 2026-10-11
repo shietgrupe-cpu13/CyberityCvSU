@@ -109,6 +109,7 @@ fun lessonFor(levelId: Int): Lesson? = when (levelId) {
     104 -> hardeningReviewLesson()
     106 -> riskRegisterLesson()
     601 -> securityIncidentsLesson()
+    602 -> detectionLesson()
     else -> null
 }
 
@@ -1540,6 +1541,287 @@ private fun securityIncidentsLesson(): Lesson = Lesson(
             correctIndex = 1,
             explanation = "The law lists age as sensitive personal information. A school email is " +
                     "personal information, but not sensitive, and schedules aren't about one person."
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// LEVEL 602 — Detection
+// ---------------------------------------------------------------------------
+// The briefing before the weekend replay. The lab's case is Prof. Ramos, a
+// Frankfurt sign-in and a muted mail-forwarding rule, so the examples here are
+// a library alert queue, a librarian's account and an admin-group rule.
+
+private fun detectionLesson(): Lesson = Lesson(
+    levelId = 602,
+    title = "The Logs Saw It",
+    sources = listOf(
+        LessonSource(
+            id = "nist-ir",
+            short = "NIST SP 800-61r3",
+            citation = "Nelson, A., Rekhi, S., Souppaya, M. & Scarfone, K. (2025). Incident " +
+                    "Response Recommendations and Considerations for Cybersecurity Risk " +
+                    "Management (NIST SP 800-61 Rev. 3): DE.CM, DE.CM-09, DE.AE-02, DE.AE-03.",
+            url = "https://doi.org/10.6028/NIST.SP.800-61r3"
+        ),
+        LessonSource(
+            id = "nist-logs",
+            short = "NIST SP 800-92",
+            citation = "Kent, K. & Souppaya, M. (2006). Guide to Computer Security Log " +
+                    "Management (NIST SP 800-92).",
+            url = "https://doi.org/10.6028/NIST.SP.800-92"
+        ),
+        LessonSource(
+            id = "nist-fn",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"False negative.\" Glossary " +
+                    "(definitions from NIST SP 800-83r1 and SP 800-86).",
+            url = "https://csrc.nist.gov/glossary/term/false_negative"
+        ),
+        LessonSource(
+            id = "nist-ioc",
+            short = "NIST Glossary",
+            citation = "NIST Computer Security Resource Center. \"Indicator.\" Glossary " +
+                    "(definition from NIST SP 800-150).",
+            url = "https://csrc.nist.gov/glossary/term/indicator"
+        ),
+        LessonSource(
+            id = "sp80053",
+            short = "NIST SP 800-53r5",
+            citation = "Joint Task Force (2020). Security and Privacy Controls for Information " +
+                    "Systems and Organizations (NIST SP 800-53 Rev. 5): SI-4, System " +
+                    "Monitoring, and SI-4(13), Analyze Traffic and Event Patterns.",
+            url = "https://doi.org/10.6028/NIST.SP.800-53r5"
+        ),
+        LessonSource(
+            id = "mitre-va",
+            short = "MITRE ATT&CK",
+            citation = "MITRE ATT&CK. \"Valid Accounts\" (T1078): detection of geographic " +
+                    "anomalies and impossible travel in sign-in logs.",
+            url = "https://attack.mitre.org/techniques/T1078/"
+        ),
+        LessonSource(
+            id = "mitre-groups",
+            short = "MITRE ATT&CK",
+            citation = "MITRE ATT&CK. \"Account Manipulation: Additional Local or Domain " +
+                    "Groups\" (T1098.007): detecting unauthorized additions to privileged groups.",
+            url = "https://attack.mitre.org/techniques/T1098/007/"
+        ),
+        LessonSource(
+            id = "ra10173",
+            short = "RA 10173",
+            citation = "Republic of the Philippines. Republic Act No. 10173, Data Privacy " +
+                    "Act of 2012, Sec. 20(c)(4): regular monitoring for security breaches.",
+            url = "https://lawphil.net/statutes/repacts/ra2012/ra_10173_2012.html"
+        )
+    ),
+    pages = listOf(
+        LessonPage(
+            title = "The logs saw it",
+            icon = LessonIcon.SHIELD,
+            paragraphs = listOf(
+                "In Level 601, an attack ran for days before anyone noticed. **Detection** is " +
+                        "the work of shrinking the gap between **started** and **discovered**.",
+                "Most of it runs on a **SIEM**, the system behind the alerts you triaged in " +
+                        "Level 102. For a school it isn't optional: the **Data Privacy Act** " +
+                        "requires **regular monitoring for security breaches**."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Detection", "Noticing an attack while it's happening, not days later."),
+                KeyTerm("SIEM", "Security information and event management: collects logs from many systems and raises alerts on them.")
+            ),
+            sourceIds = listOf("nist-ir", "nist-logs", "ra10173")
+        ),
+        LessonPage(
+            title = "Wrong in both directions",
+            icon = LessonIcon.WARNING,
+            paragraphs = listOf(
+                "Level 102 covered **false positives**. The opposite is worse: a **false " +
+                        "negative** is a real attack the tool never flags at all.",
+                "Too many false alarms cause **alert fatigue**: people skim, and the real one " +
+                        "slips past. The **severity** label is only the tool's guess too. What " +
+                        "settles an alert is whether something **explains it**."
+            ),
+            visual = LessonVisual.Log(
+                title = "ALERT QUEUE · LIBRARY · SUNDAY",
+                lines = listOf(
+                    "HIGH  mass file delete  LIB-SRV-02",
+                    "      note: nightly backup rotation",
+                    "LOW   unknown USB drive REG-PC-07",
+                    "      note: no ticket, user on leave"
+                ),
+                highlights = listOf(2, 3),
+                caption = "The HIGH alert is a scheduled job. Nothing explains the LOW one."
+            ),
+            keyTerms = listOf(
+                KeyTerm("False negative", "A real attack that the tool fails to flag."),
+                KeyTerm("Alert fatigue", "Missing real alerts because there are too many false ones to read carefully.")
+            ),
+            sourceIds = listOf("nist-fn", "nist-ir"),
+            task = 1
+        ),
+        LessonPage(
+            title = "Normal for whom?",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "A **baseline** is what's normal for one account: where it signs in from, on " +
+                        "which devices, at what hours. A sign-in that breaks **several habits " +
+                        "at once** deserves a hard look.",
+                "The classic sign is **impossible travel**: two successful sign-ins too far " +
+                        "apart for one person to cover in the time between them."
+            ),
+            visual = LessonVisual.Log(
+                title = "SIGN-IN LOG · m.reyes",
+                lines = listOf(
+                    "usual  Davao · phone, laptop · 7AM-6PM",
+                    "07:41 OK  Davao      phone   192.0.2.14",
+                    "08:01 OK  Singapore  new PC  192.0.2.88"
+                ),
+                highlights = listOf(2),
+                caption = "Twenty minutes after the phone signed in from Davao, a device the " +
+                        "account has never used signed in from another country."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Baseline", "What's normal for an account: its usual places, devices and hours."),
+                KeyTerm("Impossible travel", "Two sign-ins too far apart for one person to have made both.")
+            ),
+            sourceIds = listOf("mitre-va", "sp80053", "nist-ir"),
+            task = 2
+        ),
+        LessonPage(
+            title = "Count what got in",
+            icon = LessonIcon.SEARCH,
+            paragraphs = listOf(
+                "In Level 102 you **pivoted** on an IOC to see what else it touched. Here you " +
+                        "use it to measure **scope**: how many accounts the attacker actually reached.",
+                "Count **successes** only. A **failed** sign-in means the attacker tried but " +
+                        "didn't get in. Leave out the account you started from: you already " +
+                        "know about it."
+            ),
+            visual = LessonVisual.Log(
+                title = "SEARCH: 192.0.2.88 · 5 RESULTS",
+                lines = listOf(
+                    "08:01 OK    user=m.reyes",
+                    "08:09 FAIL  user=p.garcia",
+                    "08:11 OK    user=k.villa",
+                    "08:14 OK    user=d.santos",
+                    "08:20 FAIL  user=t.lopez"
+                ),
+                highlights = listOf(2, 3),
+                caption = "Two more accounts were entered. The two failures were tries that " +
+                        "didn't work."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Scope", "How far an incident reached: which accounts, machines and data.")
+            ),
+            sourceIds = listOf("nist-ioc", "nist-ir"),
+            task = 3
+        ),
+        LessonPage(
+            title = "Muted isn't fixed",
+            icon = LessonIcon.LOCK,
+            paragraphs = listOf(
+                "A tool can see an attack and still miss it: the alert was **muted**, given " +
+                        "the wrong **severity**, buried in **false alarms**, or sent to an " +
+                        "inbox nobody watches.",
+                "Muting a noisy rule leaves a **blind spot**. **Tuning** adds conditions so " +
+                        "it ignores normal activity and still fires on the attack. The number " +
+                        "to shrink is **time to detect**."
+            ),
+            visual = LessonVisual.Log(
+                title = "DETECTION RULES · STATUS",
+                lines = listOf(
+                    "ON     10 failed sign-ins in 5 min",
+                    "ON     malware found on a PC",
+                    "MUTED  admin sign-in after hours",
+                    "       Mar 3, j.cruz: \"fires nightly,",
+                    "       backup job uses admin acct\""
+                ),
+                highlights = listOf(2, 3, 4),
+                caption = "Muting silenced the backup job, and every real after-hours admin " +
+                        "sign-in with it."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Blind spot", "Activity no rule is watching, often left by muting a noisy one."),
+                KeyTerm("Tuning", "Adding conditions so a rule ignores normal activity but still catches attacks."),
+                KeyTerm("Time to detect", "How long an attacker was inside before anyone noticed.")
+            ),
+            sourceIds = listOf("nist-ir", "sp80053"),
+            task = 4
+        ),
+        LessonPage(
+            title = "Specific, then tested",
+            icon = LessonIcon.CODE,
+            paragraphs = listOf(
+                "Too **broad**, and a rule fires on everyone's normal work until someone " +
+                        "mutes it. Too **narrow**, and it misses the attack. Build it on what " +
+                        "makes the attack **different** from normal.",
+                "Then **test** it on past logs before switching it on. The goal is **every** " +
+                        "attack caught with as few false alarms as possible."
+            ),
+            visual = LessonVisual.Log(
+                title = "RULE TEST · ADMIN GROUP · 30 DAYS",
+                lines = listOf(
+                    "rule                   caught  false",
+                    "any change             2 of 2    41",
+                    "change with no ticket  2 of 2     0",
+                    "change at night only   1 of 2     0"
+                ),
+                highlights = listOf(2),
+                caption = "IT adds people to the admin group every week, always with a " +
+                        "ticket. Attackers don't file tickets."
+            ),
+            keyTerms = listOf(
+                KeyTerm("Detection rule", "The conditions that decide when a SIEM raises an alert.")
+            ),
+            sourceIds = listOf("mitre-groups", "sp80053", "nist-ir"),
+            task = 5
+        )
+    ),
+    questions = listOf(
+        LessonQuestion(
+            prompt = "A stolen student account downloads 2,000 e-library files overnight. No " +
+                    "rule fires. What is this?",
+            options = listOf(
+                "A false positive: nothing alerted, so nothing was wrong",
+                "A false negative: a real attack that raised no alert",
+                "A true positive: the download was real, just unflagged",
+                "Alert fatigue: the desk was too busy to look at it"
+            ),
+            correctIndex = 1,
+            explanation = "A false negative is a real attack the tool never flags. A true " +
+                    "positive needs an alert to exist, and alert fatigue means an alert fired " +
+                    "but nobody read it."
+        ),
+        LessonQuestion(
+            prompt = "A teacher's laptop signs in from Imus at 8:02 AM. At 8:20 AM the same " +
+                    "account signs in from Seoul on a phone it has never used. What gives " +
+                    "the second sign-in away?",
+            options = listOf(
+                "It came at 8:20 AM, an hour when teachers rarely sign in",
+                "Any sign-in from outside the Philippines is an attack",
+                "Imus to Seoul in 18 minutes is impossible, on a new device",
+                "Two sign-ins in one morning mean the password was shared"
+            ),
+            correctIndex = 2,
+            explanation = "No one gets from Imus to Seoul in 18 minutes, and the phone is new " +
+                    "to the account: two habits broken at once. Teachers do travel, so a " +
+                    "foreign country alone proves nothing."
+        ),
+        LessonQuestion(
+            prompt = "A \"USB storage plugged in\" alert fires 50 times a week, almost all from " +
+                    "the AV room PC, where staff copy slides from approved drives. What's the " +
+                    "best fix?",
+            options = listOf(
+                "Keep the rule, but skip the AV room's approved drives",
+                "Mute the rule until the weekly count drops below 10",
+                "Lower it to LOW so it stops interrupting the desk",
+                "Delete the rule and let antivirus handle USB drives"
+            ),
+            correctIndex = 0,
+            explanation = "Tuning removes the known, approved noise and keeps watching every " +
+                    "other drive. Muting or deleting leaves a blind spot, and a LOW label " +
+                    "just buries it."
         )
     )
 )
