@@ -34,33 +34,33 @@
 }
 /* Light Mode */
 :root[data-theme="light"] {
-  --navy: #D8E3E2;
-  --card: #F1F6F5;
-  --blue: #0F766E;
-  --blue-dark: #C6DAD8;
-  --cyan: #0B6560;
+  --navy: #AECDC7;
+  --card: #D4E8E3;
+  --blue: #085B56;
+  --blue-dark: #A4CFC4;
+  --cyan: #095B58;
   --white: #0A1A1E;
-  --gray: #455A61;
-  --red: #BF2A47;
-  --green: #146A34;
-  --amber: #8C5C00;
-  --violet: #6647C2;
-  --surface: #E7EFEE;
-  --code-bg: #E9F0EF;
+  --gray: #40555C;
+  --red: #A40F2C;
+  --green: #0A5F2A;
+  --amber: #6C4C00;
+  --violet: #5637BC;
+  --surface: #BFDCD5;
+  --code-bg: #BFCEDC;
   --on-blue: #FFFFFF;
   --on-accent: #FFFFFF;
-  --navy-rgb: 216, 227, 226;
-  --card-rgb: 241, 246, 245;
-  --blue-rgb: 15, 118, 110;
-  --blue-dark-rgb: 198, 218, 216;
-  --cyan-rgb: 11, 101, 96;
+  --navy-rgb: 174, 205, 199;
+  --card-rgb: 212, 232, 227;
+  --blue-rgb: 8, 91, 86;
+  --blue-dark-rgb: 164, 207, 196;
+  --cyan-rgb: 9, 91, 88;
   --white-rgb: 10, 26, 30;
-  --gray-rgb: 69, 90, 97;
-  --red-rgb: 191, 42, 71;
-  --green-rgb: 20, 106, 52;
-  --amber-rgb: 140, 92, 0;
-  --violet-rgb: 102, 71, 194;
-  --surface-rgb: 231, 239, 238;
+  --gray-rgb: 64, 85, 92;
+  --red-rgb: 164, 15, 44;
+  --green-rgb: 10, 95, 42;
+  --amber-rgb: 108, 76, 0;
+  --violet-rgb: 86, 55, 188;
+  --surface-rgb: 191, 220, 213;
 }
 
 /* Cyberity — Lab 3 hardening (level 404). Shares the phish desk base. */
