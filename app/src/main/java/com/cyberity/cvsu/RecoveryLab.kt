@@ -118,12 +118,12 @@ fun recoveryLab(): LabDefinition = LabDefinition(
             title = "Restore data, not settings",
             objective = "Prof. Ramos's sent mail from Saturday to Monday was deleted by the " +
                     "attacker's rule. **Preview the restore options** and **restore it " +
-                    "safely**. Then answer **why not roll back to Saturday 6 AM**.",
+                    "safely**. Then answer **why even the clean Friday snapshot was the wrong " +
+                    "choice**.",
             guide = listOf(
-                "Backups are how lost data comes back, but a backup is a **copy of everything " +
-                        "at that moment**, including whatever the attacker had changed by then. " +
-                        "Restoring the wrong snapshot can **put the attacker straight back " +
-                        "in**.",
+                "In Level 403 you restored from **before the break-in**, because any later " +
+                        "snapshot carried the attacker's way in. That still holds, but here it " +
+                        "isn't the whole answer.",
                 "So separate **data** from **settings**. Data (emails, files) can be restored " +
                         "from any point. **Settings** (rules, sign-in methods, permissions) " +
                         "should stay as they are **now**, after containment cleaned them.",
@@ -144,23 +144,24 @@ fun recoveryLab(): LabDefinition = LabDefinition(
             lockedMessage = "Restore Prof. Ramos's sent mail safely first.",
             answer = LabAnswer.Choice(
                 options = listOf(
-                    "It would also bring back the forwarding rule and the Pixel 7 the attacker added",
-                    "It would put back her old password, which the attacker already knows",
-                    "It would bring back the 82 phishing copies the attacker sent to students",
-                    "Weekend snapshots are incomplete, because backups skip weekend changes"
+                    "It still held the forwarding rule, which the attacker set up on Friday evening",
+                    "It would undo 603 by putting back her old password, which the attacker knows",
+                    "Snapshots older than a day are locked once an account has been contained",
+                    "It was clean, but it brought back none of the 31 emails and wiped 158 newer ones"
                 ),
-                correctIndex = 0
+                correctIndex = 3
             ),
             hints = listOf(
-                "Open the Saturday 6 AM preview. What settings does it contain?",
-                "The rule was created at 2:10 AM and the phone added at 2:12 AM."
+                "Open the Friday 11 PM preview. What does it bring back, and what does it remove?",
+                "Her lost mail was all sent between Saturday and Monday."
             ),
-            successFeedback = "The Saturday 6 AM snapshot was taken four hours after the " +
-                    "attacker's rule and backdoor phone were added. A full rollback would have " +
-                    "undone all of 603. Restoring deleted items only brought back her 31 sent " +
-                    "emails and left her clean settings alone.",
-            failureFeedback = "Not that. Open the Saturday 6 AM preview and compare its settings " +
-                    "with the attack timeline."
+            successFeedback = "The Friday snapshot was clean, but her 31 lost emails were all sent " +
+                    "after it, and rolling back would have wiped 158 she received since. Saturday " +
+                    "6 AM was worse: it would have brought back the attacker's rule and Pixel 7. " +
+                    "Restoring deleted items only brought back all 31 and left her clean settings " +
+                    "alone.",
+            failureFeedback = "Not that. Open the Friday 11 PM preview and compare what it brings " +
+                    "back with what it removes."
         ),
 
         LabTask(
