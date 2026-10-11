@@ -53,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -123,6 +124,8 @@ fun HomeScreen(
     var selectedTab by remember { mutableIntStateOf(0) }
     var levelRunning by remember { mutableStateOf(false) }
     var tutorialRequest by remember { mutableIntStateOf(0) }
+    // Keeps each tab's saved state (like the Learn path's scroll position) while another tab is open.
+    val tabStates = rememberSaveableStateHolder()
 
     Scaffold(
         containerColor = AppNavy,
@@ -155,17 +158,19 @@ fun HomeScreen(
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-            when (selectedTab) {
-                0 -> LearnScreen(
-                    onLevelRunningChanged = { levelRunning = it },
-                    tutorialRequest = tutorialRequest,
-                    onTutorialRequestHandled = { tutorialRequest = 0 }
-                )
-                1 -> LeaderboardTab()
-                2 -> ProfileTab(onLogout = onLogout, onReplayTutorial = {
-                    tutorialRequest++
-                    selectedTab = 0
-                })
+            tabStates.SaveableStateProvider(selectedTab) {
+                when (selectedTab) {
+                    0 -> LearnScreen(
+                        onLevelRunningChanged = { levelRunning = it },
+                        tutorialRequest = tutorialRequest,
+                        onTutorialRequestHandled = { tutorialRequest = 0 }
+                    )
+                    1 -> LeaderboardTab()
+                    2 -> ProfileTab(onLogout = onLogout, onReplayTutorial = {
+                        tutorialRequest++
+                        selectedTab = 0
+                    })
+                }
             }
         }
     }
