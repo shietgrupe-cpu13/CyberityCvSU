@@ -47,12 +47,10 @@ internal object PrivacyPreferencesRepository {
             transaction.set(preferences, mapOf("leaderboardVisible" to visible, "deleting" to false))
             if (!visible) transaction.delete(db.collection("leaderboard").document(uid))
             else if (profile?.getString("displayName") != null) {
-                val earned = (progress?.get("levelXp") as? Map<*, *>)?.values
-                    ?.sumOf { (it as? Number)?.toLong() ?: 0L } ?: 0L
                 val spent = progress?.getLong("xpSpent") ?: 0L
                 transaction.set(db.collection("leaderboard").document(uid), mapOf(
                     "displayName" to profile.getString("displayName"),
-                    "xp" to (earned - spent).coerceIn(0, Int.MAX_VALUE.toLong()),
+                    "xp" to ScorePolicy.balance(progress?.get("levelXp") as? Map<*, *>, spent),
                     "isTester" to (profile.getBoolean("isTester") ?: false),
                     "updatedAt" to FieldValue.serverTimestamp()))
             }

@@ -2,7 +2,7 @@
 
 Privacy contains leaderboard visibility, JSON download, and permanent account
 deletion. It describes current data use; an approved institutional policy is
-still needed. Problem reports have no configured support recipient.
+still needed. Problem reports open an email draft to SupportConfig.EMAIL.
 
 Hiding stores a private preference and deletes the leaderboard entry atomically.
 Showing reconstructs it from server profile/progress data. Publishing reads the

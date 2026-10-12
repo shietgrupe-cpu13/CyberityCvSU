@@ -62,11 +62,8 @@ import com.google.firebase.firestore.SetOptions
 // The Learn screen publishes the entry whenever the student's XP changes, so
 // the board follows the same figure the student sees in the app.
 //
-// Firestore rules this needs (add in the Firebase console):
-//   match /leaderboard/{uid} {
-//     allow read: if request.auth != null;
-//     allow write: if request.auth != null && request.auth.uid == uid;
-//   }
+// The authoritative firestore.rules requires XP/name/tester state to match
+// the server-stored progress/profile, including the starting grant and spending.
 
 @Immutable
 data class LeaderboardEntry(
@@ -89,18 +86,22 @@ object LeaderboardRepository {
     const val TOP_N = 50
 
     /** Writes this student's public entry. Test accounts are stored but never listed. */
-    fun publish(uid: String, profile: UserProfile, xp: Int) {
+    fun publish(uid: String): com.google.android.gms.tasks.Task<Unit> =
         db.runTransaction { transaction ->
             val privacy = transaction.get(db.collection("privacyPreferences").document(uid))
             if (privacy.getBoolean("leaderboardVisible") == false || privacy.getBoolean("deleting") == true) return@runTransaction
+            val profile = transaction.get(db.collection("users").document(uid))
+            val progress = transaction.get(db.collection("userProgress").document(uid))
+            val name = profile.getString("displayName") ?: return@runTransaction
+            val xp = ScorePolicy.balance(progress.get("levelXp") as? Map<*, *>, progress.getLong("xpSpent") ?: 0)
             transaction.set(db.collection(COLLECTION).document(uid), mapOf(
-                FIELD_NAME to profile.displayName,
+                FIELD_NAME to name,
                 FIELD_XP to xp,
-                FIELD_IS_TESTER to profile.isTester,
+                FIELD_IS_TESTER to (profile.getBoolean("isTester") ?: false),
                 FIELD_UPDATED_AT to FieldValue.serverTimestamp()
             ), SetOptions.merge())
-        }
-    }
+            Unit
+        }.addOnFailureListener { android.util.Log.w("CyberityScores", "Leaderboard synchronization failed", it) }
 
     /**
      * Listens to the top of the board, highest XP first. Test accounts are

@@ -21,9 +21,9 @@ test('Privacy visibility and deletion remain enforced against stale clients', as
     const id = '12345678-abcd-abcd-abcd-123456789012';
     const session = `accountSecuritySpark/${uid}/sessions/${id}`;
     const row = { device: 'Android', androidVersion: '16', authTime: auth.auth_time, lastActive: serverTimestamp(), signedOut: false };
-    const entry = { displayName: 'Privacy Alice', xp: 10, isTester: false, updatedAt: serverTimestamp() };
+    const entry = { displayName: 'Privacy Alice', xp: 60, isTester: false, updatedAt: serverTimestamp() };
     await assertSucceeds(setDoc(doc(db, `users/${uid}`), { displayName: 'Privacy Alice' }));
-    await assertSucceeds(setDoc(doc(db, `userProgress/${uid}`), { xp: 10 }));
+    await assertSucceeds(setDoc(doc(db, `userProgress/${uid}`), { completedLevels: [101], levelXp: { 101: 10 } }));
     await assertSucceeds(setDoc(doc(db, 'studentIds/PRIVACY-001'), { uid }));
     await assertSucceeds(setDoc(doc(db, board), entry));
     await assertSucceeds(setDoc(doc(db, session), row));

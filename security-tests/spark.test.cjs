@@ -21,10 +21,10 @@ test('Spark cutoff protects sessions and production collections', async () => {
     const row = { device: 'Test Android', androidVersion: '16', authTime: auth.auth_time,
       lastActive: serverTimestamp(), signedOut: false };
     await assertSucceeds(setDoc(doc(db, session), row));
-    await assertSucceeds(setDoc(doc(db, 'users/alice'), { name: 'Alice' }));
-    await assertSucceeds(setDoc(doc(db, 'userProgress/alice'), { xp: 10 }));
+    await assertSucceeds(setDoc(doc(db, 'users/alice'), { displayName: 'Alice' }));
+    await assertSucceeds(setDoc(doc(db, 'userProgress/alice'), { completedLevels: [101], levelXp: { 101: 10 } }));
     await assertSucceeds(setDoc(doc(db, 'studentIds/2026-001'), { uid: 'alice' }));
-    const entry = { displayName: 'Alice', xp: 10, isTester: false, updatedAt: serverTimestamp() };
+    const entry = { displayName: 'Alice', xp: 60, isTester: false, updatedAt: serverTimestamp() };
     await assertSucceeds(setDoc(doc(db, 'leaderboard/alice'), entry));
     await assertSucceeds(getDoc(doc(other, 'leaderboard/alice')));
     await assertSucceeds(getDoc(doc(other, 'studentIds/2026-001')));

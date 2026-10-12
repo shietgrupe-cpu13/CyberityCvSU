@@ -580,7 +580,7 @@ fun LearnScreen(
     LaunchedEffect(uid, leaderboardProfile, totalXp) {
         val id = uid ?: return@LaunchedEffect
         val profile = leaderboardProfile ?: return@LaunchedEffect
-        LeaderboardRepository.publish(id, profile, totalXp)
+        LeaderboardRepository.publish(id)
     }
 
     // Charging is immediate and final — a hint stays bought even if the level

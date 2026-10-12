@@ -18,7 +18,8 @@ Learning notification preferences now schedule real local reminders.
 Privacy now offers leaderboard visibility, JSON account export, and verified
 account deletion with retry/recovery routing. Help & About provides FAQs and
 user-controlled copy/share problem reports with optional basic diagnostics.
-Reports have no preconfigured support recipient. Firestore Privacy rules were
+Reports open an email draft addressed to cyberityapplication@gmail.com; developers
+can change SupportConfig.EMAIL and rebuild the app. Firestore Privacy rules were
 deployed and the integrated debug app installed on 2026-10-04. See privacy.md.
 
 | Section | Suggested feature | Work required |
