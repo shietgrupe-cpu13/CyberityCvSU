@@ -63,11 +63,7 @@ object ProgressRepository {
             .addOnSuccessListener { snapshot ->
                 val raw = snapshot.get(FIELD_LEVEL_XP) as? Map<*, *>
                 onResult(
-                    raw?.entries?.mapNotNull { (key, value) ->
-                        val id = (key as? String)?.toIntOrNull() ?: return@mapNotNull null
-                        val xp = (value as? Number)?.toInt() ?: return@mapNotNull null
-                        id to xp
-                    }?.toMap() ?: emptyMap()
+                    ScorePolicy.levelXp(raw)
                 )
             }
             .addOnFailureListener { onResult(emptyMap()) }
@@ -75,8 +71,18 @@ object ProgressRepository {
 
     /** Records XP for one level. merge() leaves every other level's entry alone. */
     fun saveLevelXp(uid: String, levelId: Int, xp: Int) {
-        db.collection(COLLECTION).document(uid)
-            .set(mapOf(FIELD_LEVEL_XP to mapOf(levelId.toString() to xp)), SetOptions.merge())
+        require(levelId in ScorePolicy.levelIds && xp in 0..ScorePolicy.cap(levelId))
+        val document = db.collection(COLLECTION).document(uid)
+        db.runTransaction { transaction ->
+            val current = transaction.get(document)
+            val existing = current.get(FIELD_LEVEL_XP) as? Map<*, *>
+            if (existing?.containsKey(levelId.toString()) != true) {
+                transaction.set(document, mapOf(
+                    FIELD_COMPLETED to FieldValue.arrayUnion(levelId),
+                    FIELD_LEVEL_XP to mapOf(levelId.toString() to xp)), SetOptions.merge())
+            }
+        }.addOnSuccessListener { LeaderboardRepository.publish(uid) }
+            .addOnFailureListener { android.util.Log.w("CyberityScores", "Level award synchronization failed", it) }
     }
 
     /**
@@ -96,8 +102,11 @@ object ProgressRepository {
      * hints bought in quick succession can't overwrite each other's deduction.
      */
     fun addXpSpent(uid: String, amount: Int) {
+        require(amount in listOf(15, 30, 50))
         db.collection(COLLECTION).document(uid)
             .set(mapOf(FIELD_XP_SPENT to FieldValue.increment(amount.toLong())), SetOptions.merge())
+            .addOnSuccessListener { LeaderboardRepository.publish(uid) }
+            .addOnFailureListener { android.util.Log.w("CyberityScores", "Hint spending synchronization failed", it) }
     }
 
     /**

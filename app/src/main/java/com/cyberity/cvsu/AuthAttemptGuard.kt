@@ -1,6 +1,8 @@
 package com.cyberity.cvsu
 
 import android.content.Context
+import android.os.SystemClock
+import android.provider.Settings
 import androidx.core.content.edit
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -26,20 +28,37 @@ internal object AuthAttemptGuard {
         guards.getOrPut(passwordReset) {
             val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val key = if (passwordReset) "reset_" else "signin_"
-            val state = AuthThrottle.State(
+            val now = SystemClock.elapsedRealtime()
+            val boot = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, -1)
+            val persisted = AuthThrottle.State(
                 prefs.getInt(key + "failures", 0), prefs.getInt(key + "penalty", 0),
                 prefs.getLong(key + "blocked_until", 0), prefs.getLong(key + "last_failure", 0),
                 prefs.getLong(key + "next_request", 0)
             )
-            AuthThrottle(state, System::currentTimeMillis, save = { value ->
-                prefs.edit {
+            val monotonic = prefs.getBoolean(key + "monotonic", false)
+            // Old wall-clock deadlines cannot be safely translated after a clock change.
+            val state = if (monotonic) AuthThrottle.restore(persisted,
+                prefs.getLong(key + "saved_elapsed", 0), now,
+                boot >= 0 && prefs.getInt(key + "boot", -2) == boot)
+            else persisted.copy(
+                blockedUntil = if (persisted.blockedUntil > 0) now + AuthThrottle.MAX_COOLDOWN_MILLIS else 0,
+                nextRequest = if (persisted.nextRequest > 0) now + (if (passwordReset) 60_000L else 1_000L) else 0,
+                lastFailure = if (persisted.lastFailure > 0) now else 0)
+            fun persist(value: AuthThrottle.State) {
+                prefs.edit(commit = true) {
                     putInt(key + "failures", value.failures)
                     putInt(key + "penalty", value.penalty)
                     putLong(key + "blocked_until", value.blockedUntil)
                     putLong(key + "last_failure", value.lastFailure)
                     putLong(key + "next_request", value.nextRequest)
+                    putBoolean(key + "monotonic", true)
+                    putLong(key + "saved_elapsed", SystemClock.elapsedRealtime())
+                    putInt(key + "boot", boot)
                 }
-            }, requestIntervalMillis = if (passwordReset) 60_000L else 1_000L)
+            }
+            persist(state)
+            AuthThrottle(state, SystemClock::elapsedRealtime, save = ::persist,
+                requestIntervalMillis = if (passwordReset) 60_000L else 1_000L)
         }
 }
 

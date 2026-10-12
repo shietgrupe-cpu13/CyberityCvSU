@@ -22,4 +22,6 @@ CLAUDE.local.md
 
 # Temporary generation files and dependencies
 /tmp/
+*-debug.log
+/tmp-score-test.log
 /output/pdf/

@@ -65,6 +65,16 @@ internal class AuthThrottle(
     }
 
     companion object {
+        /** Across boots elapsed time has a new origin. Reapply saved waits rather than trust wall time. */
+        fun restore(initial: State, savedElapsed: Long, now: Long, sameBoot: Boolean): State {
+            if (sameBoot && now >= savedElapsed) return initial
+            return initial.copy(
+                blockedUntil = now + (initial.blockedUntil - savedElapsed).coerceIn(0, MAX_COOLDOWN_MILLIS),
+                nextRequest = now + (initial.nextRequest - savedElapsed).coerceIn(0, 60_000L),
+                lastFailure = if (initial.lastFailure > 0) now else 0
+            )
+        }
+
         const val MAX_FAILURES = 5
         const val IDLE_RESET_MILLIS = 15 * 60_000L
         const val MAX_COOLDOWN_MILLIS = 15 * 60_000L

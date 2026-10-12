@@ -4,6 +4,39 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AuthThrottleTest {
+    @Test fun sameBootRestartCountsActualElapsedTime() {
+        val state = AuthThrottle.State(blockedUntil = 130_000, lastFailure = 100_000)
+        val restored = AuthThrottle.restore(state, 100_000, 110_000, true)
+        assertEquals(20L, AuthThrottle(restored, { 110_000 }).retryAfterSeconds())
+    }
+
+    @Test fun rebootReappliesWaitAndPreservesFailures() {
+        val state = AuthThrottle.State(failures = 4, penalty = 2,
+            blockedUntil = 130_000, lastFailure = 100_000, nextRequest = 101_000)
+        val restored = AuthThrottle.restore(state, 100_000, 5_000, false)
+        assertEquals(30L, AuthThrottle(restored, { 5_000 }).retryAfterSeconds())
+        assertEquals(4, restored.failures)
+        assertEquals(2, restored.penalty)
+        assertEquals(6_000L, restored.nextRequest)
+    }
+
+    @Test fun elapsedClockRollbackCannotClearSavedWait() {
+        val restored = AuthThrottle.restore(AuthThrottle.State(blockedUntil = 130_000),
+            100_000, 5_000, true)
+        assertEquals(30L, AuthThrottle(restored, { 5_000 }).retryAfterSeconds())
+    }
+
+    @Test fun passwordFailuresAndMfaFailuresShareBudgetAcrossRestart() {
+        val passwords = guard()
+        repeat(3) { reject(passwords) }
+        passwords.finished() // password accepted, MFA still pending
+        val mfa = guard()
+        reject(mfa)
+        assertTrue(mfa.tryStart())
+        mfa.rejected()
+        assertEquals(30L, mfa.retryAfterSeconds())
+    }
+
     private var now = 1_000_000L
     private var saved = AuthThrottle.State()
     private fun guard(interval: Long = 1_000L) = AuthThrottle(saved, { now }, { saved = it }, interval)
