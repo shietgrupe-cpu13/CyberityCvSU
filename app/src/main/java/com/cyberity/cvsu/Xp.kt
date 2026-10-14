@@ -24,6 +24,13 @@ const val BONUS_ALL_CLUES = 10
 const val BONUS_NO_HINTS = 15
 const val MAX_LEVEL_XP = LEVEL_XP + BONUS_NO_HEART_LOST + BONUS_ALL_CLUES + BONUS_NO_HINTS
 
+/**
+ * Taken off the payout for each failed run of a level that can be re-run
+ * inside one attempt (the Level 350 quiz). It only eats into the bonuses:
+ * finishing always pays at least [LEVEL_XP].
+ */
+const val RETRY_PENALTY = 10
+
 /** The spendable balance: the starting grant plus what levels paid out, less hints bought. */
 fun xpBalance(earned: Int, spent: Int): Int = (STARTING_XP + earned - spent).coerceAtLeast(0)
 
@@ -44,9 +51,11 @@ data class XpAward(
     val base: Int,
     val noHeartBonus: Int,
     val cluesBonus: Int,
-    val noHintsBonus: Int
+    val noHintsBonus: Int,
+    /** XP taken off for failed runs, already capped so the total never drops below the base. */
+    val retryPenalty: Int = 0
 ) {
-    val total: Int get() = base + noHeartBonus + cluesBonus + noHintsBonus
+    val total: Int get() = base + noHeartBonus + cluesBonus + noHintsBonus - retryPenalty
 }
 
 /**
@@ -58,14 +67,20 @@ fun awardFor(
     completed: Boolean,
     heartsLost: Int,
     hintsUsed: Int,
-    allCluesFound: Boolean
+    allCluesFound: Boolean,
+    failedRuns: Int = 0
 ): XpAward {
     if (!completed) return XpAward(0, 0, 0, 0)
+    val noHeart = if (heartsLost == 0) BONUS_NO_HEART_LOST else 0
+    val clues = if (allCluesFound) BONUS_ALL_CLUES else 0
+    val noHints = if (hintsUsed == 0) BONUS_NO_HINTS else 0
+    val bonuses = noHeart + clues + noHints
     return XpAward(
         base = LEVEL_XP,
-        noHeartBonus = if (heartsLost == 0) BONUS_NO_HEART_LOST else 0,
-        cluesBonus = if (allCluesFound) BONUS_ALL_CLUES else 0,
-        noHintsBonus = if (hintsUsed == 0) BONUS_NO_HINTS else 0
+        noHeartBonus = noHeart,
+        cluesBonus = clues,
+        noHintsBonus = noHints,
+        retryPenalty = (failedRuns.coerceAtLeast(0) * RETRY_PENALTY).coerceAtMost(bonuses)
     )
 }
 
@@ -74,5 +89,6 @@ fun scoreLevelXp(
     completed: Boolean,
     heartsLost: Int,
     hintsUsed: Int,
-    allCluesFound: Boolean
-): Int = awardFor(completed, heartsLost, hintsUsed, allCluesFound).total
+    allCluesFound: Boolean,
+    failedRuns: Int = 0
+): Int = awardFor(completed, heartsLost, hintsUsed, allCluesFound, failedRuns).total

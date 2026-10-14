@@ -93,3 +93,67 @@ not replace the manual source review above or claim automated fact verification.
 Manual phone check: open Learn → Unit 02 / Unit 05 → each level → Read lesson;
 check all three task pages, Sources links, both questions and explanations,
 Back/Continue to lab, scrolling and larger text. Unit 01 uses the same UI.
+
+# Unit 03 lesson source review
+
+Reviewed 14 October 2026. Five lessons for levels 301–305 (Phishing & Social
+Engineering), in UnitThreeLessons.kt, routed through lessonFor in
+LessonContent.kt, with publication details added to LessonReferences.kt. Each
+lesson has one page per lab task (5, 5, 5, 5 and 6 pages) and three no-stakes
+questions. Level 350 (Sixty Seconds) is a recall quiz over 301–304 and has no
+lesson, so the lesson can't hand over its answers.
+
+All names, domains, amounts and incidents in the lessons are fictional and
+deliberately different from the lab evidence. Key words are bolded, matching
+the Unit 01 lessons.
+
+| Source / publisher | Checked material | Used in levels |
+| --- | --- | --- |
+| [MITRE T1566](https://attack.mitre.org/techniques/T1566/) | Spearphishing vs. mass campaigns; mail sent from compromised legitimate accounts; email, service and voice sub-techniques | 301, 305 |
+| [MITRE T1566.001](https://attack.mitre.org/techniques/T1566/001/) | Attachments disguised as documents; reliance on user execution | 301 |
+| [MITRE T1036.007](https://attack.mitre.org/techniques/T1036/007/) | Double file extensions; hidden known extensions | 301 |
+| [MITRE T1598](https://attack.mitre.org/techniques/T1598/) | Phishing for information by conversation or call; posing as a legitimate source; reconnaissance used during later targeting | 301, 303, 305 |
+| [MITRE T1586.001](https://attack.mitre.org/techniques/T1586/001/) | Hijacked social media accounts used to reach trusting connections | 303 |
+| [MITRE T1583.001](https://attack.mitre.org/techniques/T1583/001/) | Lookalike/homoglyph domains; tracking and pivoting on registration data; privacy services | 302, 305 |
+| [MITRE T1091](https://attack.mitre.org/techniques/T1091/) | Malware on removable media, files renamed to look legitimate, Autorun; disable Autorun and limit removable media | 303 |
+| [NIST TN 2276 (2023)](https://doi.org/10.6028/NIST.TN.2276) | Cues B.2.3 (URL hyperlinking), B.4.3 (requests for sensitive information), B.4.4 (urgency), B.3.2 (logo imitation); premise alignment | 301, 302 |
+| [IETF RFC 5322 §§3.4–3.4.1](https://www.rfc-editor.org/rfc/rfc5322#section-3.4) | Display name, local-part and the domain that identifies where mail is delivered | 302 |
+| [IETF RFC 9989 (May 2026)](https://www.rfc-editor.org/rfc/rfc9989) | DMARC validates the Author (From) domain via aligned SPF/DKIM (§§1, 3.2.2, 4.4); visually similar domains out of scope (§2.2). Obsoletes RFC 7489 | 301, 302 |
+| [Unicode UTS #39](https://www.unicode.org/reports/tr39/) | Mixed-script and whole-script confusables (§4) | 302 |
+| [Chromium IDN display policy](https://chromium.googlesource.com/chromium/src/+/main/docs/idn.md) | When Chrome shows a label as xn-- punycode (mixed scripts, whole-script confusables) | 302 |
+| [IETF RFC 9083 (2021)](https://www.rfc-editor.org/rfc/rfc9083) | RDAP registration events, registrant/registrar entity roles, redacted contacts (§§3, 4.5, 5.1) | 305 |
+| [FBI IC3 PSA I-091124-PSA (2024)](https://www.ic3.gov/PSA/2024/PSA240911) | Business email compromise through real accounts; verify requests through a secondary channel | 301 |
+| [FBI IC3 PSA I-011822-PSA (2022)](https://www.ic3.gov/PSA/2022/PSA220118) | Tampered QR codes; check the URL after scanning; don't install apps from QR codes | 302, 305 |
+| [CISA Recognize and Report Phishing](https://www.cisa.gov/secure-our-world/recognize-and-report-phishing) | Urgency, requests for information, lookalike addresses; typos no longer reliable; report, delete, don't reply; verify through a channel you already trust | 301, 302, 304, 305 |
+| [FTC phishing (updated Oct 2024)](https://consumer.ftc.gov/articles/how-recognize-and-avoid-phishing-scams) | Payment-link lures; legitimate companies don't ask to update payment details by link; contact the company through a known number or site | 304, 305 |
+| [FTC prize scams (2025)](https://consumer.ftc.gov/articles/fake-prize-sweepstakes-and-lottery-scams) | Real prizes are free; paying a fee to collect is a scam; pressure and requests for account details | 304 |
+| [FCC caller ID spoofing (2020)](https://www.fcc.gov/consumers/guides/spoofing-and-caller-id) | Displayed numbers can be faked; hang up and call the number on your statement or official site | 303, 304, 305 |
+| [ACMA SMS sender ID register](https://www.acma.gov.au/sms-sender-id-register) | Fake sender IDs; scam texts appear in the same thread as genuine ones | 304 |
+| [UK Government Security Group: Tailgating (2024)](https://www.security.gov.uk/wp-content/uploads/2024/04/tailgating.pdf) | Following through doors, heavy-box and delivery/maintenance pretexts; challenge or report | 303 |
+| [Tischer et al., IEEE S&P 2016](https://research.google/pubs/users-really-do-plug-in-usb-drives-they-find/) | 297 drives on a campus, 45–98% plugged in, first in under six minutes, altruism as motive | 303 |
+| [Meta Newsroom (2018, updated 2019)](https://about.fb.com/news/2018/06/transparency-for-ads-and-pages/) | Page creation date, name changes and active ads | 305 |
+| [GCash Help Center](https://help.gcash.com/hc/en-us/articles/19578518834457) | GCash never asks for MPIN/OTP; unexpected prizes and pressure as scam signs | 303, 304 |
+| [BPI (15 Dec 2025)](https://www.bpi.com.ph/about-bpi/news/bpi-reminds-customers-how-to-spot-scams-this-holiday-season) | Banks don't ask for OTPs/passwords by phone or verify accounts via unsolicited calls; no clickable links by text | 304 |
+| [RA 12010, AFASA (2024)](https://lawphil.net/statutes/repacts/ra2024/ra_12010_2024.html) | §4(b): obtaining financial-account credentials by deception, including electronic communications, is a social engineering scheme | 303 |
+| [PNA: I-ARC hotline 1326](https://alpha.pna.gov.ph/articles/1207775) | CICC-led 24/7 hotline for reporting phishing, text scams and caller ID spoofing | 304 |
+
+## Unit 03 interpretation checks
+
+- RFC 7489 was obsoleted by RFC 9989 in May 2026; the newer RFC is cited.
+- The Chromium punycode rule is described only for mixed-script and
+  whole-script lookalikes. The lesson says same-alphabet swaps (rn for m) have
+  nothing for that rule to catch, not that browsers never warn about them.
+- RA 12010 is described at the level of its §4(b) text. The Act doesn't name
+  OTPs specifically, so the lesson ties the OTP rule to GCash and BPI, not to
+  the Act.
+- The cisa.gov news page used by Unit 01 ("Avoiding Social Engineering and
+  Phishing Attacks") and the NIST glossary returned retrieval errors on
+  14 October 2026, so Unit 03 cites the reachable CISA Secure Our World page
+  and the UK government tailgating guidance instead.
+- The USB study's 45–98% is the paper's estimated range for drives connected,
+  not the share of people who opened files.
+
+Validation: the five lessons compiled against LessonContent/LessonReferences
+with a standalone Kotlin compiler, and the LessonContentTest rules were
+re-run for 301–305 outside Gradle. The full Android build and LessonContentTest
+still need to run in Android Studio, followed by a phone check of each lesson.

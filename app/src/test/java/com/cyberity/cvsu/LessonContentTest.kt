@@ -7,7 +7,7 @@ class LessonContentTest {
 
     /** Levels that have a lesson so far. Add each new one here. */
     private val lessonLevels = listOf(101, 102, 103, 104, 106,
-        201, 202, 203, 204, 205, 250, 501, 502, 503, 504, 505, 550,
+        201, 202, 203, 204, 205, 250, 301, 302, 303, 304, 305, 501, 502, 503, 504, 505, 550,
         601, 602, 603, 604, 605)
 
     @Test
