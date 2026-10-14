@@ -73,8 +73,8 @@ val oneDayClueLabels: Map<String, String> = mapOf(
 fun oneDayPhoneLab(): LabDefinition = LabDefinition(
     levelId = 305,
     title = "One Day, One Phone",
-    subtitle = "Phishing Simulation · Unit 3 capstone",
-    briefing = "This is the Unit 3 final, and nothing in it is labelled.\n\n" +
+    subtitle = "Phishing Simulation · ITSO",
+    briefing = "" +
             "It is one Tuesday on campus, from 07:40 to 21:00, on your own phone. Emails, a " +
             "Messenger chat, a poster in the canteen and a phone call reach you in order. Some " +
             "are exactly what they look like, and treating those as genuine matters as much " +

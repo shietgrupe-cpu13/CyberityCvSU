@@ -1,4 +1,4 @@
-/* Cyberity — One Day, One Phone (level 305, the Unit 3 capstone).
+/* Cyberity — One Day, One Phone (level 305).
  *
  * The student's own phone, from 07:40 to 21:00 in fast time. Eight things
  * arrive across email, Messenger, a canteen poster and a live call; three

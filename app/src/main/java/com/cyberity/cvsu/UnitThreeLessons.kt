@@ -13,6 +13,12 @@ package com.cyberity.cvsu
 // LEVEL 301 — What is Phishing? (Phish Report Desk)
 // ---------------------------------------------------------------------------
 internal fun phishDeskLesson() = reviewedLesson(301, "What Phishing Really Wants", listOf(
+    LessonPage("Why phishing works", LessonIcon.PHISHING,
+        listOf("**Phishing** aims at the **person**, not the computer. It is a message that pretends to come from someone you trust so that you will **click a link, open a file, or hand over information**. CISA's advice is to look for **urgency**, requests for **sensitive information** and **lookalike addresses**, because those are what every version has in common.",
+            "Filters catch a lot, but a phishing message only has to reach **one person who acts**. This lesson walks through the questions a help desk asks about a reported message: **what it wants** from you, **who it was aimed at**, whether a **real account** sent it, what an **attachment** really is, and what to do when there is **nothing to click** at all."),
+        listOf("cisa-report-phishing", "mitre-phishing"),
+        keyTerms = listOf(KeyTerm("Social engineering", "Tricking people, rather than breaking machines, to get access or information."),
+            KeyTerm("Reporting", "Forwarding a suspicious message to IT so one person's catch protects everyone."))),
     LessonPage("Genuine mail informs; phishing asks", LessonIcon.PHISHING,
         listOf("**Phishing** is social engineering delivered electronically: a message that pretends to come from someone you trust so that you will **do something** for the sender. Logos and names are easy to copy, so the most useful question is not *who* it says it is from but **what it wants from you**.",
             "A real notice from an office you deal with usually **informs** and leaves the next step to you. A phish **asks**: sign in here, open this, send that, and do it **now**. NIST lists **requests for sensitive information** and a **sense of urgency** among the cues that mark a phishing message."),
@@ -72,6 +78,11 @@ internal fun phishDeskLesson() = reviewedLesson(301, "What Phishing Really Wants
 // LEVEL 302 — Identifying Suspicious Emails (Bait Workshop)
 // ---------------------------------------------------------------------------
 internal fun baitWorkshopLesson() = reviewedLesson(302, "Reading an Email's Address and Links", listOf(
+    LessonPage("Know how the trick is built", LessonIcon.EMAIL,
+        listOf("The fastest way to spot a trick is to understand how it is put together. NIST counts a link whose **text and destination differ** among its **technical** phishing cues, and MITRE describes attackers registering **lookalike domains** on purpose so that a sender address **borrows a trusted name**.",
+            "This lesson takes those tricks one at a time: reading an address **from the right**, spotting **lookalike letters**, previewing **where a link really goes**, and what a **DMARC pass** does and doesn't prove. In the lab you build a practice email from the same tricks, then catch one aimed at you."),
+        listOf("nist-phish-scale", "mitre-domains"),
+        keyTerms = listOf(KeyTerm("Phishing drill", "A practice phishing email sent only to volunteers, so they can learn from a click that costs nothing."))),
     LessonPage("The owner sits at the right-hand end", LessonIcon.LINK,
         listOf("In an email address, everything before the **@** is chosen by whoever runs the mailbox. The **domain** after it says where the mail is delivered. Web addresses work the same way: the **registered domain** just before the first single slash decides who controls the page.",
             "Owners can put **any words they like** in front of their own domain. Attackers use that to make a trusted name appear first, because people read **left to right** and stop at the first name they recognise. Read the address **from the right** instead, back from the first single slash."),
@@ -133,6 +144,11 @@ internal fun baitWorkshopLesson() = reviewedLesson(302, "Reading an Email's Addr
 // LEVEL 303 — Social Engineering (Campus Security Review)
 // ---------------------------------------------------------------------------
 internal fun socialEngineeringLesson() = reviewedLesson(303, "Attacks That Target People", listOf(
+    LessonPage("Hacking the person", LessonIcon.LOCK,
+        listOf("**Social engineering** gets access by working on **people**: their trust, their hurry, their wish to be helpful. MITRE describes attackers **posing as a legitimate source** to draw out information, and UK government security guidance shows the same idea at a **locked door**.",
+            "Most of it involves **no malware** and nothing for a filter to catch, so the defence is a habit: **check the request through your own route**, and **report** what doesn't fit. This lesson covers tailgating, pretexting, baiting, hijacked accounts, and how small steps join into **one attack**."),
+        listOf("mitre-phish-info", "uk-tailgating"),
+        keyTerms = listOf(KeyTerm("Social engineering", "Manipulating people into giving access or information, instead of attacking systems directly."))),
     LessonPage("The door you hold open", LessonIcon.LOCK,
         listOf("**Tailgating** is getting into a secure area by following someone who is allowed in. UK government security guidance lists the usual tactics: waiting to follow someone through a door, asking for help with a **heavy box**, or dressing as **maintenance or delivery** staff.",
             "Badges only work if each person uses their own. If someone without an ID or visitor pass is inside, the guidance is to **challenge them** if you feel comfortable, and otherwise **report them** through the proper channel."),
@@ -185,6 +201,12 @@ internal fun socialEngineeringLesson() = reviewedLesson(303, "Attacks That Targe
 // LEVEL 304 — Scam Messages (Your Phone, One Week)
 // ---------------------------------------------------------------------------
 internal fun scamMessagesLesson() = reviewedLesson(304, "Scams by Text and Call", listOf(
+    LessonPage("Scams that reach your phone", LessonIcon.WARNING,
+        listOf("**Smishing** is phishing by **text message**; **vishing** is phishing by **voice call**. The story changes every time (a prize, a parcel, a locked account) but the FTC's advice stays the same: don't use the message's links, and **contact the company through a number or site you already know**.",
+            "Philippine banks and e-wallets are blunt about one rule: they **never ask for your OTP or MPIN**. This lesson covers fake **sender IDs**, **advance-fee** prizes, **payment-link** delivery texts, **OTP** calls, and what actually helps once a scam message arrives."),
+        listOf("ftc-phishing", "bpi-scams", "gcash-safety"),
+        keyTerms = listOf(KeyTerm("Smishing", "Phishing sent by SMS text message."),
+            KeyTerm("Vishing", "Phishing carried out by phone call."))),
     LessonPage("A sender name is just a label", LessonIcon.PHISHING,
         listOf("Companies text you under a short name instead of a number. That name is a **sender ID**, and your phone groups messages with the same ID into **one thread**.",
             "Australia's communications regulator warns that scammers use **fake sender IDs**, and that their texts then **appear in the same thread as real messages** from the brand. Where a message lands proves nothing. Judge it by **what it asks** and **where its link goes**."),
@@ -236,6 +258,11 @@ internal fun scamMessagesLesson() = reviewedLesson(304, "Scams by Text and Call"
 // LEVEL 305 — Phishing Simulation capstone (One Day, One Phone)
 // ---------------------------------------------------------------------------
 internal fun oneDayPhoneLesson() = reviewedLesson(305, "Checking Before You Trust", listOf(
+    LessonPage("No labels on a real day", LessonIcon.SHIELD,
+        listOf("On a real day, genuine notices and phishing arrive **side by side**, by email, chat, poster and phone. MITRE notes that attackers use **several channels**, and that details gathered early are **used later** to make the next approach convincing.",
+            "Treating a genuine message as fake has a cost too, so this lesson is about **checking**, not suspecting everything: confirm through a channel you **already trust**, read a Page's and a domain's **history**, treat a **QR code** as a link, and **link lures** that come from the same attacker."),
+        listOf("mitre-phishing", "mitre-phish-info"),
+        keyTerms = listOf(KeyTerm("Campaign", "A set of attacks run by one attacker, often across several channels."))),
     LessonPage("Check through a door you already have", LessonIcon.SHIELD,
         listOf("A sender name like an app, an office or a teacher is typed by whoever sent the message, so it settles nothing. What settles it is **checking through a channel the message didn't give you**.",
             "CISA's rule: if a message might be real, **don't use its links or phone numbers**. Go to the service yourself through a website, app or contact you **already trust**. If the same notice is waiting there, it's real."),

@@ -157,3 +157,81 @@ Validation: the five lessons compiled against LessonContent/LessonReferences
 with a standalone Kotlin compiler, and the LessonContentTest rules were
 re-run for 301–305 outside Gradle. The full Android build and LessonContentTest
 still need to run in Android Studio, followed by a phone check of each lesson.
+
+# Unit 04 lesson source review
+
+Reviewed 14 October 2026. Five lessons for levels 401–405 (Malware), in
+UnitFourLessons.kt, routed through lessonFor in LessonContent.kt, with
+publication details added to LessonReferences.kt. Each lesson has one page per
+lab task (5 pages each) and three no-stakes questions. Level 450 (Bonus XP
+Cache) is a reward node with nothing to teach, so it has no lesson.
+
+All file names, machines, sites, numbers and incidents in the lessons are
+fictional and deliberately different from the lab evidence, except WannaCry
+(405), which is cited as a real 2017 event. Key words are bolded, matching the
+other units.
+
+| Source / publisher | Checked material | Used in levels |
+| --- | --- | --- |
+| [NIST CSRC Glossary: malware](https://csrc.nist.gov/glossary/term/malware) | Malware inserted covertly to harm confidentiality, integrity or availability; spyware and some adware count as malicious code | 401 |
+| [NIST SP 800-83 Rev. 1 (2013)](https://doi.org/10.6028/NIST.SP.800-83r1) | §2.1 viruses (host files, user-triggered, macro viruses infect documents and templates), worms (self-contained, no user action), trojan horses (non-replicating, hidden purpose); §2.2 backdoors listen for commands; §3.2 users shouldn't disable antivirus; §3.3 least privilege, malware often needs admin rights; §§3.4.1/4.2.1 antivirus weak on unknown threats, can mislabel benign activity; Executive Summary: rebuild from scratch or known-good backups. Final, not withdrawn (checked on CSRC) | 401, 402, 404, 405 |
+| [NIST CSRC Glossary: logic bomb](https://csrc.nist.gov/glossary/term/logic_bomb) | Code that sets off a malicious function when specified conditions are met | 402 |
+| [NIST CSRC Glossary: defense-in-depth](https://csrc.nist.gov/glossary/term/defense_in_depth) | Layered countermeasures along common attack paths (NISTIR 8183) | 404 |
+| [NIST SP 800-167 (2015)](https://doi.org/10.6028/NIST.SP.800-167) | §2 allowlist vs. blocklist; §2.1 better against unknown malware; §2.2.1 path rules weak unless only admins can write; file name too general | 404, 405 |
+| [MITRE T1417.001](https://attack.mitre.org/techniques/T1417/001/) | Mobile keylogging via accessibility services and third-party keyboards | 401 |
+| [MITRE T1496](https://attack.mitre.org/techniques/T1496/) | Resource/compute hijacking for cryptomining; sustained CPU and mining-pool connections | 401 |
+| [MITRE T1583.005](https://attack.mitre.org/techniques/T1583/005/) | Botnet: compromised systems directed together; mass phishing and DDoS | 401 |
+| [MITRE T1498](https://attack.mitre.org/techniques/T1498/) | Network DoS; distributed DoS from many systems | 401 |
+| [MITRE T1204.002](https://attack.mitre.org/techniques/T1204/002/) | User execution of a disguised malicious file, including fake installers | 402 |
+| [MITRE T1036.005](https://attack.mitre.org/techniques/T1036/005/) | Trusted names (svchost.exe), trusted locations, character substitution | 405 |
+| [MITRE T1036.007](https://attack.mitre.org/techniques/T1036/007/) (Unit 03 source) | Mitigation: disable "hide extensions for known file types" | 404 |
+| [MITRE T1091](https://attack.mitre.org/techniques/T1091/) (Unit 03 source) | Mitigation: disable Autorun | 404 |
+| [Google Play: AccessibilityService API](https://support.google.com/googleplay/android-developer/answer/10964491) | Accessibility tools are for people with disabilities; other apps need prominent disclosure | 401 |
+| [FTC: Malware](https://consumer.ftc.gov/articles/malware-how-protect-against-detect-and-remove-it) | Pop-ups, homepage changes, new toolbars, redirects; free downloads from unfamiliar sites | 401, 402 |
+| [Microsoft: internet macros blocked](https://learn.microsoft.com/en-us/microsoft-365-apps/security/internet-macros-blocked) | VBA macros a common malware route; macros from the internet blocked by default; Enable Content trust bar | 402, 404 |
+| [Microsoft: How UAC works](https://learn.microsoft.com/en-us/windows/security/application-security/application-control/user-account-control/how-it-works) | Standard and admin tokens; grey prompt for verified publishers, yellow for unsigned/untrusted | 402, 404 |
+| [Microsoft: Get-FileHash](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/get-filehash) | Compare against a published SHA-256; one changed character changes the hash; renaming doesn't | 402 |
+| [Microsoft: Windows LAPS](https://learn.microsoft.com/en-us/windows-server/identity/laps/laps-overview) | Per-device local admin passwords; shared ones enable lateral movement | 404 |
+| [CISA #StopRansomware Guide (Sept 2023)](https://www.cisa.gov/stopransomware/ransomware-guide) | Offline encrypted tested backups; backups hunted and deleted; double extortion; isolate first, power down only if you can't disconnect; image and memory capture; ransomware as last step of an earlier compromise; don't re-infect; rebuild from standard images; allowlisting, least privilege, KEV patching, emailed macros, LAPS | 403, 404, 405 |
+| [FBI IC3 PSA I-100219-PSA (2019)](https://www.ic3.gov/PSA/2019/PSA191002) | Paying doesn't guarantee recovery and emboldens criminals; backups the key defence, not connected | 403, 405 |
+| [NPC Circular 16-03 §§17–18](https://privacy.gov.ph/wp-content/uploads/2022/01/sgd-npc-circular-16-03-personal-data-breach-management.pdf) | Notify the Commission and data subjects within 72 hours | 403 |
+| [NCSC: Offline backups in an online world (2019)](https://www.ncsc.gov.uk/blog-post/offline-backups-in-an-online-world) | Connected USB/network backups encrypted; versioning; write-only access; 3-2-1 and why it doesn't require offline | 403 |
+| [CISA KEV catalog](https://www.cisa.gov/known-exploited-vulnerabilities) | Evidence of exploitation in the wild plus a fix; directs effort to current harm | 404 |
+| [FIRST CVSS v4.0](https://www.first.org/cvss/v4.0/specification-document) | Scores rate severity relative to other vulnerabilities; Exploit Maturity threat metric | 404 |
+| [Saltzer & Schroeder (1975), §I.A.3](https://web.mit.edu/Saltzer/www/publications/protection/Basic.html) | Least privilege; psychological acceptability | 404 |
+| [US-CERT TA17-132A (2017, rev. 2018)](https://www.cisa.gov/ncas/alerts/TA17-132A) | WannaCry spread over SMB 445 via MS17-010; patch, segment, restrict shares and privileged accounts | 405 |
+
+## Unit 04 interpretation checks
+
+- CISA's guide cautions that immutable storage "does not meet compliance
+  criteria", so the lessons teach "offline or out of reach of the network"
+  (NCSC's write-only access) rather than promising immutability alone.
+- CISA's guide does not advise on whether to pay; the payment warning is the
+  FBI's.
+- NIST SP 800-83 doesn't name virus triggers or payloads, so the trigger idea is
+  tied to NIST's logic-bomb definition and the rest of that page is explanation.
+- Microsoft's LAPS page names lateral movement and pass-the-hash; the lesson
+  only says a shared password lets an attacker move between machines.
+- The Get-FileHash page supports "one changed character changes the hash";
+  "64 characters" is SHA-256's 256 bits written in hexadecimal.
+- The FTC malware page shows two dates (May 2026 metadata, April 2025 on the
+  page), so the citation says "checked 14 October 2026" instead.
+
+Validation: the five lessons compiled with LessonContent, LessonReferences and
+the other unit lesson files using a standalone Kotlin 2.1 compiler, and the
+LessonContentTest rules were re-run for 401–405 outside Gradle (each lab has
+five tasks, every task covered). The full Android build and LessonContentTest
+still need to run in Android Studio, followed by a phone check of each lesson.
+
+## Introduction pages, Units 03 and 04 (added 14 October 2026)
+
+Each lesson for 301–305 and 401–405 now opens with an introduction page (no
+task number, shown as INTRODUCTION), matching the Unit 01 and Unit 06 lessons.
+Each introduction names the topic, says what the lesson covers, and cites only
+sources already listed for that lesson in the tables above (CISA phishing
+page, MITRE T1566/T1598/T1583.001, NIST TN 2276, UK tailgating guidance, FTC
+phishing, BPI, GCash, the NIST malware glossary and SP 800-83, the
+#StopRansomware Guide and the FBI ransomware PSA). The 302 introduction ties
+"link text and destination differ" to NIST's URL-hyperlinking cue and
+lookalike domains to MITRE, since the NIST cues checked for Unit 03 don't
+cover sender names.
