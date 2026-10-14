@@ -246,6 +246,8 @@ fun LabScreen(
     val hintsOpened = remember { mutableStateMapOf<String, Int>() }
     // Mistakes made this attempt — decides the no-heart-lost bonus.
     var heartsLost by remember { mutableIntStateOf(0) }
+    // Failed runs of a re-runnable challenge (Level 350) — each costs RETRY_PENALTY XP.
+    var failedRuns by remember { mutableIntStateOf(0) }
     // XP already taken from the balance for hints this attempt, for the result breakdown.
     var hintsPaid by remember { mutableIntStateOf(0) }
 
@@ -257,6 +259,12 @@ fun LabScreen(
     val bridge = remember {
         LabBridge { clueId ->
             when {
+                lab.failedRunClue != null && clueId == lab.failedRunClue -> {
+                    // Runs after a pass are practice, even if the page was reloaded
+                    // and forgot it had been passed.
+                    val passedAlready = lab.tasks.flatMap { it.requiredClues }.any { it in clues }
+                    if (!passedAlready) failedRuns++
+                }
                 clueId in lab.dangerousClues -> if (clueId !in penalised) {
                     penalised.add(clueId)
                     heartsLost++
@@ -282,7 +290,8 @@ fun LabScreen(
         completed = true,
         heartsLost = heartsLost,
         hintsUsed = hintsUsedTotal,
-        allCluesFound = allCluesFound
+        allCluesFound = allCluesFound,
+        failedRuns = failedRuns
     )
 
     // Price of this task's next hint, and whether the student can afford it.
@@ -430,7 +439,8 @@ fun LabScreen(
                     completed = solved == total,
                     heartsLost = heartsLost,
                     hintsUsed = hintsUsedTotal,
-                    allCluesFound = allCluesFound
+                    allCluesFound = allCluesFound,
+                    failedRuns = failedRuns
                 )
                 LabResult(
                     lab = lab,
@@ -439,6 +449,7 @@ fun LabScreen(
                     cluesFound = clues.size,
                     hintsUsed = hintsUsedTotal,
                     heartsLost = heartsLost,
+                    failedRuns = failedRuns,
                     hintsPaid = hintsPaid,
                     award = award,
                     isReplay = isReplay,
@@ -1435,6 +1446,7 @@ private fun LabResult(
     cluesFound: Int,
     hintsUsed: Int,
     heartsLost: Int,
+    failedRuns: Int,
     hintsPaid: Int,
     award: XpAward,
     isReplay: Boolean,
@@ -1493,6 +1505,7 @@ private fun LabResult(
                         heartsLost = heartsLost,
                         hintsUsed = hintsUsed,
                         hintsPaid = hintsPaid,
+                        failedRuns = failedRuns,
                         practice = practice
                     )
                     if (practice) {

@@ -10,14 +10,18 @@ package com.cyberity.cvsu
 // simulation, so the level reuses the lab engine unchanged — the single task
 // simply accepts the pass code the quiz issues.
 //
-// Deliberately gentle on consequences and strict on time: retries are free and
-// cost no hearts, because a speed test should punish hesitation, not a slow
-// reader's heart count. Hearts stay reserved for dangerous actions in the labs.
+// Strict on time, gentle on hearts: a failed run costs no hearts, because a
+// speed test should punish hesitation, not a slow reader's heart count. Hearts
+// stay reserved for dangerous actions in the labs. Each failed run before the
+// first pass does take RETRY_PENALTY XP off the payout (never below the base),
+// so passing on the first run is worth more than guessing until it sticks.
 
 /** Clue ids reported by the quiz through the JS bridge. */
 object QuickQuizClues {
     const val QUIZ_ATTEMPTED = "quiz_attempted"
     const val QUIZ_PASSED = "quiz_passed"
+    /** Reported once per failed run before the first pass. Counted, not collected. */
+    const val QUIZ_FAILED_RUN = "quiz_failed_run"
 }
 
 val quickQuizClueLabels: Map<String, String> = mapOf(
@@ -36,11 +40,13 @@ fun quickQuizLab(): LabDefinition = LabDefinition(
             "the shape of an attack rather than reasoning your way to it. Spend longer on a " +
             "hard one if you like; the clock does not reset between questions.\n\n" +
             "Five correct out of six passes. Running out of time or missing the mark costs " +
-            "you nothing — no hearts, and you can restart as often as you want. Open the " +
+            "no hearts, and you can restart as often as you want, but **each failed run " +
+            "takes 10 XP** off this level's payout (it never drops below 100). Open the " +
             "quiz with the button, and swipe the bar at the top of it down when you have the " +
             "pass code.",
     assetDir = "UNIT 03/quick_quiz",
     startPage = "quiz.html",
+    failedRunClue = QuickQuizClues.QUIZ_FAILED_RUN,
     tasks = listOf(
 
         LabTask(
@@ -80,8 +86,8 @@ fun quickQuizLab(): LabDefinition = LabDefinition(
                 sha256 = "852a0eabaccdf6b9eb2b178259e1281201beb2480364ee48ba61b8294e0218c4"
             ),
             hints = listOf(
-                "Restarting is free and costs no hearts. Read the results screen first — it " +
-                        "names every answer you missed.",
+                "Restarting costs no hearts, but each failed run takes 10 XP. Read the " +
+                        "results screen first — it names every answer you missed.",
                 "The pass code only appears at 5 or 6 correct, and it appears on the results " +
                         "screen under your score."
             ),

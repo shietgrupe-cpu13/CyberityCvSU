@@ -106,6 +106,8 @@ var QUESTIONS = [
  * ------------------------------------------------------------------------ */
 var run = null;
 var ticker = null;
+// Once passed, later runs are practice: they no longer report a failed run.
+var passedOnce = false;
 
 function startQuiz() {
   run = {
@@ -190,6 +192,7 @@ function finish(timedOut) {
   });
 
   var passed = score >= PASS_MARK;
+  var penalised = !passed && !passedOnce;
 
   var rows = QUESTIONS.map(function (q, i) {
     var given = run.answers[i];
@@ -228,11 +231,15 @@ function finish(timedOut) {
       ? '<div class="banner show good">Pass code: <b class="mono">' + PASS_CODE + '</b></div>'
       : '') +
     '<button class="cta" onclick="startQuiz()">' +
-      (passed ? 'RUN IT AGAIN' : 'TRY AGAIN — COSTS NOTHING') + '</button>' +
+      (passed ? 'RUN IT AGAIN' : 'TRY AGAIN') + '</button>' +
     '<div class="section-label">Every question</div>' +
     rows +
-    '<div class="appui"><b>Retries are free</b>This one is timed, not punishing — no ' +
-      'hearts are spent here however many times you run it.</div>';
+    (passedOnce || passed
+      ? '<div class="appui"><b>Practice runs</b>You have passed, so extra runs cost ' +
+        'nothing.</div>'
+      : '<div class="appui"><b>No hearts at stake</b>Each failed run takes <b>10 XP</b> ' +
+        'off this level\u2019s payout, which never drops below 100. Read the answers ' +
+        'before you go again.</div>');
 
   // Freeze the clock so the results screen doesn't still read "time remaining".
   var bar = document.getElementById('timer-fill');
@@ -244,7 +251,10 @@ function finish(timedOut) {
     if (num) num.textContent = '0s';
   }
 
+  if (penalised) Cyberity.clueFound('quiz_failed_run');
+
   if (passed) {
+    passedOnce = true;
     Cyberity.clueFound('quiz_passed');
     Cyberity.flagDiscovered('pass_code');
   }

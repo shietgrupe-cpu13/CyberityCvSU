@@ -82,7 +82,13 @@ data class LabDefinition(
     val startPage: String,
     val tasks: List<LabTask>,
     /** Clue ids that are dangerous actions: each costs a heart, once per attempt. */
-    val dangerousClues: List<String> = emptyList()
+    val dangerousClues: List<String> = emptyList(),
+    /**
+     * Clue id the simulation reports each time a re-runnable challenge inside it
+     * is failed (the Level 350 quiz). Unlike other clues it is counted, not
+     * collected, and each report takes [RETRY_PENALTY] XP off the payout.
+     */
+    val failedRunClue: String? = null
 ) {
     val baseUrl: String get() = "$LAB_ASSET_ROOT$assetDir/"
 }

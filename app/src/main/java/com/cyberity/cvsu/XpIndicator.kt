@@ -174,6 +174,8 @@ fun XpBreakdown(
     hintsUsed: Int,
     hintsPaid: Int,
     modifier: Modifier = Modifier,
+    /** Failed runs before passing (Level 350). The row only shows when there were some. */
+    failedRuns: Int = 0,
     /** A quiz has no evidence to find and no hints to buy, so those two bonuses
      *  are granted by default — say so rather than claiming credit for them. */
     quiz: Boolean = false,
@@ -207,6 +209,12 @@ fun XpBreakdown(
             },
             amount = award.noHintsBonus
         )
+        if (failedRuns > 0) {
+            PenaltyRow(
+                label = "Failed runs ($failedRuns)",
+                amount = award.retryPenalty
+            )
+        }
 
         Spacer(Modifier.height(10.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(AppGray.copy(alpha = 0.2f)))
@@ -233,6 +241,31 @@ fun XpBreakdown(
                 lineHeight = 15.sp
             )
         }
+    }
+}
+
+/**
+ * A deduction from the payout. Zero means the penalty had nothing left to take,
+ * because a payout never drops below the base.
+ */
+@Composable
+private fun PenaltyRow(label: String, amount: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = AppWhite,
+            fontSize = 13.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = "−$amount",
+            color = if (amount > 0) AppDanger else AppGray,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
