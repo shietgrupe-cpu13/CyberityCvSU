@@ -31,6 +31,19 @@ var PASS_CODE = 'CYBERITY{s1xty_s3c0nds_fl4t}';
  * ------------------------------------------------------------------------ */
 var QUESTIONS = [
   {
+    from: '301',
+    q: 'An email from a real classmate\u2019s address passes every mail check and asks you to sign in again. What does the pass prove?',
+    options: [
+      'She typed it herself',
+      'It came from her real account \u2014 which may be in someone else\u2019s hands',
+      'The sign-in page is safe',
+      'Nothing at all \u2014 the checks are always fake'
+    ],
+    correct: 1,
+    why: 'The checks confirm which domain sent it, not who was typing. A stolen password ' +
+      'lets an attacker send from inside the real account.'
+  },
+  {
     from: '302',
     q: 'Which part of this address decides who owns the page?<br>' +
        '<span class="mono q-url">cvsu.edu.ph.grades-portal.example/login</span>',
@@ -38,6 +51,14 @@ var QUESTIONS = [
     correct: 1,
     why: 'The owner is the two pieces just before the first single slash. Everything to ' +
       'the left is a label the attacker chose.'
+  },
+  {
+    from: '303',
+    q: 'Someone with full hands asks you to hold the badge door. What is the risk called?',
+    options: ['Phishing', 'Tailgating', 'Vishing', 'Smishing'],
+    correct: 1,
+    why: 'Tailgating: following an authorised person through a controlled door. The badge ' +
+      'log shows one swipe and two people.'
   },
   {
     from: '304',
@@ -77,27 +98,6 @@ var QUESTIONS = [
     correct: 2,
     why: 'An OTP exists to prove the account owner authorises a transaction, so anyone ' +
       'asking for yours is authorising theirs.'
-  },
-  {
-    from: '303',
-    q: 'Someone with full hands asks you to hold the badge door. What is the risk called?',
-    options: ['Phishing', 'Tailgating', 'Vishing', 'Smishing'],
-    correct: 1,
-    why: 'Tailgating: following an authorised person through a controlled door. The badge ' +
-      'log shows one swipe and two people.'
-  },
-  {
-    from: '304',
-    q: 'You get an obvious scam text. What actually reduces what happens next?',
-    options: [
-      'Reply STOP to be removed from the list',
-      'Reply to ask who they are',
-      'Don’t reply. Block, report to your telco, and warn the people around you',
-      'Nothing — they stop on their own'
-    ],
-    correct: 2,
-    why: 'Any reply confirms a real person reads the number, and confirmed numbers get ' +
-      'sold on. Reporting is the only step that touches the sender.'
   }
 ];
 
@@ -109,10 +109,26 @@ var ticker = null;
 // Once passed, later runs are practice: they no longer report a failed run.
 var passedOnce = false;
 
+/* Fisher-Yates. Every run deals the questions, and each question's options, in
+ * a fresh order, so a retry tests the material rather than a remembered
+ * sequence of positions. Answers are stored by original index, so scoring and
+ * the results screen never depend on what order anything was shown in. */
+function shuffled(n) {
+  var a = [];
+  for (var i = 0; i < n; i++) a.push(i);
+  for (var j = n - 1; j > 0; j--) {
+    var k = Math.floor(Math.random() * (j + 1));
+    var t = a[j]; a[j] = a[k]; a[k] = t;
+  }
+  return a;
+}
+
 function startQuiz() {
   run = {
     index: 0,
-    answers: [],
+    order: shuffled(QUESTIONS.length),
+    optionOrder: QUESTIONS.map(function (q) { return shuffled(q.options.length); }),
+    answers: {},
     endsAt: Date.now() + TOTAL_SECONDS * 1000,
     over: false
   };
@@ -154,7 +170,7 @@ function tick() {
 
 function answer(choice) {
   if (!run || run.over) return;
-  run.answers[run.index] = choice;
+  run.answers[run.order[run.index]] = choice;
   run.index++;
 
   if (run.index >= QUESTIONS.length) {
@@ -165,11 +181,12 @@ function answer(choice) {
 }
 
 function renderQuestion() {
-  var q = QUESTIONS[run.index];
+  var qi = run.order[run.index];
+  var q = QUESTIONS[qi];
 
-  var options = q.options.map(function (text, i) {
+  var options = run.optionOrder[qi].map(function (i) {
     return '<button class="quiz-option" onclick="answer(' + i + ')">' +
-      escapeHtml(text) + '</button>';
+      escapeHtml(q.options[i]) + '</button>';
   }).join('');
 
   document.getElementById('stage').innerHTML =
@@ -194,8 +211,10 @@ function finish(timedOut) {
   var passed = score >= PASS_MARK;
   var penalised = !passed && !passedOnce;
 
-  var rows = QUESTIONS.map(function (q, i) {
-    var given = run.answers[i];
+  // Results follow the order the questions were shown in this run.
+  var rows = run.order.map(function (qi, i) {
+    var q = QUESTIONS[qi];
+    var given = run.answers[qi];
     var right = given === q.correct;
     var state = given === undefined
       ? '<span class="res-mark skipped">NOT REACHED</span>'
@@ -214,7 +233,7 @@ function finish(timedOut) {
   }).join('');
 
   var headline = timedOut
-    ? 'Time. You answered ' + run.answers.filter(function (a) { return a !== undefined; }).length +
+    ? 'Time. You answered ' + Object.keys(run.answers).length +
       ' of ' + QUESTIONS.length + '.'
     : 'All six answered with ' + Math.ceil(secondsLeft()) + 's to spare.';
 
@@ -275,6 +294,7 @@ function renderStart(mountId) {
         'so read before you tap.</div>' +
     '</div>' +
     '<button class="cta" onclick="startQuiz()">START</button>' +
-    '<div class="appui"><b>Nothing to lose</b>Running out of time costs no hearts, and you ' +
-      'can restart as often as you like.</div>';
+    '<div class="appui"><b>No hearts at stake</b>Restart as often as you like, but each ' +
+      'failed run before you pass takes <b>10 XP</b> off this level\u2019s payout (never ' +
+      'below 100).</div>';
 }
