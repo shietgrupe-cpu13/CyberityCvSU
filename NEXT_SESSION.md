@@ -1,5 +1,84 @@
 # Cyberity: resume here
 
+## 16 October 2026: feature commit requested
+
+User reports the changes are working and requested a commit on unit_06_levels.
+Commit includes year-level registration/settings, automatic certificate identity,
+earned/sample PDF policies, isTester-controlled developer mode, protected tester
+assignment, tests and deployment notes. Unrelated pre-existing LearnScreen edits
+are left uncommitted; standalone output artifacts and capstone review files are
+excluded. Master is unchanged. No push was requested in this turn.
+
+## 16 October 2026: use existing isTester and enable current account
+
+User asked us to enable dev mode, then clarified the team already uses
+users/{uid}.isTester and requested connecting that field. This supersedes the
+earlier separate developerAccess approach. No developerAccess records were made.
+Updated listener and sample-export recheck now read users/{uid}.isTester. Rules
+make the flag administrator-owned: clients cannot self-grant or change it, and
+profile saves preserve the server value. DEV IDs no longer auto-grant tester mode.
+
+All 49 JVM tests and seven emulator suites passed; deployed rules compiled and
+released successfully. Used a read-only instrumentation probe to identify the
+phone's signed-in account (encrypted Firebase persistence was not decoded).
+Only the diagnostic test APK was installed; the main APK was not replaced.
+Enabled and server-verified isTester=true for Justinepugeh, and synchronized its
+existing public tester marker. Progress/EXP/hearts/credentials were unchanged.
+See docs/developer-mode.md for current instructions. Source is not committed or
+pushed; updated main APK installation and feature checks remain pending.
+
+## 16 October 2026: developer sample certificate downloads
+
+User approved preview-PDF downloads for dev-mode accounts. Certificate screen now
+listens to the existing server-controlled developer grant. Incomplete/legacy dev
+accounts with an identity can export a sample, including without year level.
+The PDF keeps a large PREVIEW watermark, non-completion footer and PREVIEW filename.
+An earned certificate still requires all required levels and valid year. Dev
+access is rechecked from the server after the system file picker returns.
+Debug build and all 49 JVM tests passed. No rule changes or deployment required.
+Changes are local and uncommitted; no push, phone installation or phone tests.
+
+## 16 October 2026: Firebase developer access
+
+Replaced unconditional all-build level unlocking with a server-confirmed listener
+to developerAccess/{Firebase Auth UID}. Boolean unlockAllLevels enables navigation
+for that account. Clients cannot create/update grants; admin Console controls them.
+Missing/cached/error access defaults off. Export/deletion includes the new record.
+See docs/developer-mode.md for Console instructions and revocation behavior.
+
+Debug build and all 46 JVM tests passed; all seven local Firestore suites passed.
+Deployed the tested Firestore rules successfully to cyberitycvsu, including the
+previously local optional year-level validation. Deployed SHA-256:
+C62494CDDE7208E093855B86D76C0646E38C9B779BCBDF06EAD55599F3EF64A9.
+No grants were enabled or created. No APK installation or phone tests. Updated
+APK is needed before remote toggles affect the app. Source changes remain local
+and uncommitted on unit_06_levels; master and remote source branches unchanged.
+
+## 16 October 2026: year level and automatic certificate
+
+User requested year level at registration, a settings option for older accounts,
+and certificate identity auto-filled from username with student ID/year below.
+Implemented locally: Settings > Student information and Completion certificate,
+private optional yearLevel, live Profile display, and eligible-only PDF download
+with three developer signature spaces. Existing accounts do not need to register
+again. See docs/student-information-and-certificates.md for scope and limitations.
+
+Fresh validation: debug build and all 43 JVM tests passed; six Firestore emulator
+suites passed; Android instrumentation sources compiled. No phone tests, cloud
+deployment, commit or push for this update. Phone checks remain paused.
+Stale local LearnScreen routes/types were reconciled with current HEAD to make
+the app compile and all lesson/simulation checks pass; other local edits remain.
+
+## 16 October 2026: saving rules deployed
+
+User explicitly approved deployment. Firebase CLI deploy --only firestore:rules
+to cyberitycvsu succeeded, including compilation and release to cloud.firestore.
+Deployed rules match d7dddee (see docs/atomic-learning-saves.md for hash).
+No Functions, billing, account records or APK installations changed. Old APK hint
+deductions are now rejected; distribute/install the matching updated APK next.
+Phone testing remains paused until the user resumes it. Documentation changes
+recording deployment are local and uncommitted.
+
 ## 16 October 2026: saving update restored on unit_06_levels
 
 User requested committing the earlier completion/EXP and hint purchase changes on

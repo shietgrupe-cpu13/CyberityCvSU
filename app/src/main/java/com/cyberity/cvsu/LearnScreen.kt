@@ -278,20 +278,14 @@ fun List<LearningUnit>.withLevelsCompleted(completedIds: Set<Int>): List<Learnin
 
 
 // ===========================================================================
-// DEVELOPER SWITCH — UNLOCK ALL LEVELS
+// DEVELOPER ACCESS
 // ===========================================================================
-// While content is being built, every level can be opened directly so a unit
-// can be tested without replaying the ones before it.
-//
-//   true  → all levels open in every build
-//   false → normal order: each level unlocks after the previous one
-//
-// TODO: set back to false once all content is finished.
-const val DEV_UNLOCK_ALL_LEVELS = true
+// Per-account, read-only Firebase grants replace the old all-builds constant.
+// Missing access keeps normal progression. See DeveloperMode.kt.
 
 /**
  * Display-only: shows every LOCKED level as playable. Saved progress is not
- * touched, so switching DEV_UNLOCK_ALL_LEVELS off restores normal locking.
+ * touched, so turning off developer access restores normal locking.
  */
 fun List<LearningUnit>.withAllLevelsUnlocked(): List<LearningUnit> = map { unit ->
     unit.copy(
@@ -445,14 +439,20 @@ fun LearnScreen(
     var hasCompletedOnboarding by rememberSaveable(uid) { mutableStateOf<Boolean?>(null) }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
 
-    // Developer switch (see DEV_UNLOCK_ALL_LEVELS). Only what's shown changes;
-    // `units` and saved progress keep the real lock state.
-    // Remembered because it rebuilds every unit and every level: without this it
-    // ran on each recomposition, including the once-a-second heart tick below.
-    val devUnlockAll = remember { DEV_UNLOCK_ALL_LEVELS }
+    var devUnlockAll by remember(uid) { mutableStateOf(false) }
+    DisposableEffect(uid) {
+        val listener = DeveloperModeRepository.listen(uid) { devUnlockAll = it }
+        onDispose { listener?.remove() }
+    }
+    LaunchedEffect(devUnlockAll) {
+        // Close a preview that was opened using access which has since been revoked.
+        if (!devUnlockAll) selected = null
+    }
     val shownUnits = remember(units, devUnlockAll) {
         if (devUnlockAll) units.withAllLevelsUnlocked() else units
     }
+
+    val latestShownUnits by androidx.compose.runtime.rememberUpdatedState(shownUnits)
 
     var heartState by remember(uid) {
         mutableStateOf(uid?.let { ProgressCache.loadHearts(context, it) } ?: HeartState.FULL)
@@ -909,8 +909,11 @@ fun LearnScreen(
                                         sheetState.hide()
                                     } finally {
                                         selected = null
-                                        showingLesson = true
-                                        setRunningLevel(level)
+                                        val current = latestShownUnits.flatMap { it.levels }.firstOrNull { it.id == level.id }
+                                        if (current != null && current.status != LevelStatus.LOCKED) {
+                                            showingLesson = true
+                                            setRunningLevel(current)
+                                        }
                                     }
                                 }
                             }
@@ -929,12 +932,15 @@ fun LearnScreen(
                                     selected = null
                                     // A first attempt opens with the lesson until it has
                                     // been read once; READ LESSON stays available after.
-                                    showingLesson = level.status == LevelStatus.CURRENT &&
+                                    val current = latestShownUnits.flatMap { it.levels }.firstOrNull { it.id == level.id }
+                                    if (current != null && current.status != LevelStatus.LOCKED) {
+                                    showingLesson = current.status == LevelStatus.CURRENT &&
                                             level.id !in lessonsRead &&
                                             !TutorialManager.isTutorialActive &&
                                             lessonFor(level.id) != null
-                                    setRunningLevel(level)
-                                    onStartLevel(level)
+                                    setRunningLevel(current)
+                                    onStartLevel(current)
+                                    }
                                 }
                             }
                         }
