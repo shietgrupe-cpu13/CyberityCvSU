@@ -54,5 +54,5 @@ privacy additions were removed.
   without printing tokens. Only the diagnostic test APK was installed; the main
   Cyberity APK and its data were retained. One phone probe passed.
 - The current user's isTester=true was verified through a fresh server read.
-- The user subsequently reported the features working. The implementation is
-  being committed on unit_06_levels at the user's request; master is unchanged.
+- The user subsequently reported the features working. The implementation was
+  committed on unit_06_levels and is included in the master publication.
