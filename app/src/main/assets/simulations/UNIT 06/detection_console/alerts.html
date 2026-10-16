@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Alert queue</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated monitoring console &middot; fictional accounts and addresses</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='console.html'">&#8592; Console</button>
+    <span class="topbar-title">Alert queue &middot; Fri 4 PM to Mon 8 AM</span>
+  </div>
+
+  <div class="desk-head">
+    <h1>Real threat or false alarm?</h1>
+    <p id="verdict-count" class="unread-line">10 of 10 still need a verdict</p>
+  </div>
+
+  <div class="board-actions">
+    <button class="cta danger" onclick="dismissLow()">DISMISS ALL LOW (4)</button>
+    <div class="banner" id="dismiss-banner"></div>
+  </div>
+
+  <div id="alerts"></div>
+
+  <div class="board-actions">
+    <button class="cta" onclick="submitVerdicts()">SUBMIT VERDICTS</button>
+    <div class="banner" id="alerts-banner"></div>
+  </div>
+
+  <div class="foot">The queue only tells you how many verdicts are right, not which ones. Open an alert's details if you are unsure.</div>
+
+  <script src="script.js"></script>
+  <script>renderAlerts('alerts');</script>
+</body>
+</html>

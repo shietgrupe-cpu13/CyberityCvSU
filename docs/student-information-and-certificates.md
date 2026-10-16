@@ -1,0 +1,69 @@
+# Student information and completion certificates
+
+Implemented locally on unit_06_levels on 16 October 2026. Not committed, pushed,
+installed on a phone, or deployed to Firebase in this change.
+Later that day, the tested year validation rule was deployed with the developer
+access rules. The application source still requires the updated APK; see
+NEXT_SESSION.md for current deployment status.
+
+## Student information
+
+- Registration and incomplete-profile recovery require a year selection:
+  first through fourth year, or fifth year and higher.
+- Year is stored as optional integer yearLevel (1-5) on users/{uid}. Existing
+  profiles without it remain complete for login; no re-registration is required.
+- Settings > Student information shows the existing username and student ID,
+  with a year selector and acknowledged save action. The update changes only
+  yearLevel and updatedAt, preserving identity, progress and EXP.
+- The Profile tab displays year level and observes changes. The private profile
+  cache includes year level and removes it during local account-deletion cleanup.
+- Year is included automatically in the existing private-profile JSON export.
+  Neither year nor student ID is published to the leaderboard.
+- New rules validate a present year as an integer in 1-5 while accepting missing
+  fields on older profiles. This validation change is local; previously deployed
+  rules already permit the additional profile field but do not validate its year
+  range. No cloud mutation was performed in this task.
+
+## Certificate
+
+Settings > Completion certificate fetches the profile and progress from the
+server. The preview and downloaded one-page landscape PDF use the saved display
+name (the registration username), with student ID and year directly underneath.
+No identity fields are entered again on the certificate screen.
+
+Download requires complete student identity, a valid year level, and every
+required course level. Only skippable walkthrough 200 and REWARD-type nodes are
+excluded. Developer-unlock mode does not satisfy completion. An unfinished
+certificate is marked as a preview and cannot be downloaded through this flow.
+Developer-access accounts may now download that marked preview for testing even
+without course completion/year level. It retains a large PREVIEW watermark and
+non-completion footer. Earned certificates retain all normal requirements.
+
+The document includes completion/thank-you wording, issue date, a stable
+account/course certificate number, and three blank developer signature spaces.
+CertificateBranding in CertificatePolicy.kt holds the three names and common
+role for a future template update. No signatures or endorsements were invented.
+Signature-image upload and a team certificate-design editor are not included.
+
+The issue date is the export date. Certificate number is a deterministic
+account/course reference, not a public verification endpoint or an independently
+verified qualification. Existing client-reported completion integrity limitations
+remain. This implementation does not add a server certificate issuance registry.
+
+## Validation
+
+- Debug APK build passed; all 43 JVM tests passed.
+- Six Firestore emulator suites passed, including year validation on both create
+  and update, legacy compatibility, and cross-account privacy.
+- Added a dropdown instrumentation test and compiled Android test sources;
+  instrumentation/phone checks have not been run because phone testing was paused.
+- Five new JVM checks cover legacy profiles, certificate eligibility and missing
+  levels, invalid years, stable certificate identifiers and year parsing.
+- Corrected stale local LearnScreen references to the existing Unit 3 simulations
+  and restored current Unit 5/6 routes/types from HEAD. Also restored a missing
+  saving-revision state declaration needed by the local saving integration.
+  Other pre-existing local learning-screen edits were preserved.
+
+Pending device checks: registration with no year selected; selecting/saving year;
+legacy user sign-in and update; profile refresh; certificate field placement,
+three signature spaces, preview/download lock, export cancellation and PDF layout.

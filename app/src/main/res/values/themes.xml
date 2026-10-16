@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.MyFirstTry" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/cyberity_background_dark</item>
+    </style>
+
+    <style name="Theme.MyFirstTry.Light">
+        <item name="android:windowBackground">@color/cyberity_background_light</item>
+    </style>
+
+    <style name="Theme.Cyberity.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/cyberity_background_dark</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_dark</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyFirstTry</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
+    <style name="Theme.Cyberity.Starting.Light">
+        <item name="windowSplashScreenBackground">@color/cyberity_background_light</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_light</item>
+        <item name="postSplashScreenTheme">@style/Theme.MyFirstTry.Light</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!-- "System" mode: follows the phone's own dark setting through values-night. -->
+    <style name="Theme.Cyberity.Starting.System">
+        <item name="windowSplashScreenBackground">@color/cyberity_background_system</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_logo_dark</item>
+        <item name="android:windowLightStatusBar">@bool/cyberity_light_system_bars</item>
+    </style>
+</resources>

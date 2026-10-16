@@ -1,0 +1,45 @@
+// MERGE FRAGMENT, not a replacement for your production rules.
+// Put these functions and match inside match /databases/{database}/documents.
+function sparkSessionActive() {
+  return request.auth != null &&
+    (!exists(/databases/$(database)/documents/accountSecuritySpark/$(request.auth.uid)) ||
+      timestamp.value(request.auth.token.auth_time * 1000) >
+        get(/databases/$(database)/documents/accountSecuritySpark/$(request.auth.uid)).data.revokedAt);
+}
+
+function sparkSessionOwner(uid) {
+  return request.auth != null && request.auth.uid == uid &&
+    request.auth.token.email_verified == true;
+}
+
+match /accountSecuritySpark/{uid} {
+  // Revoked clients may read their own cutoff so the app can explain logout.
+  allow get: if sparkSessionOwner(uid);
+  allow list, delete: if false;
+  allow create, update: if sparkSessionOwner(uid) && sparkSessionActive() &&
+    request.resource.data.keys().hasOnly(['revokedAt']) &&
+    request.resource.data.revokedAt == request.time &&
+    timestamp.value(request.auth.token.auth_time * 1000) > request.time - duration.value(5, 'm');
+
+  match /sessions/{sessionId} {
+    allow get, list: if sparkSessionOwner(uid) && sparkSessionActive();
+    allow create, update: if sparkSessionOwner(uid) && sparkSessionActive() &&
+      sessionId.matches('^[a-f0-9-]{36}$') &&
+      request.resource.data.keys().hasAll(['device', 'androidVersion', 'authTime', 'lastActive', 'signedOut']) &&
+      request.resource.data.keys().hasOnly(['device', 'androidVersion', 'authTime', 'lastActive', 'signedOut']) &&
+      request.resource.data.device is string && request.resource.data.device.size() > 0 &&
+      request.resource.data.device.size() <= 100 &&
+      request.resource.data.androidVersion is string && request.resource.data.androidVersion.size() <= 30 &&
+      request.resource.data.authTime == request.auth.token.auth_time &&
+      request.resource.data.signedOut is bool &&
+      (request.resource.data.lastActive == request.time ||
+        (request.resource.data.signedOut == true &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['signedOut'])));
+    allow delete: if sparkSessionOwner(uid) && sparkSessionActive();
+  }
+}
+
+// Add && sparkSessionActive() to EVERY existing protected allow condition.
+// For example, an existing owner check becomes:
+// allow read, write: if request.auth.uid == uid && sparkSessionActive();
+// Audit broad wildcard allows: any other matching allow can bypass this policy.

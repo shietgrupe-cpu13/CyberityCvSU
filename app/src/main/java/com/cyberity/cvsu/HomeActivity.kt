@@ -1,0 +1,598 @@
+package com.cyberity.cvsu
+
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.material.icons.filled.School
+
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.vector.ImageVector
+
+
+// ---------------------------------------------------------------------------
+// Data model for the Learn tab's module/lesson list
+// ---------------------------------------------------------------------------
+
+enum class LessonType { LESSON, PRACTICE }
+
+data class LessonItem(
+    val id: String,
+    val type: LessonType,
+    val title: String,
+    val xp: Int,
+    val locked: Boolean
+)
+
+data class ModuleData(
+    val id: String,
+    val title: String,
+    val completed: Boolean,
+    val items: List<LessonItem>
+)
+
+// TODO: replace with real data from Firestore/your backend once ready.
+private fun sampleModules(): List<ModuleData> = listOf(
+    ModuleData(
+        id = "basics",
+        title = "Security Basics",
+        completed = true,
+        items = emptyList()
+    ),
+    ModuleData(
+        id = "network",
+        title = "Network Fundamentals",
+        completed = false,
+        items = listOf(
+            LessonItem("l1", LessonType.LESSON, "How Networks Communicate", 10, locked = false),
+            LessonItem("p1", LessonType.PRACTICE, "Capture the Packet: CTF Challenge", 5, locked = true),
+            LessonItem("l2", LessonType.LESSON, "Ports & Protocols", 10, locked = true),
+            LessonItem("p2", LessonType.PRACTICE, "Scan the Target: CTF Challenge", 5, locked = true)
+        )
+    )
+)
+
+// ---------------------------------------------------------------------------
+// HomeScreen: hosts the bottom nav and switches between the 3 tabs
+// ---------------------------------------------------------------------------
+
+@Composable
+fun HomeScreen(
+    onLogout: () -> Unit
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var levelRunning by remember { mutableStateOf(false) }
+    var tutorialRequest by remember { mutableIntStateOf(0) }
+    // Keeps each tab's saved state (like the Learn path's scroll position) while another tab is open.
+    val tabStates = rememberSaveableStateHolder()
+
+    Scaffold(
+        containerColor = AppNavy,
+        bottomBar = {
+            if (!levelRunning) {
+                NavigationBar(containerColor = AppCard) {
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Filled.Home, contentDescription = "Learn") },
+                        label = { Text("Learn") },
+                        colors = navItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Filled.Star, contentDescription = "Leaderboard") },
+                        label = { Text("Leaderboard") },
+                        colors = navItemColors()
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Filled.Person, contentDescription = "Profile") },
+                        label = { Text("Profile") },
+                        colors = navItemColors()
+                    )
+                }
+            }
+        }
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                label = "tab"
+            ) { tab ->
+                tabStates.SaveableStateProvider(tab) {
+                    when (tab) {
+                        0 -> LearnScreen(
+                            onLevelRunningChanged = { levelRunning = it },
+                            tutorialRequest = tutorialRequest,
+                            onTutorialRequestHandled = { tutorialRequest = 0 }
+                        )
+                        1 -> LeaderboardTab()
+                        2 -> ProfileTab(onLogout = onLogout, onReplayTutorial = {
+                            tutorialRequest++
+                            selectedTab = 0
+                        })
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun navItemColors() = NavigationBarItemDefaults.colors(
+    selectedIconColor = AppCyan,
+    selectedTextColor = AppCyan,
+    unselectedIconColor = AppGray,
+    unselectedTextColor = AppGray,
+    indicatorColor = AppBlue.copy(alpha = 0.25f)
+)
+
+@Composable
+private fun StatChip(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    tint: Color
+) {
+    Surface(
+        color = AppCard,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.height(36.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        ) {
+            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(value, color = AppWhite, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+        }
+    }
+}
+
+@Composable
+private fun ModuleHeaderRow(
+    module: ModuleData,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle() }
+            .padding(vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .background(
+                    color = if (module.completed) AppSuccess else AppCyan,
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (module.completed) Icons.Filled.CheckCircle else Icons.Filled.PlayArrow,
+                contentDescription = null,
+                tint = AppNavy
+            )
+        }
+
+        Text(
+            text = module.title,
+            color = AppWhite,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 14.dp)
+        )
+
+        Icon(
+            imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+            contentDescription = null,
+            tint = AppGray
+        )
+    }
+}
+
+@Composable
+private fun LessonCard(
+    lesson: LessonItem,
+    onLearnClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AppCard),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (lesson.type == LessonType.LESSON) Icons.Filled.Info else Icons.Filled.Edit,
+                    contentDescription = null,
+                    tint = if (lesson.type == LessonType.LESSON) AppCyan else AppBlue
+                )
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp)
+                ) {
+                    Text(
+                        text = if (lesson.type == LessonType.LESSON) "Lesson" else "Practice",
+                        color = AppGray,
+                        fontSize = 12.sp
+                    )
+                    Text(
+                        text = lesson.title,
+                        color = AppWhite,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (lesson.locked) {
+                    Icon(Icons.Filled.Lock, contentDescription = "Locked", tint = AppGray)
+                }
+            }
+
+            Surface(
+                color = Color.Transparent,
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.padding(top = 10.dp)
+            ) {
+                Text(
+                    text = "XP +${lesson.xp}",
+                    color = AppGray,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+
+            if (!lesson.locked) {
+                Button(
+                    onClick = onLearnClick,
+                    colors = ButtonDefaults.buttonColors(containerColor = AppBlue),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 14.dp)
+                        .height(46.dp)
+                ) {
+                    Text("LEARN", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Placeholder tabs — build these out once you have real data
+// ---------------------------------------------------------------------------
+
+@Composable
+fun LeaderboardTab() {
+    LeaderboardScreen()
+}
+
+@Composable
+fun ProfileTab(
+    onLogout: () -> Unit,
+    onReplayTutorial: () -> Unit
+) {
+    val auth = FirebaseAuth.getInstance()
+    var showSettings by remember { mutableStateOf(false) }
+    val user = auth.currentUser
+    val email = user?.email ?: "No email"
+
+    val context = LocalContext.current
+    val uid = user?.uid
+
+    // Registered username and student ID from users/{uid}. Seeded from the
+    // on-device copy saved at sign-in, so they show on the first frame, then
+    // refreshed from Firestore. Without either, fall back to the name on the
+    // Firebase account, then the email. Saveable, so returning from another
+    // tab shows them straight away.
+    var profileName by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadName(context, it) }) }
+    var studentId by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadStudentId(context, it) }) }
+    var yearLevel by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadYearLevel(context, it) }) }
+    DisposableEffect(uid) {
+        val listener = uid?.let { id ->
+            com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(id)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) yearLevel = YearLevels.fromStored(snapshot.get("yearLevel"))
+                }
+        }
+        onDispose { listener?.remove() }
+    }
+
+    LaunchedEffect(uid) {
+        if (uid == null) return@LaunchedEffect
+        UserProfileRepository.load(uid, onResult = { profile ->
+            profileName = profile?.displayName
+            studentId = profile?.studentId
+            profile?.let { ProfileCache.saveDetails(context, uid, it.displayName, it.studentId, it.yearLevel) }
+        }, onError = {})
+    }
+
+    // Progress stats. Read from the on-device cache first (the same numbers the
+    // Learn header shows), then refreshed from Firestore.
+    var completedIds by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.load(context, it) } ?: emptySet())
+    }
+    var levelXp by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadLevelXp(context, it) } ?: emptyMap())
+    }
+    var xpSpent by remember(uid) {
+        mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
+    }
+    LaunchedEffect(uid) {
+        if (uid == null) return@LaunchedEffect
+        ProgressRepository.loadCompletedLevels(uid) { completedIds = it }
+        ProgressRepository.loadLevelXp(uid) { levelXp = it }
+        ProgressRepository.loadXpSpent(uid) { xpSpent = it }
+    }
+    val totalXp = xpBalance(earned = levelXp.values.sum(), spent = xpSpent)
+    // Counted like the Learn path: current curriculum levels only, no REWARD
+    // nodes, and saved ids for levels that no longer exist are ignored.
+    val levelsCompleted = remember(completedIds) {
+        sampleLearningUnits().withLevelsCompleted(completedIds).sumOf { it.completedCount }
+    }
+    // Day streak isn't tracked yet; the Learn header also shows 0.
+    val dayStreak = 0
+
+    val username = profileName
+        ?: user?.displayName?.takeIf { it.isNotBlank() }
+        ?: email.substringBefore("@")
+
+    val initial = username.firstOrNull()?.uppercase() ?: "?"
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppNavy)
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Profile Dashboard",
+                color = AppWhite,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(AppCard, RoundedCornerShape(12.dp))
+                    .clickable { showSettings = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = AppCyan,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Box(
+            modifier = Modifier
+                .size(110.dp)
+                .background(AppBlue.copy(alpha = 0.2f), CircleShape)
+                .padding(8.dp)
+                .background(AppBlue, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = initial,
+                color = AppOnBlue,
+                fontSize = 48.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text(
+            text = username,
+            color = AppWhite,
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "CvSU Student",
+            color = AppGray,
+            fontSize = 14.sp
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Progress stats
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ProfileStatCard(XpBolt, totalXp.toString(), "Total XP", AppXp, Modifier.weight(1f))
+            ProfileStatCard(Icons.Filled.DateRange, dayStreak.toString(), "Day streak", AppStreak, Modifier.weight(1f))
+            ProfileStatCard(Icons.Filled.Check, levelsCompleted.toString(), "Levels", AppSuccess, Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Personal Information Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = AppCard),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                ProfileInfoRow(icon = Icons.Filled.Email, label = "CvSU Email", value = email)
+
+                studentId?.let { id ->
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        thickness = 1.dp,
+                        color = AppNavy.copy(alpha = 0.5f)
+                    )
+                    ProfileInfoRow(icon = Icons.Filled.Badge, label = "Student ID", value = id)
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = AppNavy.copy(alpha = 0.5f))
+                ProfileInfoRow(icon = Icons.Filled.School, label = "Year level", value = YearLevels.label(yearLevel))
+            }
+        }
+    }
+
+    if (showSettings) {
+        SettingsDialog(
+            onDismiss = { showSettings = false },
+            xp = totalXp,
+            onReplayTutorial = {
+                showSettings = false
+                onReplayTutorial()
+            },
+            onSignOut = {
+                showSettings = false
+                AccountSessions.end(context)
+                auth.signOut()
+                onLogout()
+            }
+        )
+    }
+}
+
+@Composable
+private fun ProfileStatCard(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = AppCard,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, AppBorder)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(value, color = AppWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(label, color = AppGray, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = AppCyan,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(label, color = AppGray, fontSize = 12.sp)
+            Text(value, color = AppWhite, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}

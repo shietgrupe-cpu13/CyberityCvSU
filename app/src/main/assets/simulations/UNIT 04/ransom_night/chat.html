@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Support portal</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated incident &middot; fictional department and gang &middot; nothing is encrypted</div>
+
+  <div class="desk-head">
+    <h1>Support portal</h1>
+    <p>The link in the ransom note &middot; simulated, offline, scripted</p>
+  </div>
+  <div class="tabs"><a class="tab" href="monitor.html">Monitor</a><a class="tab on" href="chat.html">Chat</a><a class="tab" href="backups.html">Backups</a><a class="tab" href="restore.html">Restore</a><a class="tab" href="plan.html">Plan</a></div>
+
+  <div class="note-paper">!!! LOCKD !!!  HOW_TO_RECOVER.txt
+
+All files on your network are encrypted.
+Do not rename them. Do not use recovery tools.
+Do not contact police or "IT experts".
+
+To get your files back, open our support portal
+and talk to us. You have 72 hours.</div>
+
+  <div class="chat-box" id="chat"></div>
+  <div class="section-label">Your reply</div>
+  <div class="reply-list" id="replies"></div>
+  <div class="pad"><div class="banner" id="chat-banner"></div></div>
+
+  <div class="foot">Ask questions to learn what they want. Asking is free. Agreeing to pay costs a heart.</div>
+
+  <script src="script.js"></script>
+  <script>renderChat();</script>
+</body>
+</html>
