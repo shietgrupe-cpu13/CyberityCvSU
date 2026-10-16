@@ -382,7 +382,7 @@ private suspend fun signedInDestination(context: Context, uid: String): String {
     }
     if (profile?.isComplete != true) return "completeProfile"
     ProfileCache.markComplete(context, uid)
-    ProfileCache.saveDetails(context, uid, profile.displayName, profile.studentId)
+    ProfileCache.saveDetails(context, uid, profile.displayName, profile.studentId, profile.yearLevel)
     return "loggedIn"
 }
 
@@ -1021,6 +1021,7 @@ fun RegisterScreen(
 }
     var username by remember { mutableStateOf("") }
     var studentId by remember { mutableStateOf("") }
+    var yearLevel by rememberSaveable { mutableStateOf<Int?>(null) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -1092,6 +1093,8 @@ fun RegisterScreen(
                 filled = true
             )
             AuthHint("9 digits, e.g. 202310502")
+            Spacer(modifier = Modifier.height(10.dp))
+            YearLevelField(yearLevel, { yearLevel = it }, enabled = !isLoading)
 
             Spacer(modifier = Modifier.height(20.dp))
             AuthSectionLabel("SIGN-IN DETAILS")
@@ -1151,6 +1154,7 @@ fun RegisterScreen(
                     errorMessage =
                         StudentIdRules.validateDisplayName(username)?.let { "Username: $it" }
                             ?: StudentIdRules.validateStudentId(studentId, debugBuild)
+                            ?: (if (!YearLevels.isValid(yearLevel)) "Please select your year level" else null)
                                     ?: when {
                                 !android.util.Patterns.EMAIL_ADDRESS.matcher(registerEmail).matches() ||
                                         !registerEmail.endsWith("@cvsu.edu.ph") ->
@@ -1171,7 +1175,8 @@ fun RegisterScreen(
                         val profile = UserProfile(
                             studentId = normalizedId,
                             displayName = username.trim(),
-                            isTester = StudentIdRules.isDevId(normalizedId)
+                            isTester = false,
+                            yearLevel = yearLevel
                         )
 
                         fun finish() {

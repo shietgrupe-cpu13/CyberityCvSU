@@ -1,5 +1,8 @@
 package com.cyberity.cvsu
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.material.icons.filled.School
+
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -369,12 +372,23 @@ fun ProfileTab(
     // tab shows them straight away.
     var profileName by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadName(context, it) }) }
     var studentId by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadStudentId(context, it) }) }
+    var yearLevel by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadYearLevel(context, it) }) }
+    DisposableEffect(uid) {
+        val listener = uid?.let { id ->
+            com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(id)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) yearLevel = YearLevels.fromStored(snapshot.get("yearLevel"))
+                }
+        }
+        onDispose { listener?.remove() }
+    }
+
     LaunchedEffect(uid) {
         if (uid == null) return@LaunchedEffect
         UserProfileRepository.load(uid, onResult = { profile ->
             profileName = profile?.displayName
             studentId = profile?.studentId
-            profile?.let { ProfileCache.saveDetails(context, uid, it.displayName, it.studentId) }
+            profile?.let { ProfileCache.saveDetails(context, uid, it.displayName, it.studentId, it.yearLevel) }
         }, onError = {})
     }
 
@@ -513,6 +527,8 @@ fun ProfileTab(
                     )
                     ProfileInfoRow(icon = Icons.Filled.Badge, label = "Student ID", value = id)
                 }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = AppNavy.copy(alpha = 0.5f))
+                ProfileInfoRow(icon = Icons.Filled.School, label = "Year level", value = YearLevels.label(yearLevel))
             }
         }
     }

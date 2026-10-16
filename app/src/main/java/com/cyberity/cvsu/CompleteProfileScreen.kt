@@ -55,6 +55,7 @@ fun CompleteProfileScreen(
     val debugBuild = remember { context.isDebugBuild() }
 
     var studentId by rememberSaveable { mutableStateOf("") }
+    var yearLevel by rememberSaveable { mutableStateOf<Int?>(null) }
     // The username chosen at registration, if this account has one. When it
     // exists the name isn't asked again — it stays the same as registered.
     val registeredName = remember { user?.displayName?.takeIf { it.isNotBlank() } }
@@ -71,15 +72,16 @@ fun CompleteProfileScreen(
         val uid = user?.uid ?: return onSignOut()
         val idError = StudentIdRules.validateStudentId(studentId, debugBuild)
         val nameError = if (registeredName != null) null else StudentIdRules.validateDisplayName(displayName)
-        errorMessage = idError ?: nameError ?: ""
+        errorMessage = idError ?: nameError ?: if (!YearLevels.isValid(yearLevel)) "Please select your year level" else ""
         if (errorMessage.isNotEmpty()) return
 
         val normalizedId = StudentIdRules.normalize(studentId)
         val profile = UserProfile(
             studentId = normalizedId,
             displayName = displayName.trim(),
-            // DEV- IDs mark test accounts, so they can be hidden from the leaderboard.
-            isTester = StudentIdRules.isDevId(normalizedId)
+            // Tester access is assigned by an administrator in Firestore.
+            isTester = false,
+            yearLevel = yearLevel
         )
 
         isSaving = true
@@ -148,6 +150,9 @@ fun CompleteProfileScreen(
                     Icons.Filled.Badge,
                     keyboardType = if (debugBuild) KeyboardType.Text else KeyboardType.Number
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                YearLevelField(yearLevel, { yearLevel = it }, enabled = !isSaving)
 
                 if (debugBuild) {
                     Spacer(modifier = Modifier.height(6.dp))

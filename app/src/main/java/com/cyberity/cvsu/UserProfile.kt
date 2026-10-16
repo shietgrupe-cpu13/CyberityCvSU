@@ -27,7 +27,8 @@ data class UserProfile(
     val studentId: String,
     val displayName: String,
     val isTester: Boolean = false,
-    val hasCompletedOnboarding: Boolean = false
+    val hasCompletedOnboarding: Boolean = false,
+    val yearLevel: Int? = null
 ) {
     val isComplete: Boolean get() = studentId.isNotBlank() && displayName.isNotBlank()
 }
@@ -95,6 +96,7 @@ object UserProfileRepository {
     private const val USERS = "users"
     private const val STUDENT_IDS = "studentIds"
 
+    private const val FIELD_YEAR_LEVEL = "yearLevel"
     private const val FIELD_STUDENT_ID = "studentId"
     private const val FIELD_DISPLAY_NAME = "displayName"
     private const val FIELD_EMAIL = "email"
@@ -102,6 +104,18 @@ object UserProfileRepository {
     private const val FIELD_UID = "uid"
     private const val FIELD_HAS_COMPLETED_ONBOARDING = "hasCompletedOnboarding"
     private const val FIELD_UPDATED_AT = "updatedAt"
+
+    /** Server-confirmed identity for certificate export; never issue from a stale cache. */
+    fun loadConfirmed(uid: String): com.google.android.gms.tasks.Task<UserProfile?> =
+        db.collection(USERS).document(uid).get(com.google.firebase.firestore.Source.SERVER).continueWith {
+            val document = it.result
+            val id = document.getString(FIELD_STUDENT_ID)
+            val name = document.getString(FIELD_DISPLAY_NAME)
+            if (id == null || name == null) null else UserProfile(id, name,
+                document.getBoolean(FIELD_IS_TESTER) ?: false,
+                document.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false,
+                YearLevels.fromStored(document.get(FIELD_YEAR_LEVEL)))
+        }
 
     /**
      * Loads the profile for [uid]. Calls [onResult] with null when the account
@@ -121,18 +135,18 @@ object UserProfileRepository {
 
                     if (userHasOnboarded != null) {
                         Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE: $userHasOnboarded")
-                        onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, userHasOnboarded))
+                        onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, userHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL))))
                     } else {
                         // Check if studentIds/{studentId} has the field
                         db.collection(STUDENT_IDS).document(id).get()
                             .addOnSuccessListener { studentDoc ->
                                 val studentHasOnboarded = studentDoc.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE from studentIds/$id: $studentHasOnboarded")
-                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, studentHasOnboarded))
+                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, studentHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL))))
                             }
                             .addOnFailureListener {
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding FIELD MISSING - DEFAULTING TO FALSE")
-                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, false))
+                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, false, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL))))
                             }
                     }
                 } else {
@@ -146,7 +160,7 @@ object UserProfileRepository {
                                 val hasOnboarded = doc.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false
                                 Log.d("CYBERITY_ONBOARDING", "STUDENT DOCUMENT FOUND in studentIds/$sId")
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE: $hasOnboarded")
-                                onResult(UserProfile(sId, sName, false, hasOnboarded))
+                                onResult(UserProfile(sId, sName, false, hasOnboarded, YearLevels.fromStored(doc.get(FIELD_YEAR_LEVEL))))
                             } else {
                                 Log.e("CYBERITY_ONBOARDING", "STUDENT DOCUMENT NOT FOUND for $uid")
                                 onResult(null)
@@ -215,6 +229,13 @@ object UserProfileRepository {
             }
     }
 
+    /** Updates only the year field so older accounts keep their identity and progress. */
+    fun updateYearLevel(uid: String, year: Int): com.google.android.gms.tasks.Task<Void> {
+        require(YearLevels.isValid(year))
+        return db.collection(USERS).document(uid).update(mapOf(
+            FIELD_YEAR_LEVEL to year, FIELD_UPDATED_AT to FieldValue.serverTimestamp()))
+    }
+
     /**
      * Claims [profile].studentId for [uid] and writes the profile, atomically.
      * Re-saving your own ID is fine; an ID owned by another account is IdTaken.
@@ -226,6 +247,10 @@ object UserProfileRepository {
         profile: UserProfile,
         onResult: (ProfileSaveResult) -> Unit
     ) {
+        if (!YearLevels.isValid(profile.yearLevel)) {
+            onResult(ProfileSaveResult.Failed("Please select your year level"))
+            return
+        }
         val userDoc = db.collection(USERS).document(uid)
         val newIdDoc = db.collection(STUDENT_IDS).document(profile.studentId)
 
@@ -234,7 +259,8 @@ object UserProfileRepository {
             if (owner != null && owner != uid) {
                 return@runTransaction false
             }
-            val previousId = tx.get(userDoc).getString(FIELD_STUDENT_ID)
+            val previousProfile = tx.get(userDoc)
+            val previousId = previousProfile.getString(FIELD_STUDENT_ID)
 
             if (previousId != null && previousId != profile.studentId) {
                 tx.delete(db.collection(STUDENT_IDS).document(previousId))
@@ -243,10 +269,11 @@ object UserProfileRepository {
             tx.set(
                 userDoc,
                 mapOf(
+                    FIELD_YEAR_LEVEL to profile.yearLevel,
                     FIELD_STUDENT_ID to profile.studentId,
                     FIELD_DISPLAY_NAME to profile.displayName,
                     FIELD_EMAIL to email,
-                    FIELD_IS_TESTER to profile.isTester,
+                    FIELD_IS_TESTER to (previousProfile.getBoolean(FIELD_IS_TESTER) ?: false),
                     FIELD_HAS_COMPLETED_ONBOARDING to profile.hasCompletedOnboarding,
                     FIELD_UPDATED_AT to FieldValue.serverTimestamp()
                 ),
@@ -283,13 +310,17 @@ object ProfileCache {
     }
 
     /** Name and student ID for the Profile tab, so it shows them on its first frame. */
-    fun saveDetails(context: Context, uid: String, name: String, studentId: String) {
+    fun saveDetails(context: Context, uid: String, name: String, studentId: String, yearLevel: Int? = null) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString("$uid:name", name)
             .putString("$uid:studentId", studentId)
+            .also { if (yearLevel != null) it.putInt("$uid:yearLevel", yearLevel) }
             .apply()
     }
+
+    fun loadYearLevel(context: Context, uid: String): Int? =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getInt("$uid:yearLevel", 0).takeIf { YearLevels.isValid(it) }
 
     fun loadName(context: Context, uid: String): String? =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString("$uid:name", null)

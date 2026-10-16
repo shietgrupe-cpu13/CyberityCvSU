@@ -50,8 +50,12 @@ Client-reported grading retains its documented integrity limitations.
 
 ## Compatibility and rollout
 
-These changes are NOT deployed or installed on a phone. Deploy the reviewed rules
-and distribute the matching APK as one coordinated update:
+Firestore rules were deployed to cyberitycvsu on 16 October 2026 after explicit
+user approval. Firebase confirmed successful compilation and release to
+cloud.firestore. The deployed file matches commit d7dddee; SHA-256:
+0A3B942B8031420B2C2B4C07A530512A72FC8D6506855809B4D5A267F53996EE.
+The matching APK has not been installed or distributed in this session. Phone
+testing remains paused. Updated clients are required for hint purchases:
 
 - New APK against old rules: completion transactions use the existing compatible
   fields, but hint purchases fail safely because receipt writes are not allowed.

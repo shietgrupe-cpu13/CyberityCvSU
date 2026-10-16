@@ -43,6 +43,8 @@ import java.util.Calendar
 import kotlinx.coroutines.CancellationException
 
 private enum class SettingsSection(val title: String, val icon: ImageVector) {
+    STUDENT("Student information", Icons.Default.Badge),
+    CERTIFICATE("Completion certificate", Icons.Default.WorkspacePremium),
     APPEARANCE("Appearance", Icons.Default.Palette),
     LEARNING("Learning", Icons.Default.School),
     NOTIFICATIONS("Notifications", Icons.Default.Notifications),
@@ -53,7 +55,7 @@ private enum class SettingsSection(val title: String, val icon: ImageVector) {
 
 private val settingsGroups = listOf(
     "Preferences" to listOf(SettingsSection.APPEARANCE, SettingsSection.LEARNING, SettingsSection.NOTIFICATIONS),
-    "Account" to listOf(SettingsSection.SECURITY, SettingsSection.PRIVACY),
+    "Account" to listOf(SettingsSection.STUDENT, SettingsSection.CERTIFICATE, SettingsSection.SECURITY, SettingsSection.PRIVACY),
     "Support" to listOf(SettingsSection.HELP)
 )
 
@@ -88,6 +90,8 @@ fun SettingsDialog(onDismiss: () -> Unit, onSignOut: () -> Unit = {}, onReplayTu
                     onClose = onDismiss, canDismiss = !securityBusy) {
                     when (shown) {
                         null -> SettingsHome(xp = xp, onOpen = { selected = it.name }, onSignOut = { confirmSignOut = true })
+                        SettingsSection.STUDENT -> StudentInformationScreen(onBusyChanged = { securityBusy = it })
+                        SettingsSection.CERTIFICATE -> CompletionCertificateScreen()
                         SettingsSection.APPEARANCE -> AppearanceSettings()
                         SettingsSection.LEARNING -> LearningSettings { onDismiss(); onReplayTutorial() }
                         SettingsSection.NOTIFICATIONS -> NotificationSettings()
@@ -126,6 +130,8 @@ private fun ColumnScope.SettingsHome(xp: Int?, onOpen: (SettingsSection) -> Unit
             .count { it.factorId == TotpMultiFactorGenerator.FACTOR_ID }
         val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
         mapOf(
+            SettingsSection.STUDENT to "Profile and year level",
+            SettingsSection.CERTIFICATE to "Preview and download",
             SettingsSection.APPEARANCE to when (CyberityThemeState.mode) {
                 CyberityThemeState.DARK -> "Dark"; CyberityThemeState.LIGHT -> "Light"; else -> "System"
             },

@@ -113,7 +113,7 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
         }
         SettingsCard {
             Text("What we store", color = AppWhite, fontWeight = FontWeight.SemiBold)
-            Text("Email, student ID, display name, progress, XP and hearts, and the model of devices you sign in on. No location. Passwords are never exported.",
+            Text("Email, student ID, display name, year level, progress, XP and hearts, and the model of devices you sign in on. No location. Passwords are never exported.",
                 color = AppGray, fontSize = 13.sp)
         }
     }
@@ -148,7 +148,7 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
                     PrivacyAccountData.delete(uid, beforeAuthDeletion = { runCatching {
                         context.getSharedPreferences("account_sessions", Context.MODE_PRIVATE).edit().remove(uid).apply()
                         context.getSharedPreferences("cyberity_profile_cache", Context.MODE_PRIVATE).edit()
-                            .remove(uid).remove("$uid:name").remove("$uid:studentId").apply()
+                            .remove(uid).remove("$uid:name").remove("$uid:studentId").remove("$uid:yearLevel").apply()
                         val progressCache = context.getSharedPreferences("cyberity_progress_cache", Context.MODE_PRIVATE)
                         val progressEditor = progressCache.edit()
                         progressCache.all.keys.filter { it == uid || it.startsWith("$uid:") }.forEach { progressEditor.remove(it) }

@@ -49,7 +49,10 @@ test('Scores reject inflation, refunds, repeat awards and profile-role bypasses'
 
     const tester = env.authenticatedContext('score-tester', auth).firestore();
     const testerProfile = doc(tester, 'users/score-tester');
-    await assertSucceeds(setDoc(testerProfile, { displayName: 'Dev Tester', studentId: 'DEV-123', isTester: true }));
+    await assertFails(setDoc(testerProfile, { displayName: 'Dev Tester', studentId: 'DEV-123', isTester: true }));
+    await env.withSecurityRulesDisabled(async context => {
+      await setDoc(doc(context.firestore(), 'users/score-tester'), { displayName: 'Dev Tester', studentId: 'DEV-123', isTester: true });
+    });
     await assertFails(updateDoc(testerProfile, { studentId: '202610002', isTester: false }));
     await assertFails(deleteDoc(testerProfile));
     await assertFails(setDoc(doc(tester, 'leaderboard/score-tester'), { displayName: 'Dev Tester', xp: 50, isTester: false, updatedAt: serverTimestamp() }));
