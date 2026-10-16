@@ -1,6 +1,6 @@
 # Cyberity
 
-Cyberity is an Android cybersecurity e-learning capstone application built with Kotlin, Jetpack Compose, and Firebase. Students learn through guided lessons, quizzes, and interactive simulations while tracking their progress across six learning units.
+Cyberity is an Android cybersecurity e-learning capstone application built with Kotlin, Jetpack Compose, and Firebase. Students learn through guided lessons, quizzes, and interactive simulations while tracking their progress and daily learning streaks across six learning units.
 
 ## Download
 
@@ -13,6 +13,7 @@ Cyberity is an Android cybersecurity e-learning capstone application built with 
 - Six units covering cybersecurity fundamentals, account security, phishing and social engineering, malware, network security, and incident response.
 - Interactive simulations and quizzes with feedback, hearts, EXP, and purchasable hints.
 - A ranking system and leaderboard for comparing learning progress.
+- A flame icon and daily learning streak saved in Firestore. Complete a level or quiz to light it; server time prevents phone date/time changes from granting extra days. Database administrators can correct or reset streaks.
 - Student profiles with a username, student ID, and year level. Existing students can add their year level through **Settings > Student information**.
 - PDF completion certificates populated with the student's username, student ID, and year level, with spaces for three project members' signatures.
 - Completion and EXP awards saved together to prevent duplicate first-clear rewards. Hint purchases also save their receipt and EXP deduction together.
@@ -25,6 +26,8 @@ Open **Settings > Completion certificate** to export a PDF after completing the 
 For development, an administrator can set the Boolean field `isTester` to `true` on the student's `users/{uid}` document in the Firebase console. The app reads the server-confirmed flag to enable level access and a watermarked certificate preview. Set it to `false` to revoke access. Students cannot change this field themselves. Preview certificates are clearly marked and do not certify course completion.
 
 See [tester mode](docs/developer-mode.md), [student information and certificates](docs/student-information-and-certificates.md), and [reliable progress and EXP saves](docs/atomic-learning-saves.md) for implementation details.
+
+See [learning streaks](docs/learning-streak.md) for daily reset behavior, clock protection, and administrator controls in Firebase Console.
 
 ## Build and run
 

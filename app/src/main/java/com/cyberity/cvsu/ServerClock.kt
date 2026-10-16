@@ -5,6 +5,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
+import com.google.android.gms.tasks.Task
 
 // ===========================================================================
 // SERVER CLOCK
@@ -39,6 +40,9 @@ object ServerClock {
     fun now(): Long =
         if (isSynced) SystemClock.elapsedRealtime() + offsetMillis else System.currentTimeMillis()
 
+    /** Streaks never use the device wall clock, even before the first sync. */
+    fun trustedNow(): Long? = if (isSynced) SystemClock.elapsedRealtime() + offsetMillis else null
+
     /**
      * Measures the offset between this device's clock and Firestore's.
      *
@@ -51,18 +55,26 @@ object ServerClock {
      * blocking the Learn screen when offline.
      */
     fun sync(uid: String, onSynced: () -> Unit = {}) {
+        syncTask(uid).addOnSuccessListener { onSynced() }
+    }
+
+    /** Callers that require trusted time must wait for a successful server response. */
+    fun syncTask(uid: String): Task<Long> {
         val doc = FirebaseFirestore.getInstance().collection(COLLECTION).document(uid)
         val sentAt = SystemClock.elapsedRealtime()
 
-        doc.set(mapOf(FIELD_PING to FieldValue.serverTimestamp()), SetOptions.merge())
-            .addOnSuccessListener {
-                doc.get(Source.SERVER).addOnSuccessListener { snapshot ->
-                    val serverAt = snapshot.getTimestamp(FIELD_PING)?.toDate()?.time ?: return@addOnSuccessListener
-                    val deviceMidpoint = (sentAt + SystemClock.elapsedRealtime()) / 2
-                    offsetMillis = serverAt - deviceMidpoint
-                    isSynced = true
-                    onSynced()
-                }
+        return doc.set(mapOf(FIELD_PING to FieldValue.serverTimestamp()), SetOptions.merge())
+            .continueWithTask { written ->
+                written.result // Propagate failure; never substitute device time.
+                doc.get(Source.SERVER)
+            }.continueWith { read ->
+                val snapshot = read.result
+                check(!snapshot.metadata.isFromCache && !snapshot.metadata.hasPendingWrites())
+                val serverAt = checkNotNull(snapshot.getTimestamp(FIELD_PING)) { "Server time unavailable." }.toDate().time
+                val deviceMidpoint = (sentAt + SystemClock.elapsedRealtime()) / 2
+                offsetMillis = serverAt - deviceMidpoint
+                isSynced = true
+                checkNotNull(trustedNow())
             }
     }
 }

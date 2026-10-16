@@ -44,7 +44,8 @@ service cloud.firestore {
       let spent = data.get('xpSpent', 0);
       let oldSpent = previous.get('xpSpent', 0);
       let changed = data.diff(previous).affectedKeys();
-      return changed.hasOnly(['completedLevels', 'levelXp', 'xpSpent', 'lastHintPurchase', 'hearts', 'heartsUpdatedAt', 'clockPing']) &&
+      return changed.hasOnly(['completedLevels', 'levelXp', 'xpSpent', 'lastHintPurchase', 'hearts', 'heartsUpdatedAt', 'clockPing', 'streakDays', 'streakLastActivityAt', 'streakLevelId']) &&
+        validStreak(data, previous) &&
         (!changed.hasAny(['lastHintPurchase']) || spent > oldSpent) &&
         (spent == oldSpent || validHintDebit(data, oldSpent, spent)) &&
         (!changed.hasAny(['clockPing']) || data.clockPing == request.time) &&
@@ -59,6 +60,27 @@ service cloud.firestore {
         (!changed.hasAny(['hearts', 'heartsUpdatedAt']) ||
           (data.keys().hasAll(['hearts', 'heartsUpdatedAt']) && data.heartsUpdatedAt == request.time)) &&
         (added.size() == 0 || validNewAwards(xp, added, completed));
+    }
+    // Optional legacy-compatible progress fields: streakDays (positive int),
+    // streakLastActivityAt (server timestamp), streakLevelId (completed, awarded level).
+    // One learning day per Philippine calendar date; no client-supplied timestamps.
+    function validStreak(data, previous) {
+      let fields = ['streakDays', 'streakLastActivityAt', 'streakLevelId'];
+      let changed = data.diff(previous).affectedKeys().hasAny(fields);
+      return !changed || (data.keys().hasAll(fields) && validStreakActivity(data, previous));
+    }
+    function validStreakActivity(data, previous) {
+      let today = (request.time + duration.value(8, 'h')).date();
+      let last = previous.get('streakLastActivityAt', request.time - duration.value(3, 'd'));
+      let lastDay = (last + duration.value(8, 'h')).date();
+      let count = previous.get('streakDays', 0);
+      let expected = count <= 0 ? 1 : lastDay == today ? count :
+        (lastDay == today - duration.value(1, 'd') ? count + 1 : 1);
+      return data.streakDays is int && data.streakDays > 0 && data.streakDays == expected &&
+        data.streakLastActivityAt == request.time &&
+        data.streakLevelId in knownLevelIds() && data.streakLevelId != 200 &&
+        data.streakLevelId in data.get('completedLevels', []) &&
+        string(data.streakLevelId) in data.get('levelXp', {}).keys();
     }
     function validNewAwards(xp, added, completed) {
       return (!('101' in added) || (xp['101'] is int && xp['101'] >= 0 && xp['101'] <= 150 && 101 in completed)) &&

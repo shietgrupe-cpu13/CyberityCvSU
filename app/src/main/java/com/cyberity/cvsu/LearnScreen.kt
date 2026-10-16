@@ -427,6 +427,7 @@ fun LearnScreen(
 ) {
     val context = LocalContext.current
     val uid = FirebaseAuth.getInstance().currentUser?.uid
+    val learningStreak = rememberLearningStreak(uid)
 
     // Seeded from the on-device cache, synchronously, so the first frame already
     // shows real progress instead of the all-locked default while Firestore answers.
@@ -858,7 +859,8 @@ fun LearnScreen(
             } else {
                 Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
                     LearnHeader(
-                        streak = 0,
+                        streak = learningStreak.days,
+                        streakActive = learningStreak.activeToday,
                         xp = totalXp,
                         hearts = hearts,
                         heartRefillIn = heartRefillIn,
@@ -1000,7 +1002,8 @@ fun LearnHeader(
     hearts: Int,
     heartRefillIn: String?,
     onReplayTutorial: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    streakActive: Boolean = false
 ) {
     var showSettings by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -1018,7 +1021,7 @@ fun LearnHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            StatPill(Icons.Filled.DateRange, streak.toString(), AppStreak, "Day streak")
+            StreakIndicator(streak, streakActive)
             XpIndicator(xp = xp)
 
             Row(verticalAlignment = Alignment.CenterVertically) {

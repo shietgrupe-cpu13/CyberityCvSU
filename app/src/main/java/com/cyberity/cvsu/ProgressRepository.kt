@@ -52,13 +52,25 @@ object ProgressRepository {
     fun completeLevel(uid: String, levelId: Int, xp: Int): Task<SavedProgress> {
         require(levelId in ScorePolicy.levelIds && xp in 0..ScorePolicy.cap(levelId))
         val ref = db.collection(COLLECTION).document(uid)
-        return db.runTransaction { tx ->
-            val previous = saved(tx.get(ref))
-            val awards = if (levelId in previous.levelXp) previous.levelXp else previous.levelXp + (levelId to xp)
-            val result = previous.copy(completed = previous.completed + levelId, levelXp = awards)
-            tx.set(ref, mapOf(FIELD_COMPLETED to result.completed.toList(),
-                FIELD_LEVEL_XP to awards.mapKeys { it.key.toString() }), SetOptions.merge())
-            result
+        return ServerClock.syncTask(uid).continueWithTask { clock ->
+            clock.result // A completion must not calculate its streak using the phone date.
+            db.runTransaction { tx ->
+                val document = tx.get(ref)
+                val previous = saved(document)
+                val awards = if (levelId in previous.levelXp) previous.levelXp else previous.levelXp + (levelId to xp)
+                val result = previous.copy(completed = previous.completed + levelId, levelXp = awards)
+                val fields = mutableMapOf<String, Any>(FIELD_COMPLETED to result.completed.toList(),
+                    FIELD_LEVEL_XP to awards.mapKeys { it.key.toString() })
+                if (levelId != 200) {
+                    fields["streakDays"] = StreakPolicy.next(
+                        (document.getLong("streakDays") ?: 0).toInt(),
+                        document.getTimestamp("streakLastActivityAt")?.toDate()?.time, checkNotNull(ServerClock.trustedNow()))
+                    fields["streakLastActivityAt"] = FieldValue.serverTimestamp()
+                    fields["streakLevelId"] = levelId
+                }
+                tx.set(ref, fields, SetOptions.merge())
+                result
+            }
         }.addOnSuccessListener { LeaderboardRepository.publish(uid) }
     }
 

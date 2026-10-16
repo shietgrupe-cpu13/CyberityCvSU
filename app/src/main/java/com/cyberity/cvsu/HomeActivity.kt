@@ -2,6 +2,7 @@ package com.cyberity.cvsu
 
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.LocalFireDepartment
 
 
 import androidx.compose.animation.AnimatedContent
@@ -415,8 +416,7 @@ fun ProfileTab(
     val levelsCompleted = remember(completedIds) {
         sampleLearningUnits().withLevelsCompleted(completedIds).sumOf { it.completedCount }
     }
-    // Day streak isn't tracked yet; the Learn header also shows 0.
-    val dayStreak = 0
+    val learningStreak = rememberLearningStreak(uid)
 
     val username = profileName
         ?: user?.displayName?.takeIf { it.isNotBlank() }
@@ -503,7 +503,8 @@ fun ProfileTab(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             ProfileStatCard(XpBolt, totalXp.toString(), "Total XP", AppXp, Modifier.weight(1f))
-            ProfileStatCard(Icons.Filled.DateRange, dayStreak.toString(), "Day streak", AppStreak, Modifier.weight(1f))
+            ProfileStatCard(Icons.Filled.LocalFireDepartment, learningStreak.days.toString(), "Day streak",
+                if (learningStreak.activeToday) AppStreak else AppGray, Modifier.weight(1f))
             ProfileStatCard(Icons.Filled.Check, levelsCompleted.toString(), "Levels", AppSuccess, Modifier.weight(1f))
         }
 
