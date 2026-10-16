@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Bonus XP Cache</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Bonus &middot; no hearts at stake &middot; retries are free</div>
+
+  <div class="desk-head">
+    <h1>Bonus XP Cache</h1>
+    <p>You survived the malware unit. Crack the lock to claim what&rsquo;s inside.</p>
+  </div>
+
+  <div class="chest-wrap">
+    <svg class="chest" id="chest" viewBox="0 0 200 170" role="img" aria-label="Treasure chest">
+      <ellipse class="glow" cx="100" cy="78" rx="78" ry="16"/>
+      <rect class="body" x="20" y="80" width="160" height="80" rx="8"/>
+      <rect class="band" x="20" y="96" width="160" height="10"/>
+      <rect class="band" x="40" y="80" width="12" height="80"/>
+      <rect class="band" x="148" y="80" width="12" height="80"/>
+      <g class="lid">
+        <path class="body" d="M20 80 V58 Q20 36 46 36 H154 Q180 36 180 58 V80 Z"/>
+        <rect class="band" x="40" y="36" width="12" height="44"/>
+        <rect class="band" x="148" y="36" width="12" height="44"/>
+      </g>
+      <g class="lock">
+        <rect x="86" y="84" width="28" height="30" rx="5"/>
+        <circle cx="100" cy="96" r="4" fill="#5b6778" stroke="none"/>
+        <rect x="98.5" y="98" width="3" height="9" fill="#5b6778" stroke="none"/>
+      </g>
+    </svg>
+  </div>
+  <div class="xp-pop" id="xp-pop">+50 XP</div>
+
+  <div id="lock-box">
+    <div class="wheels" id="wheels"></div>
+    <div class="pad"><button class="cta" onclick="tryLock()">TRY THE LOCK</button></div>
+    <div class="section-label">The four clues &middot; one from each level</div>
+    <div id="clues"></div>
+  </div>
+
+  <div class="pad"><div class="banner" id="cache-banner"></div></div>
+
+  <div class="section-label" id="cards-label" style="display:none">Your Unit 4 field guide</div>
+  <div class="cards" id="cards"></div>
+  <div class="flip-count" id="flip-count"></div>
+
+  <div class="foot">This is a reward. Wrong codes just shake the lock, and nothing here costs a heart.</div>
+
+  <script src="script.js"></script>
+  <script>renderCache();</script>
+</body>
+</html>

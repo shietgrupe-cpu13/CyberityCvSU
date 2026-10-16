@@ -1,0 +1,219 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function owner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function verifiedOwner(uid) {
+      return owner(uid) && request.auth.token.email_verified == true;
+    }
+    function freshAuthentication() {
+      return request.auth != null && timestamp.value(request.auth.token.auth_time * 1000) > request.time - duration.value(5, 'm');
+    }
+    function accountDeleting(uid) {
+      return exists(/databases/$(database)/documents/privacyPreferences/$(uid)) &&
+        get(/databases/$(database)/documents/privacyPreferences/$(uid)).data.deleting == true;
+    }
+    function sparkSessionActive() {
+      return request.auth != null && !accountDeleting(request.auth.uid) &&
+        (!exists(/databases/$(database)/documents/accountSecuritySpark/$(request.auth.uid)) ||
+          timestamp.value(request.auth.token.auth_time * 1000) >
+            get(/databases/$(database)/documents/accountSecuritySpark/$(request.auth.uid)).data.revokedAt);
+    }
+    function deletionOwner(uid) {
+      return verifiedOwner(uid) && freshAuthentication() && accountDeleting(uid) &&
+        get(/databases/$(database)/documents/privacyPreferences/$(uid)).data.deletionAuthTime == request.auth.token.auth_time;
+    }
+    function publicEntryAllowed(uid) {
+      return !existsAfter(/databases/$(database)/documents/privacyPreferences/$(uid)) ||
+        (getAfter(/databases/$(database)/documents/privacyPreferences/$(uid)).data.leaderboardVisible == true &&
+          getAfter(/databases/$(database)/documents/privacyPreferences/$(uid)).data.deleting == false);
+    }
+
+    // Bounded client-reported scores. Rules cannot prove that a lab was actually solved.
+    function knownLevelIds() { return [101, 102, 103, 104, 105, 106, 200, 201, 202, 203, 204, 205, 250, 301, 302, 303, 304, 305, 350, 401, 402, 403, 404, 405, 450, 501, 502, 503, 504, 505, 550, 601, 602, 603, 604, 605]; }
+    function knownXpKeys() { return ['101', '102', '103', '104', '105', '106', '200', '201', '202', '203', '204', '205', '250', '301', '302', '303', '304', '305', '350', '401', '402', '403', '404', '405', '450', '501', '502', '503', '504', '505', '550', '601', '602', '603', '604', '605']; }
+    function earnedXp(xp) {
+      return xp.get('101', 0) + xp.get('102', 0) + xp.get('103', 0) + xp.get('104', 0) + xp.get('105', 0) + xp.get('106', 0) + xp.get('201', 0) + xp.get('202', 0) + xp.get('203', 0) + xp.get('204', 0) + xp.get('205', 0) + xp.get('250', 0) + xp.get('301', 0) + xp.get('302', 0) + xp.get('303', 0) + xp.get('304', 0) + xp.get('305', 0) + xp.get('350', 0) + xp.get('401', 0) + xp.get('402', 0) + xp.get('403', 0) + xp.get('404', 0) + xp.get('405', 0) + xp.get('450', 0) + xp.get('501', 0) + xp.get('502', 0) + xp.get('503', 0) + xp.get('504', 0) + xp.get('505', 0) + xp.get('550', 0) + xp.get('601', 0) + xp.get('602', 0) + xp.get('603', 0) + xp.get('604', 0) + xp.get('605', 0);
+    }
+    function validProgress(data, previous) {
+      let xp = data.get('levelXp', {});
+      let oldXp = previous.get('levelXp', {});
+      let added = xp.diff(oldXp).addedKeys();
+      let completed = data.get('completedLevels', []);
+      let spent = data.get('xpSpent', 0);
+      let oldSpent = previous.get('xpSpent', 0);
+      let changed = data.diff(previous).affectedKeys();
+      return changed.hasOnly(['completedLevels', 'levelXp', 'xpSpent', 'lastHintPurchase', 'hearts', 'heartsUpdatedAt', 'clockPing']) &&
+        (!changed.hasAny(['lastHintPurchase']) || spent > oldSpent) &&
+        (spent == oldSpent || validHintDebit(data, oldSpent, spent)) &&
+        (!changed.hasAny(['clockPing']) || data.clockPing == request.time) &&
+        xp is map && xp.keys().hasOnly(knownXpKeys()) && xp.keys().hasAll(oldXp.keys()) &&
+        added.size() <= 1 && xp.diff(oldXp).changedKeys().size() == 0 &&
+        completed is list && completed.size() == completed.toSet().size() &&
+        completed.hasOnly(knownLevelIds()) && completed.hasAll(previous.get('completedLevels', [])) &&
+        spent is int && spent >= oldSpent && spent <= 50 + earnedXp(xp) &&
+        (spent - oldSpent) in [0, 15, 30, 50] &&
+        (!('hearts' in data) || (data.hearts is int && data.hearts >= 0 && data.hearts <= 5)) &&
+        (!('heartsUpdatedAt' in data) || data.heartsUpdatedAt is timestamp) &&
+        (!changed.hasAny(['hearts', 'heartsUpdatedAt']) ||
+          (data.keys().hasAll(['hearts', 'heartsUpdatedAt']) && data.heartsUpdatedAt == request.time)) &&
+        (added.size() == 0 || validNewAwards(xp, added, completed));
+    }
+    function validNewAwards(xp, added, completed) {
+      return (!('101' in added) || (xp['101'] is int && xp['101'] >= 0 && xp['101'] <= 150 && 101 in completed)) &&
+        (!('102' in added) || (xp['102'] is int && xp['102'] >= 0 && xp['102'] <= 150 && 102 in completed)) &&
+        (!('103' in added) || (xp['103'] is int && xp['103'] >= 0 && xp['103'] <= 150 && 103 in completed)) &&
+        (!('104' in added) || (xp['104'] is int && xp['104'] >= 0 && xp['104'] <= 150 && 104 in completed)) &&
+        (!('105' in added) || (xp['105'] is int && xp['105'] >= 0 && xp['105'] <= 150 && 105 in completed)) &&
+        (!('106' in added) || (xp['106'] is int && xp['106'] >= 0 && xp['106'] <= 150 && 106 in completed)) &&
+        (!('200' in added) || (xp['200'] is int && xp['200'] >= 0 && xp['200'] <= 0 && 200 in completed)) &&
+        (!('201' in added) || (xp['201'] is int && xp['201'] >= 0 && xp['201'] <= 150 && 201 in completed)) &&
+        (!('202' in added) || (xp['202'] is int && xp['202'] >= 0 && xp['202'] <= 150 && 202 in completed)) &&
+        (!('203' in added) || (xp['203'] is int && xp['203'] >= 0 && xp['203'] <= 150 && 203 in completed)) &&
+        (!('204' in added) || (xp['204'] is int && xp['204'] >= 0 && xp['204'] <= 150 && 204 in completed)) &&
+        (!('205' in added) || (xp['205'] is int && xp['205'] >= 0 && xp['205'] <= 150 && 205 in completed)) &&
+        (!('250' in added) || (xp['250'] is int && xp['250'] >= 0 && xp['250'] <= 150 && 250 in completed)) &&
+        (!('301' in added) || (xp['301'] is int && xp['301'] >= 0 && xp['301'] <= 150 && 301 in completed)) &&
+        (!('302' in added) || (xp['302'] is int && xp['302'] >= 0 && xp['302'] <= 150 && 302 in completed)) &&
+        (!('303' in added) || (xp['303'] is int && xp['303'] >= 0 && xp['303'] <= 150 && 303 in completed)) &&
+        (!('304' in added) || (xp['304'] is int && xp['304'] >= 0 && xp['304'] <= 150 && 304 in completed)) &&
+        (!('305' in added) || (xp['305'] is int && xp['305'] >= 0 && xp['305'] <= 150 && 305 in completed)) &&
+        (!('350' in added) || (xp['350'] is int && xp['350'] >= 0 && xp['350'] <= 150 && 350 in completed)) &&
+        (!('401' in added) || (xp['401'] is int && xp['401'] >= 0 && xp['401'] <= 150 && 401 in completed)) &&
+        (!('402' in added) || (xp['402'] is int && xp['402'] >= 0 && xp['402'] <= 150 && 402 in completed)) &&
+        (!('403' in added) || (xp['403'] is int && xp['403'] >= 0 && xp['403'] <= 150 && 403 in completed)) &&
+        (!('404' in added) || (xp['404'] is int && xp['404'] >= 0 && xp['404'] <= 150 && 404 in completed)) &&
+        (!('405' in added) || (xp['405'] is int && xp['405'] >= 0 && xp['405'] <= 150 && 405 in completed)) &&
+        (!('450' in added) || (xp['450'] is int && xp['450'] >= 0 && xp['450'] <= 150 && 450 in completed)) &&
+        (!('501' in added) || (xp['501'] is int && xp['501'] >= 0 && xp['501'] <= 150 && 501 in completed)) &&
+        (!('502' in added) || (xp['502'] is int && xp['502'] >= 0 && xp['502'] <= 150 && 502 in completed)) &&
+        (!('503' in added) || (xp['503'] is int && xp['503'] >= 0 && xp['503'] <= 150 && 503 in completed)) &&
+        (!('504' in added) || (xp['504'] is int && xp['504'] >= 0 && xp['504'] <= 150 && 504 in completed)) &&
+        (!('505' in added) || (xp['505'] is int && xp['505'] >= 0 && xp['505'] <= 150 && 505 in completed)) &&
+        (!('550' in added) || (xp['550'] is int && xp['550'] >= 0 && xp['550'] <= 150 && 550 in completed)) &&
+        (!('601' in added) || (xp['601'] is int && xp['601'] >= 0 && xp['601'] <= 150 && 601 in completed)) &&
+        (!('602' in added) || (xp['602'] is int && xp['602'] >= 0 && xp['602'] <= 150 && 602 in completed)) &&
+        (!('603' in added) || (xp['603'] is int && xp['603'] >= 0 && xp['603'] <= 150 && 603 in completed)) &&
+        (!('604' in added) || (xp['604'] is int && xp['604'] >= 0 && xp['604'] <= 150 && 604 in completed)) &&
+        (!('605' in added) || (xp['605'] is int && xp['605'] >= 0 && xp['605'] <= 150 && 605 in completed));
+    }
+
+    function scoreBalance(data) {
+      let balance = 50 + earnedXp(data.get('levelXp', {})) - data.get('xpSpent', 0);
+      return balance > 0 ? balance : 0;
+    }
+    function validHintDebit(data, before, after) {
+      let id = data.get('lastHintPurchase', '');
+      let path = /databases/$(database)/documents/userProgress/$(request.auth.uid)/hintPurchases/$(id);
+      let receipt = getAfter(path).data;
+      return id is string && id.matches('^[a-f0-9]{64}$') && !exists(path) &&
+        receipt.spentBefore == before && receipt.spentAfter == after && receipt.cost == after - before;
+    }
+    function validHintReceipt(data, uid, id) {
+      let path = /databases/$(database)/documents/userProgress/$(uid);
+      let oldSpent = exists(path) ? get(path).data.get('xpSpent', 0) : 0;
+      let progress = getAfter(path).data;
+      let fields = ['attemptId', 'levelId', 'taskId', 'hintNumber', 'cost', 'spentBefore', 'spentAfter', 'createdAt'];
+      return id.matches('^[a-f0-9]{64}$') && data.keys().hasAll(fields) && data.keys().hasOnly(fields) &&
+        data.attemptId is string && data.attemptId.matches('^[a-f0-9-]{36}$') &&
+        data.levelId in knownLevelIds() &&
+        data.taskId is string && data.taskId.size() > 0 && data.taskId.size() <= 100 &&
+        data.hintNumber is int && data.hintNumber >= 1 && data.hintNumber <= 100 &&
+        data.cost == (data.hintNumber == 1 ? 15 : (data.hintNumber == 2 ? 30 : 50)) &&
+        data.spentBefore is int && data.spentAfter is int &&
+        data.spentBefore == oldSpent && data.spentAfter == oldSpent + data.cost &&
+        progress.xpSpent == data.spentAfter && progress.lastHintPurchase == id && data.createdAt == request.time;
+    }
+    function validProfile(data, previous) {
+      let tester = data.get('isTester', false);
+      let studentId = data.get('studentId', '');
+      return tester is bool && studentId is string &&
+        (!('yearLevel' in data) || (data.yearLevel is int && data.yearLevel >= 1 && data.yearLevel <= 5)) &&
+        tester == previous.get('isTester', false) &&
+        (!('displayName' in data) || (data.displayName is string && data.displayName.size() >= 3 && data.displayName.size() <= 20));
+    }
+    function validLeaderboard(uid) {
+      let data = request.resource.data;
+      let profile = getAfter(/databases/$(database)/documents/users/$(uid)).data;
+      let progress = existsAfter(/databases/$(database)/documents/userProgress/$(uid)) ?
+        getAfter(/databases/$(database)/documents/userProgress/$(uid)).data : {};
+      return data.keys().hasAll(['displayName', 'xp', 'isTester', 'updatedAt']) &&
+        data.keys().hasOnly(['displayName', 'xp', 'isTester', 'updatedAt']) &&
+        data.displayName == profile.displayName && data.displayName is string &&
+        data.displayName.size() >= 3 && data.displayName.size() <= 20 &&
+        data.isTester == profile.get('isTester', false) && data.isTester is bool &&
+        data.xp is int && data.xp == scoreBalance(progress) &&
+        data.updatedAt == request.time;
+    }
+
+    match /privacyPreferences/{uid} {
+      // Readable after cutoff/deletion to route a failed deletion back to its recovery flow.
+      allow get: if verifiedOwner(uid);
+      allow list, delete: if false;
+      allow create, update: if verifiedOwner(uid) && (
+        (sparkSessionActive() && request.resource.data.keys().hasAll(['leaderboardVisible', 'deleting']) &&
+          request.resource.data.keys().hasOnly(['leaderboardVisible', 'deleting']) &&
+          request.resource.data.leaderboardVisible is bool && request.resource.data.deleting == false) ||
+        (freshAuthentication() && request.resource.data.keys().hasAll(['leaderboardVisible', 'deleting', 'deletionAuthTime']) &&
+          request.resource.data.keys().hasOnly(['leaderboardVisible', 'deleting', 'deletionAuthTime']) &&
+          request.resource.data.leaderboardVisible == false && request.resource.data.deleting == true &&
+          request.resource.data.deletionAuthTime == request.auth.token.auth_time &&
+          ((!exists(/databases/$(database)/documents/privacyPreferences/$(uid)) && sparkSessionActive()) ||
+            (exists(/databases/$(database)/documents/privacyPreferences/$(uid)) &&
+              ((resource.data.deleting == false && sparkSessionActive()) ||
+                (resource.data.deleting == true && request.auth.token.auth_time >= resource.data.deletionAuthTime)))))
+      );
+    }
+    match /accountSecuritySpark/{uid} {
+      allow get: if verifiedOwner(uid);
+      allow list, delete: if false;
+      allow create, update: if verifiedOwner(uid) && freshAuthentication() &&
+        (sparkSessionActive() || deletionOwner(uid)) &&
+        request.resource.data.keys().hasOnly(['revokedAt']) && request.resource.data.revokedAt == request.time;
+      match /sessions/{sessionId} {
+        allow get, list: if verifiedOwner(uid) && (sparkSessionActive() || deletionOwner(uid));
+        allow create, update: if verifiedOwner(uid) && sparkSessionActive() &&
+          sessionId.matches('^[a-f0-9-]{36}$') &&
+          request.resource.data.keys().hasAll(['device', 'androidVersion', 'authTime', 'lastActive', 'signedOut']) &&
+          request.resource.data.keys().hasOnly(['device', 'androidVersion', 'authTime', 'lastActive', 'signedOut']) &&
+          request.resource.data.device is string && request.resource.data.device.size() > 0 && request.resource.data.device.size() <= 100 &&
+          request.resource.data.androidVersion is string && request.resource.data.androidVersion.size() <= 30 &&
+          request.resource.data.authTime == request.auth.token.auth_time && request.resource.data.signedOut is bool &&
+          (request.resource.data.lastActive == request.time ||
+            (request.resource.data.signedOut == true && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['signedOut'])));
+        allow delete: if verifiedOwner(uid) && (sparkSessionActive() || deletionOwner(uid));
+      }
+    }
+    match /userProgress/{uid} {
+      allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+      allow create: if owner(uid) && sparkSessionActive() && validProgress(request.resource.data, {});
+      allow update: if owner(uid) && sparkSessionActive() && validProgress(request.resource.data, resource.data);
+      allow delete: if deletionOwner(uid);
+      match /hintPurchases/{purchaseId} {
+        allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+        allow update: if false;
+        allow delete: if deletionOwner(uid);
+        allow create: if owner(uid) && sparkSessionActive() && validHintReceipt(request.resource.data, uid, purchaseId);
+      }
+    }
+    match /users/{uid} {
+      allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+      allow create: if owner(uid) && sparkSessionActive() && validProfile(request.resource.data, {});
+      allow update: if owner(uid) && sparkSessionActive() && validProfile(request.resource.data, resource.data);
+      allow delete: if deletionOwner(uid);
+    }
+    match /studentIds/{id} {
+      allow read: if request.auth != null &&
+        (sparkSessionActive() || (resource.data.uid == request.auth.uid && deletionOwner(request.auth.uid)));
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid && sparkSessionActive();
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid &&
+        (sparkSessionActive() || deletionOwner(request.auth.uid));
+    }
+    match /leaderboard/{uid} {
+      allow read: if request.auth != null && (sparkSessionActive() || (owner(uid) && deletionOwner(uid)));
+      allow create, update: if owner(uid) && sparkSessionActive() && publicEntryAllowed(uid) && validLeaderboard(uid);
+      allow delete: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+    }
+  }
+}

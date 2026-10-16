@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Re-entry test</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated containment console &middot; fictional accounts and addresses</div>
+
+  <div id="hud"></div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='ops.html'">&#8592; Console</button>
+    <span class="topbar-title">Re-entry test</span>
+  </div>
+
+  <div class="detail">
+    <div class="appui">
+      <b>Think like the attacker</b>
+      The test replays every way back in that the attacker could still have: old sessions,
+      rules, the IP, the link, and every sign-in method on every account.
+    </div>
+    <button class="cta" onclick="runVerify()">RUN TEST</button>
+    <div id="checks"></div>
+    <div class="banner" id="verify-banner"></div>
+  </div>
+
+  <div class="foot">A red check tells you what the attacker could still do, and where to fix it.</div>
+
+  <script src="script.js"></script>
+  <script>renderHud();</script>
+</body>
+</html>

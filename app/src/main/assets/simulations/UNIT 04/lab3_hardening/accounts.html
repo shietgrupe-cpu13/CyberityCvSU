@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Same click, two accounts</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated lab &middot; fictional PCs and programs &middot; nothing is installed or run</div>
+
+  <div class="desk-head">
+    <h1>Same click, two accounts</h1>
+    <p>A sandbox replay of Grade_Calculator_2026.exe, a trojan shared in a class group chat</p>
+  </div>
+  <div class="tabs"><a class="tab" href="patch.html">Patch</a><a class="tab" href="allow.html">Allow</a><a class="tab on" href="accounts.html">Accounts</a><a class="tab" href="harden.html">Harden</a><a class="tab" href="stack.html">Layers</a></div>
+
+  <div class="seg">
+    <button id="seg-admin" onclick="setAccount('admin')">Administrator</button>
+    <button id="seg-std" onclick="setAccount('std')">Standard user</button>
+  </div>
+
+  <div class="pad"><button class="cta" onclick="replay()">REPLAY THE CLICK AS THIS ACCOUNT</button></div>
+  <div class="replay" id="replay"><span class="muted">Choose an account, then press REPLAY.</span></div>
+
+  <div class="compare" id="cmp"></div>
+
+  <div class="pad">
+    <div class="banner" id="acct-banner"></div>
+    <button class="cta danger" onclick="everyoneAdmin()">MAKE EVERY STUDENT A LOCAL ADMIN (FEWER TICKETS)</button>
+  </div>
+
+  <div class="foot">Replays run in an isolated sandbox. Nothing runs on your device.</div>
+
+  <script src="script.js"></script>
+  <script>renderAccounts();</script>
+</body>
+</html>

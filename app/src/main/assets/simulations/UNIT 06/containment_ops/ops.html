@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Containment console</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated containment console &middot; fictional accounts and addresses</div>
+
+  <div id="hud"></div>
+
+  <div class="desk-head">
+    <h1>Containment console</h1>
+    <p>CvSU IT Services Office &middot; incident TKT-0144 &middot; owner: <b>you</b></p>
+  </div>
+
+  <div class="section-label">Compromised accounts</div>
+  <div id="accounts"></div>
+
+  <div class="section-label">Across the campus</div>
+  <a class="choice tile" href="network.html">
+    <span class="tile-body">
+      <span class="tile-name">NETWORK BLOCKS</span>
+      <span class="tile-sub" id="net-sub">Firewall and campus DNS</span>
+    </span>
+  </a>
+  <a class="choice tile" href="mail.html">
+    <span class="tile-body">
+      <span class="tile-name">MAIL PURGE</span>
+      <span class="tile-sub" id="mail-sub">Pull phishing back out of inboxes, see who clicked</span>
+    </span>
+  </a>
+  <a class="choice tile" href="verify.html">
+    <span class="tile-body">
+      <span class="tile-name">RE-ENTRY TEST</span>
+      <span class="tile-sub">Try every way back in. Containment isn't done until this is green.</span>
+    </span>
+  </a>
+
+  <div class="section-label">Containment rules</div>
+  <div class="explain">
+    <div class="explain-row"><b>Stop</b><span>What is causing harm right now? Stop that first.</span></div>
+    <div class="explain-row"><b>Small</b><span>The smallest action that fully works. Never more than the harm needs.</span></div>
+    <div class="explain-row"><b>Keep</b><span>Snapshot, then scrub. Evidence goes to the locker before anything is deleted.</span></div>
+  </div>
+
+  <div class="foot">Everything here is simulated. No account, mailbox or network is touched.</div>
+
+  <script src="script.js"></script>
+  <script>renderHud(); renderOps();</script>
+</body>
+</html>

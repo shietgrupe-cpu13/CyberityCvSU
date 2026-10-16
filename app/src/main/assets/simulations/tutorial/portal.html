@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Sandboxed browser</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Sandboxed browser · this site is fake and local</div>
+
+  <div class="browser-chrome">
+    <button class="chrome-btn" onclick="goBack()" aria-label="Back">&#8592;</button>
+    <div class="url-bar">
+      <span class="lock">&#128274;</span>
+      <span class="url-text mono">https://cvsu-verify.example/portal/login</span>
+    </div>
+    <button class="chrome-btn" onclick="togglePageInfo()" aria-label="Page details">&#9432;</button>
+  </div>
+
+  <div class="panel" id="info-panel">
+    <h3>Page details</h3>
+    <div class="kv"><span>Page title</span><span>CvSU Student Portal · Sign in</span></div>
+    <div class="kv"><span>Certificate</span><span>Valid, issued 2 days ago to cvsu-verify.example</span></div>
+    <div class="kv"><span>Form posts to</span><span class="mono">https://collect.cvsu-verify.example/save.php</span></div>
+    <button class="link-btn" onclick="viewSource()">View page source</button>
+    <div class="source" id="source-box" style="display:none"></div>
+  </div>
+
+  <div class="site">
+    <div class="brandline">Cavite State University</div>
+    <h2>Student Portal</h2>
+    <p>Your password has expired. Sign in to confirm it and keep your enrollment.</p>
+
+    <label for="u">Student number</label>
+    <input id="u" type="text" autocomplete="off" placeholder="20XX-XXXXX">
+
+    <label for="p">Password</label>
+    <input id="p" type="password" autocomplete="off" placeholder="Password">
+
+    <button onclick="fakeSubmit()">Sign in</button>
+  </div>
+
+  <div class="caught" id="caught">
+    <strong>Simulated credential capture</strong>
+    On a real page, what you just typed would now be sitting on the collection host listed in the
+    page details panel. Nothing was sent or stored here. In a real level this costs a heart —
+    investigate a suspicious page, never sign in to it.
+  </div>
+
+  <div class="foot">This page is bundled with the app. It has no network access.</div>
+
+  <script src="script.js"></script>
+  <script>
+    var SOURCE_LINES = [
+      '<!DOCTYPE html>',
+      '<html lang="en">',
+      '<head>',
+      '  <meta charset="utf-8">',
+      '  <title>CvSU Student Portal · Sign in</title>',
+      '</head>',
+      '<body>',
+      '  <h1>Student Portal</h1>',
+      '',
+      '  <!-- kit: quick-portal v1 | build CYBERITY{first_flag_captured} | remove before deploy -->',
+      '',
+      '  <form method="post" action="https://collect.cvsu-verify.example/save.php">',
+      '    <input name="student_no" type="text">',
+      '    <input name="passwd" type="password">',
+      '    <button type="submit">Sign in</button>',
+      '  </form>',
+      '</body>',
+      '</html>'
+    ];
+
+    function goBack() {
+      window.location.href = 'message.html#portal';
+    }
+
+    function togglePageInfo() {
+      var panel = document.getElementById('info-panel');
+      var first = !panel.classList.contains('open');
+      panel.classList.toggle('open');
+      if (first) Cyberity.clueFound('page_info_opened');
+    }
+
+    function viewSource() {
+      var box = document.getElementById('source-box');
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+
+      // Comment lines are what a browser never draws, so they are picked out.
+      box.innerHTML = SOURCE_LINES.map(function (line) {
+        var safe = escapeHtml(line);
+        return line.indexOf('<!--') !== -1 ? '<span class="cmt">' + safe + '</span>' : safe;
+      }).join('\n');
+      box.style.display = 'block';
+      Cyberity.clueFound('source_viewed');
+    }
+
+    function fakeSubmit() {
+      document.getElementById('u').value = '';
+      document.getElementById('p').value = '';
+      document.getElementById('caught').classList.add('open');
+      Cyberity.clueFound('credentials_submitted');
+    }
+  </script>
+</body>
+</html>

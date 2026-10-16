@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Existing AppNavy palette, shared with the launch window. -->
+    <color name="cyberity_background_dark">#0A1016</color>
+    <color name="cyberity_background_light">#AECDC7</color>
+
+    <!-- "System" splash: light here, dark in values-night. -->
+    <color name="cyberity_background_system">@color/cyberity_background_light</color>
+    <bool name="cyberity_light_system_bars">true</bool>
+</resources>
