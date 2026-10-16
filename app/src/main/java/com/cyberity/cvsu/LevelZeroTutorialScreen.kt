@@ -36,7 +36,10 @@ fun LevelZeroTutorialScreen(
         onMistake = { practiceHearts = (practiceHearts - 1).coerceAtLeast(1) },
         hearts = practiceHearts,
         xpBalance = practiceXp,
-        onSpendXp = { practiceXp = (practiceXp - it).coerceAtLeast(0) },
+        onPurchaseHint = { purchase, done ->
+            practiceXp = (practiceXp - purchase.cost).coerceAtLeast(0)
+            done(Result.success(Unit))
+        },
         practice = true
     )
 }

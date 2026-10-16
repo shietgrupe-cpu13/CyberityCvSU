@@ -2,6 +2,8 @@ const { test } = require('node:test');
 const { readFileSync } = require('node:fs');
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
 const { doc, setDoc, updateDoc, deleteDoc, writeBatch, serverTimestamp } = require('firebase/firestore');
+const { addPurchase } = require('./purchase-helper.cjs');
+
 test('Scores reject inflation, refunds, repeat awards and profile-role bypasses', async () => {
   const env = await initializeTestEnvironment({ projectId: 'demo-cyberity-spark', firestore: {
     host: '127.0.0.1', port: 8088, rules: readFileSync(require('node:path').join(__dirname, '../firestore.rules'), 'utf8')
@@ -33,7 +35,7 @@ test('Scores reject inflation, refunds, repeat awards and profile-role bypasses'
     await assertFails(updateDoc(progress, { xpSpent: -1 }));
     await assertFails(updateDoc(progress, { xpSpent: 200 }));
     const spend = writeBatch(db);
-    spend.update(progress, { xpSpent: 15 }); spend.set(board, entry(135));
+    addPurchase(spend, db, 'score-alice'); spend.set(board, entry(135));
     await assertSucceeds(spend.commit());
     await assertFails(updateDoc(progress, { xpSpent: 0 }));
     await assertFails(setDoc(board, entry(150))); // cannot ignore spent hints
@@ -62,7 +64,9 @@ test('Scores reject inflation, refunds, repeat awards and profile-role bypasses'
       await setDoc(doc(context.firestore(), 'userProgress/score-full'), { completedLevels: ids, levelXp: allAwards });
     });
     await assertSucceeds(updateDoc(doc(full, 'userProgress/score-full'), { clockPing: serverTimestamp() }));
-    await assertSucceeds(updateDoc(doc(full, 'userProgress/score-full'), { xpSpent: 15 }));
+    const fullSpend = writeBatch(full);
+    addPurchase(fullSpend, full, 'score-full');
+    await assertSucceeds(fullSpend.commit());
     await assertSucceeds(setDoc(doc(full, 'leaderboard/score-full'), { displayName: 'Full Curriculum', xp: 35+(ids.length-1)*150, isTester: false, updatedAt: serverTimestamp() }));
   } finally { await env.cleanup(); }
 });

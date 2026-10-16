@@ -17,6 +17,29 @@ object ProgressCache {
     private const val XP_SPENT_KEY_SUFFIX = ":xpSpent"
     private const val LESSONS_KEY_SUFFIX = ":lessonsRead"
 
+    /** A result waiting for acknowledgement survives app restart and is safe to resend. */
+    fun pendingAwards(context: Context, uid: String): Map<Int, Int> {
+        val raw = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString("$uid:pendingAwards", "").orEmpty()
+        return raw.split(";").mapNotNull {
+            val parts = it.split("=")
+            val level = parts.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
+            val xp = parts.getOrNull(1)?.toIntOrNull() ?: return@mapNotNull null
+            level to xp
+        }.toMap()
+    }
+
+    fun queueAward(context: Context, uid: String, level: Int, xp: Int): Boolean =
+        writePending(context, uid, pendingAwards(context, uid) + (level to xp))
+
+    fun acknowledgeAward(context: Context, uid: String, level: Int) {
+        writePending(context, uid, pendingAwards(context, uid) - level)
+    }
+
+    private fun writePending(context: Context, uid: String, awards: Map<Int, Int>): Boolean =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putString("$uid:pendingAwards", awards.entries.joinToString(";") { "${it.key}=${it.value}" }).commit()
+
     fun load(context: Context, uid: String): Set<Int> {
         val raw = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString(uid, null) ?: return emptySet()
