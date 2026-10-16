@@ -5,6 +5,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
 import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.firestore.DocumentSnapshot
 
 data class SavedProgress(val completed: Set<Int>, val levelXp: Map<Int, Int>, val xpSpent: Int)
@@ -70,6 +71,27 @@ object ProgressRepository {
                 }
                 tx.set(ref, fields, SetOptions.merge())
                 result
+            }
+        }.continueWithTask { completion ->
+            if (completion.isSuccessful) {
+                Tasks.forResult(completion.result)
+            } else {
+                val failure = completion.exception ?: IllegalStateException("Completion unavailable.")
+                android.util.Log.w("CyberityProgress", "Completion write failed for level $levelId; checking server", failure)
+                // A lost acknowledgement, or a failed streak update on a replay, must
+                // not strand a result that the server has already confirmed. Never
+                // use the local cache as proof of completion.
+                ref.get(Source.SERVER).continueWithTask { confirmation ->
+                    val snapshot = if (confirmation.isSuccessful) confirmation.result else null
+                    val stored = snapshot?.takeIf {
+                        !it.metadata.isFromCache && !it.metadata.hasPendingWrites()
+                    }?.let { saved(it) }
+                    if (stored != null && levelId in stored.completed && levelId in stored.levelXp) {
+                        Tasks.forResult(stored)
+                    } else {
+                        Tasks.forException(failure)
+                    }
+                }
             }
         }.addOnSuccessListener { LeaderboardRepository.publish(uid) }
     }

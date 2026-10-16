@@ -624,9 +624,9 @@ fun LearnScreen(
                 }
                 savingCompletion = false
             }
-            .addOnFailureListener {
+            .addOnFailureListener { error ->
                 savingCompletion = false
-                completionError = "Your result hasn't been confirmed yet. Check your connection and retry. You won't receive duplicate XP."
+                completionError = completionSaveMessage(error)
             }
     }
 
@@ -644,7 +644,7 @@ fun LearnScreen(
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 pendingLevel = level
                 pendingXp = xp
-                completionError = "A previous result is waiting to be saved. Check your connection and retry."
+                completionError = completionSaveMessage(error)
                 break
             }
         }
