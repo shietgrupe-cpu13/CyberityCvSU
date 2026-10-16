@@ -465,6 +465,8 @@ fun LearnScreen(
         mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
     }
 
+    var savedRevision by remember(uid) { mutableIntStateOf(0) }
+
     // Name and tester flag for the public leaderboard entry.
     var leaderboardProfile by remember(uid) { mutableStateOf<UserProfile?>(null) }
 
@@ -482,19 +484,17 @@ fun LearnScreen(
             },
             onError = {}
         )
-        ProgressRepository.loadCompletedLevels(uid) { remoteIds ->
-            ProgressCache.save(context, uid, remoteIds)
-            units = sampleLearningUnits().withLevelsCompleted(remoteIds)
+        val loadingRevision = savedRevision
+        ProgressRepository.load(uid).addOnSuccessListener { remote ->
+            if (savedRevision != loadingRevision || FirebaseAuth.getInstance().currentUser?.uid != uid) return@addOnSuccessListener
+            units = sampleLearningUnits().withLevelsCompleted(remote.completed)
+            levelXp = remote.levelXp
+            xpSpent = remote.xpSpent
+            ProgressCache.save(context, uid, remote.completed)
+            ProgressCache.saveLevelXp(context, uid, remote.levelXp)
+            ProgressCache.saveXpSpent(context, uid, remote.xpSpent)
         }
         ServerClock.sync(uid) { clockSynced = true }
-        ProgressRepository.loadLevelXp(uid) { remote ->
-            ProgressCache.saveLevelXp(context, uid, remote)
-            levelXp = remote
-        }
-        ProgressRepository.loadXpSpent(uid) { remote ->
-            ProgressCache.saveXpSpent(context, uid, remote)
-            xpSpent = remote
-        }
         ProgressRepository.loadHearts(uid) { remote ->
             if (remote != null) {
                 ProgressCache.saveHearts(context, uid, remote)
@@ -583,15 +583,87 @@ fun LearnScreen(
         LeaderboardRepository.publish(id)
     }
 
-    // Charging is immediate and final — a hint stays bought even if the level
-    // is abandoned straight afterwards.
-    fun spendXp(amount: Int) {
-        if (amount <= 0) return
-        xpSpent += amount
+    fun acceptSaved(saved: SavedProgress) {
+        savedRevision++
+        val completed = completedIdsOf(units) + saved.completed
+        units = sampleLearningUnits().withLevelsCompleted(completed)
+        levelXp = levelXp + saved.levelXp
+        xpSpent = maxOf(xpSpent, saved.xpSpent)
         uid?.let { id ->
+            ProgressCache.save(context, id, completed)
+            ProgressCache.saveLevelXp(context, id, levelXp)
             ProgressCache.saveXpSpent(context, id, xpSpent)
-            ProgressRepository.addXpSpent(id, amount)
         }
+    }
+
+    var savingCompletion by remember { mutableStateOf(false) }
+    var completionError by remember { mutableStateOf<String?>(null) }
+    var pendingLevel by rememberSaveable { mutableStateOf<Int?>(null) }
+    var pendingXp by rememberSaveable { mutableIntStateOf(0) }
+
+    fun finishLevel(levelId: Int, earned: Int) {
+        if (savingCompletion) return
+        val id = uid ?: return
+        val award = ProgressCache.pendingAwards(context, id)[levelId] ?: earned
+        pendingLevel = levelId
+        pendingXp = award
+        if (!ProgressCache.queueAward(context, id, levelId, award)) {
+            completionError = "Your device couldn't keep this result. Free some storage and retry."
+            return
+        }
+        savingCompletion = true
+        completionError = null
+        ProgressRepository.completeLevel(id, levelId, award)
+            .addOnSuccessListener { saved ->
+                if (FirebaseAuth.getInstance().currentUser?.uid == id) {
+                    acceptSaved(saved)
+                    ProgressCache.acknowledgeAward(context, id, levelId)
+                    pendingLevel = null
+                    setRunningLevel(null)
+                }
+                savingCompletion = false
+            }
+            .addOnFailureListener {
+                savingCompletion = false
+                completionError = "Your result hasn't been confirmed yet. Check your connection and retry. You won't receive duplicate XP."
+            }
+    }
+
+    LaunchedEffect(uid) {
+        val id = uid ?: return@LaunchedEffect
+        for ((level, xp) in ProgressCache.pendingAwards(context, id)) {
+            if (FirebaseAuth.getInstance().currentUser?.uid != id) break
+            try {
+                val restored = ProgressRepository.completeLevel(id, level, xp).privacyAwait()
+                if (FirebaseAuth.getInstance().currentUser?.uid == id) {
+                    acceptSaved(restored)
+                    ProgressCache.acknowledgeAward(context, id, level)
+                }
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                pendingLevel = level
+                pendingXp = xp
+                completionError = "A previous result is waiting to be saved. Check your connection and retry."
+                break
+            }
+        }
+    }
+
+    if (savingCompletion || completionError != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(if (savingCompletion) "Saving your progress" else "Progress not confirmed") },
+            text = { Text(if (savingCompletion) "Please wait while your completion and XP are saved together." else completionError.orEmpty()) },
+            confirmButton = {
+                if (!savingCompletion) TextButton(onClick = { pendingLevel?.let { finishLevel(it, pendingXp) } }) { Text("Retry save") }
+            },
+            dismissButton = {
+                if (!savingCompletion) TextButton(onClick = {
+                    completionError = null
+                    setRunningLevel(null)
+                }) { Text("Save later") }
+            }
+        )
     }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -699,14 +771,7 @@ fun LearnScreen(
                     } else if (running.id == 200) {
                         UnitTwoWalkthroughScreen(
                             onExit = { setRunningLevel(null) },
-                            onComplete = {
-                                units = units.withLevelCompleted(running.id)
-                                uid?.let {
-                                    ProgressRepository.markLevelCompleted(it, running.id)
-                                    ProgressCache.save(context, it, completedIdsOf(units))
-                                }
-                                setRunningLevel(null)
-                            }
+                            onComplete = { finishLevel(running.id, 0) }
                         )
                     } else if (hearts < MIN_HEARTS_TO_START) {
                         OutOfHeartsLevel(
@@ -731,14 +796,7 @@ fun LearnScreen(
                                 xpReward = MAX_LEVEL_XP,
                                 modifier = modifier,
                                 onExit = requestExit,
-                                onComplete = { _, _, _ ->
-                                    units = units.withLevelCompleted(running.id)
-                                    uid?.let {
-                                        ProgressRepository.markLevelCompleted(it, running.id)
-                                        ProgressCache.save(context, it, completedIdsOf(units))
-                                    }
-                                    setRunningLevel(null)
-                                }
+                                onComplete = { earned, _, _ -> finishLevel(running.id, earned) }
                             )
 
                             is LevelContent.Scenarios -> ScenarioQuizScreen(
@@ -750,21 +808,7 @@ fun LearnScreen(
                                 hearts = hearts,
                                 xpBalance = totalXp,
                                 isReplay = isReplay,
-                                onComplete = { earned, _, _ ->
-                                    val firstClear = running.status != LevelStatus.COMPLETED
-                                    units = units.withLevelCompleted(running.id)
-                                    uid?.let {
-                                        ProgressRepository.markLevelCompleted(it, running.id)
-                                        ProgressCache.save(context, it, completedIdsOf(units))
-                                        if (firstClear) {
-                                            val updated = levelXp + (running.id to earned)
-                                            levelXp = updated
-                                            ProgressCache.saveLevelXp(context, it, updated)
-                                            ProgressRepository.saveLevelXp(it, running.id, earned)
-                                        }
-                                    }
-                                    setRunningLevel(null)
-                                }
+                                onComplete = { earned, _, _ -> finishLevel(running.id, earned) }
                             )
 
                             is LevelContent.Lab -> LabScreen(
@@ -776,23 +820,20 @@ fun LearnScreen(
                                 onMistake = { spendHeart() },
                                 hearts = hearts,
                                 xpBalance = totalXp,
-                                onSpendXp = { spendXp(it) },
-                                isReplay = isReplay,
-                                onComplete = { earned, _, _ ->
-                                    val firstClear = running.status != LevelStatus.COMPLETED
-                                    units = units.withLevelCompleted(running.id)
-                                    uid?.let {
-                                        ProgressRepository.markLevelCompleted(it, running.id)
-                                        ProgressCache.save(context, it, completedIdsOf(units))
-                                        if (firstClear) {
-                                            val updated = levelXp + (running.id to earned)
-                                            levelXp = updated
-                                            ProgressCache.saveLevelXp(context, it, updated)
-                                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                                onPurchaseHint = { purchase, done ->
+                                    val id = uid
+                                    if (id == null) done(Result.failure(IllegalStateException("Please sign in again.")))
+                                    else ProgressRepository.purchaseHint(id, purchase)
+                                        .addOnSuccessListener { saved ->
+                                            if (FirebaseAuth.getInstance().currentUser?.uid == id) {
+                                                acceptSaved(saved)
+                                                done(Result.success(Unit))
+                                            } else done(Result.failure(IllegalStateException("Your account changed.")))
                                         }
-                                    }
-                                    setRunningLevel(null)
-                                }
+                                        .addOnFailureListener { done(Result.failure(it)) }
+                                },
+                                isReplay = isReplay,
+                                onComplete = { earned, _, _ -> finishLevel(running.id, earned) }
 
                             )
 

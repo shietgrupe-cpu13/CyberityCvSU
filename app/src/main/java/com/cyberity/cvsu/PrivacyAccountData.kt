@@ -32,6 +32,9 @@ internal object PrivacyAccountData {
         val sessions = db.collection("accountSecuritySpark").document(uid).collection("sessions")
             .get(Source.SERVER).privacyAwait()
         sessions.documents.forEach { records.put(it.reference.path, jsonValue(it.data)) }
+        val purchases = db.collection("userProgress").document(uid).collection("hintPurchases")
+            .get(Source.SERVER).privacyAwait()
+        purchases.documents.forEach { records.put(it.reference.path, jsonValue(it.data)) }
         check(FirebaseAuth.getInstance().currentUser?.uid == uid) { "Your account changed. Try again." }
         return result.put("records", records).toString(2)
     }
@@ -51,6 +54,7 @@ internal object PrivacyAccountData {
             // Marker blocks concurrent normal app writes, including from older devices.
             drain(db.collection("accountSecuritySpark").document(uid).collection("sessions"))
             drain(db.collection("studentIds").whereEqualTo("uid", uid))
+            drain(db.collection("userProgress").document(uid).collection("hintPurchases"))
             val batch = db.batch()
             for (collection in listOf("users", "userProgress", "leaderboard"))
                 batch.delete(db.collection(collection).document(uid))

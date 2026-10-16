@@ -1,5 +1,23 @@
 # Cyberity: resume here
 
+## 16 October 2026: saving update restored on unit_06_levels
+
+User requested committing the earlier completion/EXP and hint purchase changes on
+unit_06_levels only. Both remote master and unit_06_levels were previously aligned
+at e8b82d2; master must remain unchanged. Restored the transaction/recovery/rules
+integration and receipt privacy handling. See docs/atomic-learning-saves.md.
+Fresh restoration validation: debug build and 38 Android JVM tests passed;
+all five local Firestore emulator tests passed. No production rules deployed.
+
+Phone testing was paused at the user's request after connection inspection; no APK
+was installed and no cloud rules were deployed. Live Firestore metadata access
+worked with the normal approved host access: Standard edition, free tier.
+In-app pre/post assessment is agreed future work, not implemented here.
+
+Unrelated pre-existing LearnScreen edits are preserved separately from the saving
+commit and restored as uncommitted edits after validation. Unrelated PDFs and
+capstone review documents are not part of this implementation commit.
+
 Last updated: 2026-10-12.
 
 ## Purpose

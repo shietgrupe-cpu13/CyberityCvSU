@@ -210,7 +210,7 @@ fun LabScreen(
     onMistake: () -> Unit,
     hearts: Int,
     xpBalance: Int,
-    onSpendXp: (Int) -> Unit,
+    onPurchaseHint: (HintPurchase, (Result<Unit>) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     clueLabels: Map<String, String> = emptyMap(),
     /** True when this level was already completed — XP was paid out on the
@@ -242,6 +242,9 @@ fun LabScreen(
 
     // Evidence discovered in the simulation, in the order it was found.
     val clues = remember { mutableStateListOf<String>() }
+    val attemptId = androidx.compose.runtime.saveable.rememberSaveable { java.util.UUID.randomUUID().toString() }
+    var purchasingHint by remember { mutableStateOf(false) }
+    var hintError by remember { mutableStateOf<String?>(null) }
     // Hints opened, per task id.
     val hintsOpened = remember { mutableStateMapOf<String, Int>() }
     // Mistakes made this attempt — decides the no-heart-lost bonus.
@@ -296,7 +299,7 @@ fun LabScreen(
 
     // Price of this task's next hint, and whether the student can afford it.
     val hintCost = nextHintCost(hintsOpened[task.id] ?: 0)
-    val canAffordHint = xpBalance >= hintCost
+    val canAffordHint = xpBalance >= hintCost && !purchasingHint
 
 
     // Load the page a task starts on. Keyed on the task, so it fires once per task.
@@ -318,6 +321,7 @@ fun LabScreen(
     }
 
     fun submit() {
+        if (purchasingHint) return
         val correct = LabValidator.isCorrect(task.answer, answerText, choiceIndex)
         verdict = if (correct) Verdict.CORRECT else Verdict.INCORRECT
         if (correct) solved++ else {
@@ -399,6 +403,10 @@ fun LabScreen(
                     onExit = onExit
                 )
 
+                if (purchasingHint || hintError != null) {
+                    Text(if (purchasingHint) "Confirming hint purchase..." else hintError.orEmpty(),
+                        color = AppCyan, modifier = Modifier.padding(horizontal = 16.dp))
+                }
                 TaskPanel(
                     task = task,
                     taskNumber = taskIndex + 1,
@@ -410,9 +418,20 @@ fun LabScreen(
                     canAffordHint = canAffordHint,
                     onOpenHint = {
                         if (canAffordHint) {
-                            hintsOpened[task.id] = (hintsOpened[task.id] ?: 0) + 1
-                            hintsPaid += hintCost
-                            onSpendXp(hintCost)
+                            purchasingHint = true
+                            hintError = null
+                            val purchasedTask = task.id
+                            val number = (hintsOpened[purchasedTask] ?: 0) + 1
+                            val purchase = HintPurchase(attemptId, lab.levelId, purchasedTask, number)
+                            onPurchaseHint(purchase) { result ->
+                                purchasingHint = false
+                                result.onSuccess {
+                                    hintsOpened[purchasedTask] = number
+                                    hintsPaid += purchase.cost
+                                }.onFailure {
+                                    hintError = "Hint not confirmed. Check your connection and tap the hint again to retry safely."
+                                }
+                            }
                         }
                     },
                     verdict = verdict,

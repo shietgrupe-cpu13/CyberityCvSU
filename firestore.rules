@@ -43,8 +43,11 @@ service cloud.firestore {
       let completed = data.get('completedLevels', []);
       let spent = data.get('xpSpent', 0);
       let oldSpent = previous.get('xpSpent', 0);
-      return data.diff(previous).affectedKeys().hasOnly(['completedLevels', 'levelXp', 'xpSpent', 'hearts', 'heartsUpdatedAt', 'clockPing']) &&
-        (!data.diff(previous).affectedKeys().hasAny(['clockPing']) || data.clockPing == request.time) &&
+      let changed = data.diff(previous).affectedKeys();
+      return changed.hasOnly(['completedLevels', 'levelXp', 'xpSpent', 'lastHintPurchase', 'hearts', 'heartsUpdatedAt', 'clockPing']) &&
+        (!changed.hasAny(['lastHintPurchase']) || spent > oldSpent) &&
+        (spent == oldSpent || validHintDebit(data, oldSpent, spent)) &&
+        (!changed.hasAny(['clockPing']) || data.clockPing == request.time) &&
         xp is map && xp.keys().hasOnly(knownXpKeys()) && xp.keys().hasAll(oldXp.keys()) &&
         added.size() <= 1 && xp.diff(oldXp).changedKeys().size() == 0 &&
         completed is list && completed.size() == completed.toSet().size() &&
@@ -53,9 +56,12 @@ service cloud.firestore {
         (spent - oldSpent) in [0, 15, 30, 50] &&
         (!('hearts' in data) || (data.hearts is int && data.hearts >= 0 && data.hearts <= 5)) &&
         (!('heartsUpdatedAt' in data) || data.heartsUpdatedAt is timestamp) &&
-        (!data.diff(previous).affectedKeys().hasAny(['hearts', 'heartsUpdatedAt']) ||
+        (!changed.hasAny(['hearts', 'heartsUpdatedAt']) ||
           (data.keys().hasAll(['hearts', 'heartsUpdatedAt']) && data.heartsUpdatedAt == request.time)) &&
-        (!('101' in added) || (xp['101'] is int && xp['101'] >= 0 && xp['101'] <= 150 && 101 in completed)) &&
+        (added.size() == 0 || validNewAwards(xp, added, completed));
+    }
+    function validNewAwards(xp, added, completed) {
+      return (!('101' in added) || (xp['101'] is int && xp['101'] >= 0 && xp['101'] <= 150 && 101 in completed)) &&
         (!('102' in added) || (xp['102'] is int && xp['102'] >= 0 && xp['102'] <= 150 && 102 in completed)) &&
         (!('103' in added) || (xp['103'] is int && xp['103'] >= 0 && xp['103'] <= 150 && 103 in completed)) &&
         (!('104' in added) || (xp['104'] is int && xp['104'] >= 0 && xp['104'] <= 150 && 104 in completed)) &&
@@ -92,9 +98,32 @@ service cloud.firestore {
         (!('604' in added) || (xp['604'] is int && xp['604'] >= 0 && xp['604'] <= 150 && 604 in completed)) &&
         (!('605' in added) || (xp['605'] is int && xp['605'] >= 0 && xp['605'] <= 150 && 605 in completed));
     }
+
     function scoreBalance(data) {
       let balance = 50 + earnedXp(data.get('levelXp', {})) - data.get('xpSpent', 0);
       return balance > 0 ? balance : 0;
+    }
+    function validHintDebit(data, before, after) {
+      let id = data.get('lastHintPurchase', '');
+      let path = /databases/$(database)/documents/userProgress/$(request.auth.uid)/hintPurchases/$(id);
+      let receipt = getAfter(path).data;
+      return id is string && id.matches('^[a-f0-9]{64}$') && !exists(path) &&
+        receipt.spentBefore == before && receipt.spentAfter == after && receipt.cost == after - before;
+    }
+    function validHintReceipt(data, uid, id) {
+      let path = /databases/$(database)/documents/userProgress/$(uid);
+      let oldSpent = exists(path) ? get(path).data.get('xpSpent', 0) : 0;
+      let progress = getAfter(path).data;
+      let fields = ['attemptId', 'levelId', 'taskId', 'hintNumber', 'cost', 'spentBefore', 'spentAfter', 'createdAt'];
+      return id.matches('^[a-f0-9]{64}$') && data.keys().hasAll(fields) && data.keys().hasOnly(fields) &&
+        data.attemptId is string && data.attemptId.matches('^[a-f0-9-]{36}$') &&
+        data.levelId in knownLevelIds() &&
+        data.taskId is string && data.taskId.size() > 0 && data.taskId.size() <= 100 &&
+        data.hintNumber is int && data.hintNumber >= 1 && data.hintNumber <= 100 &&
+        data.cost == (data.hintNumber == 1 ? 15 : (data.hintNumber == 2 ? 30 : 50)) &&
+        data.spentBefore is int && data.spentAfter is int &&
+        data.spentBefore == oldSpent && data.spentAfter == oldSpent + data.cost &&
+        progress.xpSpent == data.spentAfter && progress.lastHintPurchase == id && data.createdAt == request.time;
     }
     function validProfile(data, previous) {
       let tester = data.get('isTester', false);
@@ -161,6 +190,12 @@ service cloud.firestore {
       allow create: if owner(uid) && sparkSessionActive() && validProgress(request.resource.data, {});
       allow update: if owner(uid) && sparkSessionActive() && validProgress(request.resource.data, resource.data);
       allow delete: if deletionOwner(uid);
+      match /hintPurchases/{purchaseId} {
+        allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+        allow update: if false;
+        allow delete: if deletionOwner(uid);
+        allow create: if owner(uid) && sparkSessionActive() && validHintReceipt(request.resource.data, uid, purchaseId);
+      }
     }
     match /users/{uid} {
       allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
