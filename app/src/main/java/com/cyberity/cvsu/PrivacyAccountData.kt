@@ -55,6 +55,7 @@ internal object PrivacyAccountData {
             drain(db.collection("accountSecuritySpark").document(uid).collection("sessions"))
             drain(db.collection("studentIds").whereEqualTo("uid", uid))
             drain(db.collection("userProgress").document(uid).collection("hintPurchases"))
+            drain(db.collection("userProgress").document(uid).collection("heartDebits"))
             val batch = db.batch()
             for (collection in listOf("users", "userProgress", "leaderboard"))
                 batch.delete(db.collection(collection).document(uid))

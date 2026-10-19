@@ -7,6 +7,10 @@ import com.google.firebase.firestore.MetadataChanges
 
 /** Administrators grant tester access through users/{uid}.isTester in Firebase Console. */
 internal object DeveloperModePolicy {
+    fun heartBalance(state: HeartState, now: Long, enabled: Boolean): Int =
+        if (enabled) MAX_HEARTS else state.heartsAt(now)
+
+    fun spendsHearts(enabled: Boolean): Boolean = !enabled
     fun unlockAllLevels(data: Map<String, Any>?, fromCache: Boolean, pendingWrites: Boolean): Boolean =
         !fromCache && !pendingWrites && data?.get("isTester") == true
 }

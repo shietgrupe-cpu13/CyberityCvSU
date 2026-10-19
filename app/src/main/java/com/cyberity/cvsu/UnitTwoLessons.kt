@@ -4,7 +4,7 @@ package com.cyberity.cvsu
 internal fun strongPasswordsLesson() = reviewedLesson(201, "Passwords That Survive Guessing", listOf(
     LessonPage("Length is useful; predictability still matters", LessonIcon.LOCK,
         listOf("A long password can still follow an obvious pattern. A school name, a year and a final symbol give an attacker clues about which guesses to try first. Adding punctuation is not the same as making a secret unpredictable.",
-            "For the lab, generate an account-specific replacement instead of editing the old pattern. Its length target is an exercise requirement, not a promise of safety. Use fictional credentials only."),
+            "For the lab, enter an account-specific replacement or use the training generator, confirm it, save it, and test sign-in. Its length target is an exercise requirement, not a promise of safety. Use fictional credentials only."),
         listOf("nist-strength"), task = 1,
         visual = LessonVisual.DoDont(listOf("Generate a fresh, unpredictable secret"), listOf("Rotate School2025! into School2026!")),
         keyTerms = listOf(KeyTerm("Predictability", "How easily an attacker can narrow the likely guesses."))),

@@ -53,7 +53,7 @@ class Element {
   constructor(tag) {this.tag = tag; this.children = []; this.listeners = {}; this.attributes = {}; this.style = {}; this.textContent = ''; this.value = '';}
   set textContent(value) {this._text = value; this.children = [];}
   get textContent() {return this._text + this.children.map(child=>child.textContent).join('');}
-  appendChild(child) {this.children.push(child); if (this.tag === 'select' && this.children.length === 1) this.value = child.value;}
+  appendChild(child) {child.parentNode=this; this.children.push(child); if (this.tag === 'select' && this.children.length === 1) this.value = child.value;}
   replaceChildren() {this.children = []; this._text = '';}
   setAttribute(key,value) {this.attributes[key] = value;}
   addEventListener(key,fn) {this.listeners[key] = fn;}
@@ -67,10 +67,11 @@ function harness(level,index,options = {}) {
   const window = options.window || {name:'',location:{search:''},sessionStorage:{getItem:key=>storage.get(key) ?? null,setItem:(key,value)=>storage.set(key,value)}};
   const context = vm.createContext({document:{getElementById:()=>root,createElement:tag=>new Element(tag)},
     window,URLSearchParams,Event,AndroidLab:{notifyClueFound:id=>events.push(id)}});
+  vm.runInContext(fs.readFileSync(path.join(base,'../task-problems.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(base,folders[level],'script.js'),'utf8'),context);
   vm.runInContext(index === -1 ? 'renderNetworkDashboard()' : `mountNetworkCase(${level},${index})`,context);
   function all(node = root) {return [node,...node.children.flatMap(child=>all(child))];}
-  return {root,events,all,storage,window};
+  return {root,events,all,storage,window,context};
 }
 for (const [level,stages] of Object.entries(cases)) stages.forEach((scenario,index) => {
   test(`${level}/${index}: evidence gates replay; verification reaches the Android bridge`,() => {
@@ -79,11 +80,12 @@ for (const [level,stages] of Object.entries(cases)) stages.forEach((scenario,ind
     storage.set(`cyberity_net_${level}`,JSON.stringify({runs:previous.length,stages:Object.fromEntries(previous.map(i=>[i,{inspected:[],values:{},verified:true,lastResult:null}]))}));
     const h = harness(level,index,{storage});
     const run = h.all().find(n=>n.id === 'run-replay');
-    run.trigger('click'); assert.deepEqual(h.events,[]);
+    run.trigger('click'); solveProblems(h); assert.deepEqual(h.events,[]);
     for (const detail of h.all().filter(n=>n.tag === 'details')) {detail.open=true; detail.trigger('toggle');}
     assert.deepEqual(h.events,[`net_${level}_${index}_inspected`]);
     for (const [key,value] of Object.entries(correct[scenario.mode] || {})) h.all().find(n=>n.id === `control-${key}`).value = value;
-    run.trigger('click');
+    if (scenario.mode === 'wifiUpgrade') setConfig(h,{passphrase:'Orbit-Lantern-Lake-42',confirmation:'Orbit-Lantern-Lake-42'});
+    run.trigger('click'); solveProblems(h);
     assert.deepEqual(h.events,[`net_${level}_${index}_inspected`,`net_${level}_${index}_verified`]);
     if (level === '505' && index === 2) assert.match(h.all().find(n=>n.attributes.role === 'status').textContent,/CYBERITY\{stateful_campus_verified}/);
     assert.deepEqual(harness(level,index).events,[], 'A fresh attempt cannot inherit bridge evidence.');
@@ -108,7 +110,7 @@ test('verified work survives tool navigation; a fresh console entry clears the a
   const h = harness(505,0);
   for (const detail of h.all().filter(n=>n.tag === 'details')) {detail.open=true; detail.trigger('toggle');}
   for (const [key,value] of Object.entries(correct.firewall)) h.all().find(n=>n.id === `control-${key}`).value=value;
-  h.all().find(n=>n.id === 'run-replay').trigger('click');
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   const restored = harness(505,0,{storage:h.storage});
   assert.deepEqual(restored.events,['net_505_0_inspected','net_505_0_verified']);
   assert.equal(restored.all().find(n=>n.id === 'control-dns').value,'approved');
@@ -139,7 +141,7 @@ test('final operations report and rogue reconnect require verified preceding wor
     const h = harness(level,index);
     for (const detail of h.all().filter(n=>n.tag === 'details')) {detail.open=true; detail.trigger('toggle');}
     for (const [key,value] of Object.entries(config)) h.all().find(n=>n.id === `control-${key}`).value=value;
-    h.all().find(n=>n.id === 'run-replay').trigger('click');
+    h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
     assert.ok(!h.events.includes(`net_${level}_${index}_verified`));
     assert.match(h.all().find(n=>n.attributes.role === 'status').textContent,/CASE INCOMPLETE/);
   }
@@ -150,7 +152,7 @@ test('all three firewall tools complete as one connected case and issue the repo
     const h = harness(505,index,{storage});
     for (const detail of h.all().filter(n=>n.tag === 'details')) {detail.open=true; detail.trigger('toggle');}
     for (const [key,value] of Object.entries(correct[cases[505][index].mode])) h.all().find(n=>n.id === `control-${key}`).value=value;
-    h.all().find(n=>n.id === 'run-replay').trigger('click');
+    h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
     assert.ok(h.events.includes(`net_505_${index}_verified`));
     if (index === 2) assert.match(h.all().find(n=>n.attributes.role === 'status').textContent,/CYBERITY\{stateful_campus_verified}/);
   }
@@ -179,12 +181,12 @@ function setConfig(h,config,dispatch = false) {
 }
 test('paced replay unlocks proof only after the last check; show-all completes once',()=>{
   const clock=timerWindow(); const h=harness(505,0,clock); inspectAll(h); setConfig(h,correct.firewall);
-  h.all().find(n=>n.id === 'run-replay').trigger('click');
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   assert.ok(!h.events.includes('net_505_0_verified'));
   assert.equal(h.all().find(n=>n.id === 'run-replay').disabled,true);
   clock.step(); assert.ok(!h.events.includes('net_505_0_verified'));
   const skip=h.all().find(n=>n.className === 'tool-btn skip-replay');
-  skip.trigger('click'); skip.trigger('click');
+  skip.trigger('click'); solveProblems(h); skip.trigger('click');
   assert.equal(clock.pending.size,0);
   assert.equal(h.events.filter(id=>id === 'net_505_0_verified').length,1);
   assert.equal(JSON.parse(clock.storage.get('cyberity_net_505')).journal.length,1);
@@ -192,32 +194,32 @@ test('paced replay unlocks proof only after the last check; show-all completes o
 });
 test('changing a setting cancels an in-flight replay and cannot grant stale proof',()=>{
   const clock=timerWindow(); const h=harness(505,0,clock); inspectAll(h); setConfig(h,correct.firewall);
-  h.all().find(n=>n.id === 'run-replay').trigger('click'); clock.step();
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h); clock.step();
   setConfig(h,{web:'any'},true);
   assert.equal(clock.pending.size,0); assert.ok(!h.events.includes('net_505_0_verified'));
-  h.all().find(n=>n.id === 'run-replay').trigger('click'); clock.flush();
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h); clock.flush(); solveProblems(h);
   assert.ok(!h.events.includes('net_505_0_verified'));
   assert.match(h.all().find(n=>n.attributes.role === 'status').textContent,/Staff SMB.*ALLOW/s);
 });
 test('leaving a tool cancels its unfinished timers and keeps it unverified',()=>{
   const clock=timerWindow(); const h=harness(501,0,clock); inspectAll(h);
-  h.all().find(n=>n.id === 'run-replay').trigger('click'); clock.listeners.pagehide();
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h); clock.listeners.pagehide();
   assert.equal(clock.pending.size,0);
   assert.ok(!h.events.includes('net_501_0_verified'));
   assert.equal(JSON.parse(clock.storage.get('cyberity_net_501')).stages[0].verified,false);
 });
 test('dangerous action cancels pending browser verification',()=>{
   const clock=timerWindow(); const h=harness(503,1,clock); inspectAll(h); setConfig(h,correct.certificate);
-  h.all().find(n=>n.id === 'run-replay').trigger('click');
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   h.all().find(n=>n.className === 'danger').trigger('click');
   assert.equal(clock.pending.size,0); assert.ok(!h.events.includes('net_503_1_verified')); assert.ok(h.events.includes('net_503_unsafe'));
 });
 test('team conversations survive navigation and react to actual service outcomes',()=>{
   const h=harness(501,2);
   h.all().find(n=>n.textContent === 'What happened?').trigger('click');
-  inspectAll(h); setConfig(h,{policy:'all'}); h.all().find(n=>n.id === 'run-replay').trigger('click');
+  inspectAll(h); setConfig(h,{policy:'all'}); h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   assert.match(h.all().find(n=>n.className === 'message-thread').textContent,/Either enrollment is still broken or the share is exposed/);
-  setConfig(h,correct.repair,true); h.all().find(n=>n.id === 'run-replay').trigger('click');
+  setConfig(h,correct.repair,true); h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   const restored=harness(501,2,{storage:h.storage});
   assert.match(restored.all().find(n=>n.className === 'message-thread').textContent,/Enrollment loads, and the unsolicited share connection is still blocked/);
   assert.equal(restored.all().find(n=>n.textContent === 'What happened?').disabled,true);
@@ -231,7 +233,7 @@ test('direct rule editing evaluates actual first matches and keeps final deny pi
   const h=harness(505,1); inspectAll(h);
   h.all().find(n=>n.textContent === 'REMOVE').trigger('click');
   assert.equal(h.all().find(n=>n.id === 'control-order').value,'custom');
-  h.all().find(n=>n.id === 'run-replay').trigger('click');
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   assert.ok(h.events.includes('net_505_1_verified'));
   assert.equal(JSON.parse(h.storage.get('cyberity_net_505')).stages[1].customRules.at(-1),'final');
 });
@@ -239,7 +241,7 @@ test('unread-evidence navigation and resume links reflect actual case progress',
   const h=harness(502,0), next=h.all().find(n=>n.className === 'tool-btn evidence-next');
   for(let i=0;i<cases[502][0].records.length;i++) next.trigger('click');
   assert.ok(h.events.includes('net_502_0_inspected')); assert.equal(next.disabled,true);
-  h.all().find(n=>n.id === 'run-replay').trigger('click');
+  h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   const desk=harness(502,-1,{storage:h.storage});
   assert.equal(desk.all().find(n=>n.className === 'continue-card').href,'upgrade.html');
 });
@@ -247,7 +249,7 @@ test('editing a previously approved policy invalidates the downstream report',()
   const storage=new Map();
   for (let index=0;index<3;index++) {
     const h=harness(505,index,{storage}); inspectAll(h); setConfig(h,correct[cases[505][index].mode]);
-    h.all().find(n=>n.id === 'run-replay').trigger('click');
+    h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   }
   const policy=harness(505,0,{storage}); setConfig(policy,{web:'any'},true);
   const report=harness(505,2,{storage});
@@ -257,6 +259,114 @@ test('editing a previously approved policy invalidates the downstream report',()
 });
 test('reduced-motion mode completes verification immediately without scheduling animation',()=>{
   const clock=timerWindow(); clock.window.matchMedia=()=>({matches:true});
-  const h=harness(501,0,clock); inspectAll(h); h.all().find(n=>n.id === 'run-replay').trigger('click');
+  const h=harness(501,0,clock); inspectAll(h); h.all().find(n=>n.id === 'run-replay').trigger('click'); solveProblems(h);
   assert.equal(clock.pending.size,0); assert.ok(h.events.includes('net_501_0_verified'));
+});
+
+function solveProblems(h) {
+  let guard=5;
+  while (guard-- > 0) {
+    const section=h.all().find(n=>n.className === 'card task-problems');
+    if (!section) return;
+    const heading=section.children.find(n=>n.tag === 'h3');
+    if (!heading) return;
+    const index=Number(heading.textContent.match(/Problem (\d+)/)[1])-2;
+    const prompt=section.children.find(n=>n.tag === 'p').textContent;
+    const answer=vm.runInContext(`Object.values(TaskProblems.sets).flat().find(q=>q.prompt === ${JSON.stringify(prompt)}).choices[0]`,h.context);
+    section.children.find(n=>n.tag === 'button' && n.textContent === answer).trigger('click');
+    section.children.find(n=>n.tag === 'button' && /NEXT PROBLEM|FINISH TASK PROBLEMS/.test(n.textContent)).trigger('click');
+  }
+  assert.fail('Task problems did not terminate');
+}
+
+test('follow-up problems gate proof and resume at the next unsolved problem',()=>{
+  const h=harness(501,0); inspectAll(h);
+  h.all().find(n=>n.id === 'run-replay').trigger('click');
+  assert.ok(!h.events.includes('net_501_0_verified'));
+  const section=h.all().find(n=>n.className === 'card task-problems');
+  const next=section.children.find(n=>n.tag === 'button' && n.textContent === 'NEXT PROBLEM');
+  next.trigger('click');
+  assert.match(section.textContent,/Problem 2/,'Cannot skip an unanswered problem');
+  section.children.find(n=>n.tag === 'button' && n.textContent === 'The resolver at 192.0.2.53').trigger('click');
+  assert.ok(!h.events.includes('net_501_0_verified'));
+  assert.match(section.textContent,/try again/);
+  section.children.find(n=>n.tag === 'button' && n.textContent === '192.0.2.20').trigger('click');
+  next.trigger('click');
+  const resumed=harness(501,0,{storage:h.storage});
+  assert.ok(!resumed.events.includes('net_501_0_verified'));
+  assert.match(resumed.all().find(n=>n.className === 'card task-problems').textContent,/Problem 3/);
+  solveProblems(resumed);
+  assert.ok(resumed.events.includes('net_501_0_verified'));
+});
+
+test('editing policy while follow-up problems are open cannot issue stale proof',()=>{
+  const h=harness(505,0); inspectAll(h); setConfig(h,correct.firewall);
+  h.all().find(n=>n.id === 'run-replay').trigger('click');
+  setConfig(h,{web:'any'},true);
+  solveProblems(h);
+  assert.ok(!h.events.includes('net_505_0_verified'));
+  assert.equal(JSON.parse(h.storage.get('cyberity_net_505')).stages[0].verified,false);
+});
+
+test('every Unit 5 task has between one and four total problems',()=>{
+  const problems=require(path.join(base,'../task-problems.js')).sets;
+  assert.equal(Object.keys(problems).length,18);
+  for(const questions of Object.values(problems)) {
+    assert.ok(questions.length >= 1 && questions.length <= 3);
+    for(const question of questions) {
+      assert.notEqual(question.choices[0],question.choices[1]);
+      assert.ok(question.explanation.length > 30);
+    }
+  }
+});
+
+test('Wi-Fi upgrade requires entering and confirming a new training passphrase',()=>{
+  const h=harness(502,1); inspectAll(h); setConfig(h,correct.wifiUpgrade);
+  const run=h.all().find(n=>n.id === 'run-replay');
+  run.trigger('click');
+  assert.ok(!h.events.includes('net_502_1_verified'));
+  assert.match(h.all().find(n=>n.attributes.role === 'status').textContent,/passphrase: FAIL/);
+  setConfig(h,{passphrase:'Orbit-Lantern-Lake-42',confirmation:'different'});
+  run.trigger('click');
+  assert.ok(!h.events.includes('net_502_1_verified'));
+  setConfig(h,{confirmation:'Orbit-Lantern-Lake-42'});
+  run.trigger('click'); solveProblems(h);
+  assert.ok(h.events.includes('net_502_1_verified'));
+  const input=h.all().find(n=>n.id === 'control-passphrase');
+  input.value='Edited-After-Verification'; input.trigger('input');
+  assert.equal(JSON.parse(h.storage.get('cyberity_net_502')).stages[1].verified,false);
+});
+
+test('all 18 tasks finish in order using visible, enabled evidence, replay and problem controls',()=>{
+  function human(el,event='click') {
+    assert.ok(el && !el.disabled,'Required control must be enabled');
+    for (let node=el;node;node=node.parentNode) assert.ok(!node.hidden,'Required control must be visible');
+    el.trigger(event);
+  }
+  for (const [level,stages] of Object.entries(cases)) {
+    const storage=new Map();
+    stages.forEach((scenario,index)=>{
+      const h=harness(level,index,{storage});
+      const evidence=h.all().find(n=>n.className === 'tool-btn evidence-next');
+      const run=h.all().find(n=>n.id === 'run-replay');
+      assert.equal(run.disabled,true,'Replay explains its evidence prerequisite');
+      for (let i=0;i<scenario.records.length;i++) human(evidence);
+      for (const [key,value] of Object.entries(correct[scenario.mode] || {})) {
+        const el=h.all().find(n=>n.id === 'control-'+key); el.value=value; human(el,'change');
+      }
+      if (scenario.mode === 'wifiUpgrade') for (const key of ['passphrase','confirmation']) {
+        const el=h.all().find(n=>n.id === 'control-'+key); el.value='Orbit-Lantern-Lake-42'; human(el,'input');
+      }
+      human(run);
+      for (let guard=0;guard<4;guard++) {
+        const section=h.all().find(n=>n.className === 'card task-problems');
+        if (!section) break;
+        const prompt=section.children.find(n=>n.tag === 'p').textContent;
+        const answer=vm.runInContext(`Object.values(TaskProblems.sets).flat().find(q=>q.prompt === ${JSON.stringify(prompt)}).choices[0]`,h.context);
+        human(section.children.find(n=>n.tag === 'button' && n.textContent === answer));
+        human(section.children.find(n=>n.tag === 'button' && /NEXT PROBLEM|FINISH TASK PROBLEMS/.test(n.textContent)));
+      }
+      assert.ok(h.events.includes(`net_${level}_${index}_verified`),level+'/'+index+' must finish');
+    });
+  }
 });

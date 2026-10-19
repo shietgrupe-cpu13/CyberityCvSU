@@ -355,7 +355,6 @@ function renderNetworkDashboard() {
   netElement('div','SHIFT BRIEFING',root,'section-label');
   const briefing = netElement('section',null,root,'briefing');
   netElement('p',NETWORK_META.mission,briefing);
-  netElement('p','Inspect the evidence, operate the tool, and replay the consequences. Your work remains available when you return to this console.',briefing);
   netElement('div','INVESTIGATION TOOLS',root,'section-label');
   NETWORK_CASES[NETWORK_META.level].forEach((s,i) => {
     const tile = netElement('a',null,root,'choice tile'); tile.href = NETWORK_META.pages[i];
@@ -390,9 +389,12 @@ function mountNetworkCase(levelId,index) {
   const hudHelp = add('span','',hud,'hud-help');
   const team = renderTeamChannel(root,index,state);
   function updateHud() {
-    hudEvidence.textContent = 'EVIDENCE ' + inspected.size + '/' + scenario.records.length;
+    const problemTotal=TaskProblems.sets[levelId + '_' + index].length+1;
+    const practicalDone=Boolean(state.lastResult?.ok);
+    const problemNumber=state.verified ? problemTotal : practicalDone ? Math.min(problemTotal,(state.problemProgress || 0)+2) : 1;
+    hudEvidence.textContent = 'PROBLEM ' + problemNumber + '/' + problemTotal + ' · EVIDENCE ' + inspected.size + '/' + scenario.records.length;
     hudState.textContent = state.verified ? 'VERIFIED' : replayTimer !== null ? 'REPLAYING' : 'INVESTIGATING';
-    hudHelp.textContent = state.verified ? 'Swipe the top handle down to answer' : inspected.size < scenario.records.length ? 'Open the remaining evidence' : 'Run the acceptance checks';
+    hudHelp.textContent = state.verified ? 'All problems complete · return to the task panel' : practicalDone ? 'Continue the case problems below' : inspected.size < scenario.records.length ? 'Open the remaining evidence' : 'Run the acceptance checks';
     hud.className = 'case-hud' + (state.verified ? ' calm' : '');
     if (runButton) runButton.disabled = inspected.size !== scenario.records.length || replayTimer !== null;
     if (nextEvidenceButton) {nextEvidenceButton.disabled=inspected.size === scenario.records.length; nextEvidenceButton.textContent=inspected.size === scenario.records.length ? 'ALL EVIDENCE INSPECTED' : 'OPEN NEXT UNREAD EVIDENCE';}
@@ -567,23 +569,24 @@ function mountNetworkCase(levelId,index) {
   }
   function showResult(result) {
     output.replaceChildren();
-    add('strong',result.ok ? 'VERIFIED · All acceptance checks passed' : 'NOT VERIFIED · Review the failed checks',output,'result-title');
+    add('strong',result.ok ? state.verified ? 'TASK VERIFIED' : 'PRACTICAL CHECKS PASSED' : 'NOT VERIFIED · Review the failed checks',output,'result-title');
     result.lines.forEach((line,i)=>{
       const row = add('div',null,output,`result-row ${/FAIL|EXPOSED|DISABLED|ACCEPTED.*redirected|not authenticated/i.test(line) ? 'bad' : ''}`);
       add('span',String(i+1).padStart(2,'0'),row,'result-number mono'); add('span',line,row,'result-text');
     });
-    add('p',result.ok ? 'Return to the task panel to submit your finding.' : 'Adjust the configuration and run the replay again.',output);
     output.className = `output ${result.ok ? 'pass' : 'fail'}`;
     const handoff = add('div',null,output,'handoff');
-    add('strong',result.ok ? 'Finding ready' : 'Keep investigating',handoff);
-    add('span',result.ok ? 'Swipe the simulation handle down to submit your answer. Your work is saved here.' : 'Change the failed setting and replay. The evidence stays available.',handoff);
-    if (result.ok && index < 2) {const next = add('a','REVIEW NEXT TOOL → ' + NETWORK_CASES[levelId][index+1].title.split(' · ')[0],handoff,'next-tool'); next.href=NETWORK_META.pages[index+1];}
+    add('span',result.ok ? state.verified ? 'Swipe the simulation handle down to submit your answer. Your work is saved here.' : 'Continue through the problems below to unlock your finding.' : 'Change the failed setting and replay. The evidence stays available.',handoff);
+    if (result.ok && state.verified && index < 2) {const next = add('a','REVIEW NEXT TOOL → ' + NETWORK_CASES[levelId][index+1].title.split(' · ')[0],handoff,'next-tool'); next.href=NETWORK_META.pages[index+1];}
+    if (result.ok && !state.verified) {
+      const revision = replayVersion;
+      TaskProblems.mount(output, levelId + '_' + index, () => {
+        if (revision !== replayVersion || state.lastResult !== result) return;
+        state.verified=true; saveNetworkState(); clue('verified');
+        showResult(result); updateHud();
+      }, state.problemProgress || 0, count => {state.problemProgress=count; saveNetworkState(); updateHud();});
+    }
     team.result(result);
-    const reaction=add('div',null,output,'outcome-person');
-    add('span',NETWORK_STORY.person.split(' ').map(part=>part[0]).slice(0,2).join(''),reaction,'person-avatar');
-    const quote=add('div',null,reaction,'outcome-quote');
-    add('strong',NETWORK_STORY.person + ' · ' + NETWORK_STORY.role,quote);
-    add('p',result.ok ? NETWORK_STORY.pass[index] : NETWORK_STORY.fail[index],quote);
     if (visual.packets) visual.packets.textContent = result.lines.join('\n\n');
     if (visual.browser) {visual.browser.textContent = result.ok ? index === 0 ? 'OBSERVER REPLAY VERIFIED' : 'SAFE ACTION VERIFIED' : 'IDENTITY NOT VERIFIED'; visual.browser.className = result.ok ? 'badge good' : 'badge bad';}
     if (visual.threat) {visual.threat.textContent = result.ok && index > 0 ? 'UNAPPROVED PATH BLOCKED' : index === 0 ? 'OBSERVATION REPLAYED' : 'UNAPPROVED PATH'; visual.threat.className = result.ok ? 'threat-node contained' : 'threat-node';}
@@ -592,7 +595,7 @@ function mountNetworkCase(levelId,index) {
       node.textContent = result.lines[Math.min(i,result.lines.length-1)];
       node.className = `client-status${result.ok ? ' good-text' : ''}`;
     });
-    if (levelId === 505 && index === 2 && result.ok) {
+    if (levelId === 505 && index === 2 && result.ok && state.verified) {
       add('div','VERIFICATION REPORT',output,'eyebrow');
       add('pre','CYBERITY{stateful_campus_verified}',output,'report-code mono');
       add('p','Required HTTPS: PASS · established replies: PASS · unsolicited inbound: DENY',output);
@@ -620,9 +623,9 @@ function mountNetworkCase(levelId,index) {
       settled=true; finishReplay=null;
       if (replayTimer !== null) window.clearTimeout(replayTimer);
       replayTimer=null; showAllButton.hidden=true;
-      state.verified=result.ok; state.lastResult=result; saveNetworkState();
+      state.verified=false; state.lastResult=result; saveNetworkState();
       appendCaseJournal(index,result); journalView=renderCaseJournal(root,journalView);
-      showResult(result); if (result.ok) clue('verified');
+      showResult(result);
       run.textContent=scenario.action; updateHud();
     }
     let reduced = true;

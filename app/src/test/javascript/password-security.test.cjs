@@ -12,24 +12,27 @@ const workspaceSource = source("account-workspace.js"), script = source("script.
 const learningSource = source("learning-content.js");
 const peopleSource = source("people.js");
 const cases = vm.runInNewContext(casesSource + ";passwordCases");
-const learning = vm.runInNewContext(learningSource + ";UnitTwoLearning");
 const hash = text => createHash("sha256").update(text, "utf8").digest("hex");
 function storage() {
     const values = new Map();
     return {getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value)};
 }
-function harness(key, session = storage()) {
+function harness(key, session = storage(), simulationWindow = {name: '', addEventListener() {}}) {
     let now = Date.UTC(2026, 9, 1, 10);
     const clues = [], elements = {}, all = [];
     function element(tag = "div") {
-        const el = {tag, textContent: "", hidden: true, disabled: false, children: [], listeners: {},
-            value: "", checked: false, className: "", attributes: {}, dataset: {},
-            parentNode: {insertBefore() {}},
+        const el = {tag, textContent: "", hidden: false, disabled: false, children: [], listeners: {},
+            style: {}, remove() {}, value: "", checked: false, className: "", attributes: {}, dataset: {},
+            parentNode: {insertBefore() {}, appendChild() {}},
             classList: {add() {}, remove() {}, toggle() {}},
             setPointerCapture() {}, releasePointerCapture() {},
             closest(selector) { return selector === "[data-drop-zone]" && this.dataset.dropZone !== undefined ? this : null; },
             replaceChildren() { this.children = []; },
-            appendChild(child) { this.children.push(child); return child; },
+            appendChild(child) {
+                const previous=child.parentNode?.children;
+                if (previous?.includes(child)) previous.splice(previous.indexOf(child),1);
+                child.parentNode=this; this.children.push(child); return child;
+            },
             removeChild(child) { this.children.splice(this.children.indexOf(child), 1); },
             get firstChild() { return this.children[0]; },
             setAttribute(name, value) { this.attributes[name] = value; },
@@ -37,28 +40,44 @@ function harness(key, session = storage()) {
         }; all.push(el); return el;
     }
     const html = fs.readFileSync(pagePath(key), "utf8");
-    for (const match of html.matchAll(/id="([^"]+)"/g)) elements[match[1]] = element();
+    for (const match of html.matchAll(/<([a-zA-Z][\w-]*)\b([^>]*\bid="([^"]+)"[^>]*)>/g)) {
+        const el=element(match[1]); el.hidden=/\bhidden(?:\s|=|$)/.test(match[2]);
+        el.disabled=/\bdisabled(?:\s|=|$)/.test(match[2]); elements[match[3]]=el;
+    }
     const sandbox = {
         document: {body: {dataset: {case: key}}, getElementById: id => {
             const el = elements[id] || all.find(el => el.id === id);
             assert.ok(el, "missing HTML element " + id); return el;
         }, createElement: element, createTextNode: text => ({textContent: text}), addEventListener() {},
         querySelectorAll: () => all.filter(el => ["button", "input", "select", "textarea"].includes(el.tag))},
-        window: {addEventListener() {}}, sessionStorage: session,
+        window: simulationWindow, sessionStorage: session,
         AndroidLab: {notifyClueFound: clue => clues.push(clue), hashCandidate: hash},
         crypto: webcrypto, TextEncoder, Uint8Array, Uint32Array,
         Date: class extends Date {constructor(value) {super(value === undefined ? now : value);} static now() {return now;}},
         setInterval: () => 1, clearInterval() {}, setTimeout: callback => {callback(); return 1;}
     };
     vm.createContext(sandbox);
-    vm.runInContext(casesSource + "\n" + engineSource + "\n" + workspaceSource + "\n" + learningSource + "\n" + peopleSource + "\n" + script, sandbox);
+    vm.runInContext(fs.readFileSync(path.join(root, "../../task-problems.js"), "utf8") + "\n" + casesSource + "\n" + engineSource + "\n" + workspaceSource + "\n" + learningSource + "\n" + peopleSource + "\n" + script, sandbox);
     return {elements, clues, all, session, run: code => vm.runInContext(code, sandbox), advance: ms => now += ms};
 }
 
 function assertVerified(h) {
     assert.equal(h.clues.length, 1, "verified practical work issues one proof directly");
     assert.equal(h.elements.result.hidden, false);
+    if(h.run("workspace !== null")) {
+        const steps=h.run("workspace.progress()");
+        assert.ok(steps.length >= 1 && steps.length <= 4);
+        assert.ok(steps.every(([,done])=>done),"all practical steps must be verified");
+    }
     assert.ok(h.elements.code.textContent.startsWith("CASE-"));
+    for (const id of ['tab-case','tab-tool','tab-notes','open-account-tool']) {
+        assert.equal(h.elements[id].disabled,false,'Completed tasks must keep desk navigation available');
+    }
+    assert.equal(h.elements.apply.disabled,true);
+    h.elements['tab-notes'].listeners.click();
+    assert.equal(h.elements['desk-notes'].hidden,false);
+    h.elements['tab-tool'].listeners.click();
+    assert.equal(h.elements['desk-tool'].hidden,false);
 }
 async function ready(h) { for (let i = 0; i < 4; i++) await h.run("Promise.resolve()"); }
 async function recovered(h) {
@@ -72,14 +91,19 @@ async function configure(h, key) {
     const check = id => controls[id].checked = true;
     const select = (id, value) => controls[id].value = value;
     if (key === "201_0") {
-        await click("generate-password"); check("unique"); h.run("apply()");
-        assert.equal(h.clues.length, 0, "short generated password is insufficient");
-        select("length", "20"); await click("generate-password");
+        check("unique");
+        controls['portal-new'].value='short'; controls['portal-confirm'].value='short';
+        await click('save-portal'); h.run('apply()');
+        assert.equal(h.clues.length, 0, "short password is insufficient");
+        await click('portal-suggest');
+        assert.ok(controls['portal-new'].value.length >= 20);
 
     } else if (key === "201_1") {
-        await click("replace-portal"); await click("replace-shop"); select("vault", "manager");
+        select("vault", "manager");
     } else if (key === "201_2") {
         select("minimum", "15"); select("rotation", "compromise"); check("blocklist"); check("autofill");
+        controls["policy-sample"].value="passwordpassword"; await click("test-policy");
+        controls["policy-sample"].value="Ocean!Lantern-Bicycle-42"; await click("test-policy");
     } else if (key === "202_0" || key === "202_1") {
         select("attack-classification", key === "202_0" ? "dictionary" : "stuffing");
         h.run("apply()"); assert.equal(h.clues.length, 0, "finding requires inspected evidence");
@@ -106,8 +130,10 @@ async function configure(h, key) {
     } else if (key === "203_1") {
         await click("deny-prompts"); await click("review-logins"); await click("report-prompts");
     } else if (key === "203_2") {
+        controls["passkey-device"].value="Maya personal phone"; check("device-unlocked");
         await click("enroll-passkey"); select("backup-location", "private");
     } else if (key === "204_0") {
+        controls["recovery-mailbox"].value="maya@recovery.example";
         select("recovery-address", "protected"); select("backup-location", "private"); await click("rotate-codes");
     } else if (key === "204_1") {
         await click("revoke-library"); select("shared-device", "signout");
@@ -116,13 +142,106 @@ async function configure(h, key) {
     } else if (key === "204_2") {
         for (const id of ["reset-credential", "revoke-attacker", "restore-recovery", "remove-forwarding", "report-breach"]) await click(id);
     } else if (key === "205_1") {
-        await click("replace-incident-password"); select("incident-factor", "passkey"); await click("enroll-incident-factor");
+        select("incident-factor", "passkey"); await click("enroll-incident-factor");
     } else if (key === "205_2") {
         for (const id of ["revoke-incident-session", "remove-incident-rule", "rotate-incident-codes", "file-incident"]) await click(id);
         select("incident-recovery", "owner");
     } else throw new Error("Unexpected workspace " + key);
+    const prefix=key === "201_0" ? "portal" : key === "201_1" ? "shopping" : ["202_1","202_2","204_2","205_1"].includes(key) ? "replacement" : null;
+    if (prefix) {
+        const password="Lemon!River-Orbit-" + key;
+        controls[prefix + "-new"].value=password;
+        controls[prefix + "-confirm"].value="different";
+        const applyId=prefix === "portal" ? "save-portal" : prefix === "shopping" ? "save-shopping" : key === "202_2" ? "reset-exposed" : key === "204_2" ? "reset-credential" : "save-replacement";
+        await click(applyId); h.run("apply()"); assert.equal(h.clues.length,0,"mismatched passwords cannot complete");
+        controls[prefix + "-confirm"].value=password;
+        await click(applyId); h.run("apply()"); assert.equal(h.clues.length,0,"saved password must pass a simulated login");
+        controls[prefix + "-login"].value="old-wrong-password"; await click(prefix + "-test");
+        h.run("apply()"); assert.equal(h.clues.length,0,"old or wrong credentials must fail the test login");
+        controls[prefix + "-login"].value=password; await click(prefix + "-test");
+        if (key === "202_1") {
+            controls["second-student-new"].value=password;
+            controls["second-student-confirm"].value=password;
+            await click("save-second-student");
+            assert.equal(h.run('workspace.state["second-student"]'),undefined,"affected users need different credentials");
+            const second="Comet!Bicycle-Ocean-03";
+            controls["second-student-new"].value=second; controls["second-student-confirm"].value=second;
+            await click("save-second-student");
+            controls["second-student-login"].value=second; await click("second-student-test");
+        }
+    }
 }
 (async () => {
+    const walkSession = storage();
+    const selections = {vault:'manager', minimum:'20', rotation:'compromise', 'attack-classification':'dictionary', storage:'argon', factor:'app', 'backup-location':'private', 'recovery-address':'protected', 'shared-device':'signout', 'incident-factor':'app', 'incident-recovery':'owner'};
+    for (const id of [201,202,203,204,205]) for (let index=0; index<3; index++) {
+        const key=id+'_'+index, h=harness(key,walkSession); await ready(h);
+        if (!h.run('workspace !== null')) {
+            h.elements.recovered.value=await recovered(h); await h.run('verify()');
+            assertVerified(h); continue;
+        }
+        h.elements['tab-tool'].listeners.click();
+        const controls=h.run('workspace.controls');
+        const panels=h.elements.workspace.children.filter(node=>node.className === 'workspace-step');
+        const next=h.all.find(el=>el.textContent === 'NEXT STEP');
+        const descendants=node=>[node,...(node.children || []).flatMap(descendants)];
+        async function human(el,event='click') {
+            assert.ok(!el.disabled,key+': disabled '+el.id);
+            for (let node=el;node;node=node.parentNode) assert.ok(!node.hidden,key+': hidden '+el.id);
+            await el.listeners[event]?.(); h.elements.workspace.listeners[event]?.();
+        }
+        for (let step=0;step<panels.length;step++) {
+            for (const el of descendants(panels[step])) {
+                if (el.tag === 'select') {
+                    el.value=el.id === 'attack-classification' && key === '202_1' ? 'stuffing' : selections[el.id];
+                    assert.ok(el.value,key+': missing selection '+el.id); await human(el,'change');
+                } else if (el.tag === 'input') {
+                    if (el.type === 'checkbox') el.checked=true;
+                    else if (el.id === 'factor-proof') {
+                        const proof=controls['enrollment-code'];
+                        for (let node=proof;node;node=node.parentNode) assert.ok(!node.hidden,'Training code must be visible beside its entry field');
+                        el.value=proof.textContent.match(/\d{6}/)[0];
+                    }
+                    else if (el.id === 'policy-sample') continue;
+                    else if (el.id === 'recovery-mailbox') el.value='maya@recovery.example';
+                    else if (el.id === 'passkey-device') el.value='Maya phone';
+                    else if (/-new$|-confirm$|-login$/.test(el.id)) el.value='Orbit!Lantern-Lake-'+el.id.replace(/-(new|confirm|login)$/,'');
+                    else continue;
+                    await human(el,'input');
+                } else if (el.tag === 'button' && !/suggest$|test-policy$|policy-.*-sample$/.test(el.id || '')) await human(el);
+            }
+            if (key === '201_2' && step === 3) {
+                for (const sample of ['policy-weak-sample','policy-long-sample']) {await human(controls[sample]); await human(controls['test-policy']);}
+            }
+            assert.equal(h.run('workspace.progress()')[step][1],true,key+': step '+step+' must finish through visible controls');
+            if (step<panels.length-1) await human(next);
+        }
+        await human(h.elements.apply); assertVerified(h);
+    }
+    const focused=harness('201_0'); await ready(focused);
+    assert.equal(focused.elements['desk-case'].hidden,false);
+    assert.equal(focused.elements['desk-tool'].hidden,true);
+    focused.elements['open-account-tool'].listeners.click();
+    assert.equal(focused.elements['desk-case'].hidden,true);
+    assert.equal(focused.elements['desk-tool'].hidden,false);
+    const panels=focused.elements.workspace.children.filter(node=>node.className === 'workspace-step');
+    const navigation=focused.elements.workspace.children.find(node=>node.className === 'workspace-navigation');
+    assert.equal(panels.length,3);
+    assert.equal(panels.filter(panel=>!panel.hidden).length,1,'Only one practical panel is visible');
+    assert.equal(navigation.children[1].disabled,true);
+    navigation.children[1].listeners.click();
+    assert.equal(panels[0].hidden,false,'An unfinished step cannot be skipped');
+    await configure(focused,'201_0');
+    navigation.children[1].listeners.click();
+    assert.equal(panels[1].hidden,false);
+    focused.elements['tab-notes'].listeners.click();
+    focused.elements['tab-tool'].listeners.click();
+    assert.equal(panels[1].hidden,false,'Opening notes preserves the current practical step');
+    assert.equal(focused.run('workspace.controls["portal-new"].value'),'Lemon!River-Orbit-201_0');
+    navigation.children[1].listeners.click();
+    assert.equal(panels[2].hidden,false);
+    navigation.children[0].listeners.click();
+    assert.equal(panels[1].hidden,false);
     const typography = harness("201_0");
     typography.run('setLessonText(byId("guide"), "Use **unique credentials** and <script>literal text</script>.")');
     assert.equal(typography.elements.guide.children[1].tag, "strong");
@@ -199,6 +318,22 @@ async function configure(h, key) {
         h.run("complete()"); assert.equal(h.clues.length, 1);
     }
     assert.ok(JSON.parse(capstoneSession.getItem("cyberity_unit2_incident_v1")).contained);
+    const blockedStorage={getItem() {throw new Error('Storage unavailable');},setItem() {throw new Error('Storage unavailable');}};
+    for (const id of [201,202,203,204,205,250]) {
+        const sharedWindow={name:'',addEventListener() {}};
+        for (let index=0;index<3;index++) {
+            const key=id+'_'+index;
+            const h=harness(key,blockedStorage,sharedWindow); await ready(h);
+            if (h.run('workspace !== null')) {await configure(h,key);h.run('apply()');}
+            else {
+                if (id === 250) h.elements.start.listeners.click();
+                h.elements.recovered.value=await recovered(h); await h.run('verify()');
+            }
+            assertVerified(h);
+            assert.equal(h.run('UnitTwoCaseFlow.read(item.id).completed.length'),index+1,
+                'The connected case must survive task navigation without sessionStorage');
+        }
+    }
     for (const id of [201, 202, 203, 204, 205, 250]) {
         for (const index of [1, 2]) {
             const disconnected = harness(id + "_" + index); await ready(disconnected); 
@@ -252,6 +387,37 @@ async function configure(h, key) {
     gate.elements.recovered.value = await recovered(gate); await gate.run("verify()");
     assertVerified(gate);
     assert.equal(gate.clues.length, 1, "the final challenge evaluates incident work without mandatory card practice");
+    for (const minimum of ['15', '20']) {
+        const policy = harness('201_2'); await ready(policy);
+        policy.run("UnitTwoCaseFlow.finish(201,0,'Verified'); UnitTwoCaseFlow.finish(201,1,'Verified')");
+        policy.elements['tab-tool'].listeners.click();
+        const fields = policy.run('workspace.controls');
+        const next = policy.all.find(el => el.textContent === 'NEXT STEP');
+        function interact(el, event = 'click') {
+            assert.ok(el && !el.disabled, 'Control must be enabled');
+            for (let node = el; node; node = node.parentNode) assert.ok(!node.hidden, 'Control must be visible');
+            el.listeners[event]?.();
+            policy.elements.workspace.listeners[event]?.();
+        }
+        fields.minimum.value = minimum; interact(fields.minimum, 'change'); interact(next);
+        fields.blocklist.checked = true; interact(fields.blocklist, 'change');
+        fields.autofill.checked = true; interact(fields.autofill, 'change'); interact(next);
+        fields.rotation.value = 'compromise'; interact(fields.rotation, 'change'); interact(next);
+        assert.equal(policy.elements.apply.disabled, true);
+        interact(fields['policy-weak-sample']); interact(fields['test-policy']);
+        assert.equal(policy.elements.apply.disabled, true, 'One test cannot finish the policy');
+        assert.ok(fields['policy-checks'].textContent.includes('rejected ✓'));
+        interact(fields['policy-long-sample']); interact(fields['test-policy']);
+        assert.equal(policy.elements.apply.disabled, false, 'Both tests unlock verification');
+        const back = policy.all.find(el => el.textContent === 'BACK');
+        interact(back); fields.rotation.value = 'monthly'; interact(fields.rotation, 'change');
+        assert.equal(policy.elements.apply.disabled, true, 'Changed policy invalidates its tests');
+        assert.ok(fields['policy-checks'].textContent.includes('pending'));
+        fields.rotation.value = 'compromise'; interact(fields.rotation, 'change'); interact(next);
+        interact(fields['policy-weak-sample']); interact(fields['test-policy']);
+        interact(fields['policy-long-sample']); interact(fields['test-policy']);
+        interact(policy.elements.apply); assertVerified(policy);
+    }
     const fresh = harness("201_0"), controls = fresh.run("workspace.controls");
     assert.equal(controls["rsa-n"], undefined, "password lesson must not require RSA");
     assert.equal(controls["hash-password"], undefined, "hashing belongs in the attack lesson");

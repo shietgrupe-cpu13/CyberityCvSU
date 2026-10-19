@@ -1,0 +1,32 @@
+# Changelog
+
+## 1.0.1 — 19 October 2026
+
+### Learning simulations
+
+- Reworked Unit 02 into focused practical steps across connected cases.
+- Added fictional password entry, confirmation, saving, and sign-in tests for credential repairs.
+- Clarified Strong Passwords case 3 with sample passwords, separate policy-test results, and completion guidance.
+- Kept the MFA training proof visible beside the proof-entry field.
+- Preserved case navigation after completion and added storage fallback for connected tasks when WebView session storage is unavailable.
+- Added Unit 05 follow-up problems, saved problem progress, and Wi-Fi passphrase confirmation.
+- Removed unused Unit 02 sorting content and duplicate instructions and results in Units 02 and 05.
+
+### Hearts
+
+- Added per-account cached heart state and queued deductions with duplicate protection.
+- Set the refill interval to 15 minutes with server-side timing validation.
+- Enabled unlimited hearts for server-confirmed tester accounts while preserving their normal balance for revocation.
+
+### Distribution and validation
+
+- Updated the Android app to version 1.0.1, build 2.
+- Added permanent latest-release download and checksum links to the README.
+- Passed 55 simulation checks and Android unit checks; built the debug APK successfully.
+- Added automated progression checks using visible, enabled controls across practical Unit 02 cases and all 18 Unit 05 tasks. Device testing remains separate.
+
+The downloadable APK uses the current Android debug signing key. The original v1.0 release remains available in the release history.
+
+## 1.0
+
+Initial published release with six cybersecurity learning units, lessons, quizzes, interactive simulations, progress and EXP, leaderboards, student profiles, learning streaks, and PDF completion certificates. Earlier v1.0 download updates included completion-save recovery improvements.

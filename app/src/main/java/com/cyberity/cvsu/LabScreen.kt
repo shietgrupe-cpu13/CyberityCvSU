@@ -210,6 +210,7 @@ fun LabScreen(
     onMistake: () -> Unit,
     hearts: Int,
     xpBalance: Int,
+    unlimitedHearts: Boolean = false,
     onPurchaseHint: (HintPurchase, (Result<Unit>) -> Unit) -> Unit,
     modifier: Modifier = Modifier,
     clueLabels: Map<String, String> = emptyMap(),
@@ -258,6 +259,7 @@ fun LabScreen(
 
     // Dangerous actions cost a heart, once each, and are never logged as evidence.
     val penalised = remember { mutableStateListOf<String>() }
+    val latestUnlimitedHearts by androidx.compose.runtime.rememberUpdatedState(unlimitedHearts)
 
     val bridge = remember {
         LabBridge { clueId ->
@@ -270,8 +272,10 @@ fun LabScreen(
                 }
                 clueId in lab.dangerousClues -> if (clueId !in penalised) {
                     penalised.add(clueId)
-                    heartsLost++
-                    onMistake()
+                    if (!latestUnlimitedHearts) {
+                        heartsLost++
+                        onMistake()
+                    }
                 }
                 clueId !in clues -> clues.add(clueId)
             }
@@ -324,7 +328,7 @@ fun LabScreen(
         if (purchasingHint) return
         val correct = LabValidator.isCorrect(task.answer, answerText, choiceIndex)
         verdict = if (correct) Verdict.CORRECT else Verdict.INCORRECT
-        if (correct) solved++ else {
+        if (correct) solved++ else if (!unlimitedHearts) {
             heartsLost++
             onMistake()
         }
@@ -391,6 +395,7 @@ fun LabScreen(
             LabStage.RUNNING -> Column(modifier = Modifier.fillMaxSize()) {
 
                 LabTopBar(
+                    unlimitedHearts = unlimitedHearts,
                     lab = lab,
                     taskNumber = taskIndex + 1,
                     total = total,
@@ -837,6 +842,7 @@ private fun LabChip(text: String) {
 
 @Composable
 private fun LabTopBar(
+    unlimitedHearts: Boolean,
     lab: LabDefinition,
     taskNumber: Int,
     total: Int,
@@ -903,7 +909,7 @@ private fun LabTopBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(modifier = Modifier.coachTarget(coach, CoachTarget.HEARTS)) {
-                HeartsRow(hearts = hearts)
+                HeartsRow(hearts = hearts, unlimited = unlimitedHearts)
             }
             Spacer(Modifier.weight(1f))
             // Balance first — it moves when a hint is bought — then, on a first

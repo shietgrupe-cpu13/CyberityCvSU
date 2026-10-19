@@ -26,14 +26,51 @@ let resolved = false, record = null, deadline = null, timer = null;
 let generation = 0, working = false, tested = 0;
 let roundExpired = false;
 let workspace = null;
-let hashAttemptCount = 0;
 let hashVerified = false;
+
 
 const pause = () => new Promise(resolve => setTimeout(resolve, 35));
 function notify() {
     try { AndroidLab.notifyClueFound("password_" + item.id + "_" + item.index); } catch (_) {}
 }
-function feedback(message) { byId("feedback").textContent = message; }
+function updateTaskProgress() {
+    const steps = workspace ? workspace.progress() : [
+        ["Inspect the current salted record", Boolean(record)],
+        ["Calculate candidate digests", tested > 0],
+        ["Verify the full matching digest", hashVerified]
+    ];
+    const completeCount = steps.filter(([,done])=>done).length;
+    const panel = byId("task-progress"); panel.replaceChildren();
+    const heading = document.createElement("h2");
+    heading.textContent = "Task progress · " + completeCount + " / " + steps.length;
+    panel.appendChild(heading);
+    const track = document.createElement('progress'); track.max=steps.length; track.value=completeCount;
+    track.setAttribute('aria-label','Practical steps complete'); panel.appendChild(track);
+    const next = document.createElement('p');
+    next.className='next-action'; next.textContent=steps.find(([,done])=>!done)?.[0] || 'All practical actions verified';
+    panel.appendChild(next);
+    const details=document.createElement('details');
+    const summary=document.createElement('summary'); summary.textContent='Review task steps'; details.appendChild(summary);
+    panel.appendChild(details);
+    steps.forEach(([label,done])=>{
+        const row=document.createElement("p");
+        row.textContent=(done ? "✓ " : "○ ") + label;
+        row.className=done ? "step-done" : "step-pending";
+        details.appendChild(row);
+    });
+    if (workspace) workspace.refreshSteps();
+    if (workspace) byId('apply').disabled=resolved || completeCount !== steps.length;
+    byId("phase").textContent=resolved ? "All simulation steps verified · Resolved" :
+        "TASK " + (item.index+1) + " OF 3 · " + completeCount + "/" + steps.length + " steps complete";
+}
+function feedback(message) { byId("feedback").textContent = message; updateTaskProgress(); }
+function showDesk(view) {
+    ['case','tool','notes'].forEach(name=>{
+        byId('desk-'+name).hidden=name!==view;
+        byId('tab-'+name).className=name===view ? 'on' : '';
+        byId('tab-'+name).setAttribute('aria-selected',String(name===view));
+    });
+}
 function complete() {
     if (resolved) return;
     if (workspace) { const problem = workspace.validate(); if (problem) {feedback(problem); return;} }
@@ -53,24 +90,17 @@ function complete() {
     if (isHash) byId("timer").textContent = "Investigation verified";
     byId("result").hidden = false;
     byId("code").textContent = "CASE-" + item.id + "-" + (item.index + 1);
-    byId("phase").textContent = "3 / 3 · Resolved";
+    byId("phase").textContent = "All simulation steps verified · Resolved";
     feedback(item.feedback);
     const explain = (tag, text) => {
         const element = document.createElement(tag); setLessonText(element, text); byId("debrief").appendChild(element);
     };
-    explain("h3", learning.topic[4]);
-    explain("p", learning.topic[5]);
-
-    explain("h3", "Your case outcome");
-    explain("p", item.feedback);
+    explain("h3", learning.outcome[0]);
+    explain("p", learning.outcome[1]);
     if (item.index === 2) {
         explain("h3", isFinalChallenge ? "Incident closure report" : "Your connected case results");
         const caseRun = UnitTwoCaseFlow.read(item.id);
         [0, 1, 2].forEach(index => explain("p", "Task " + (index + 1) + ": " + caseRun.outcomes[index].summary));
-    }
-    if (item.index === 2) {
-        explain("h3", "Carry this into the next lesson");
-        explain("p", "Use a unique unpredictable credential for each account, add supported sign-in protection, and protect recovery. If an account is compromised, inspect sessions and account changes rather than relying on a password change alone. When analysing a hash, reproduce its input exactly and compare the whole digest; the training timer does not predict real cracking speed.");
     }
     explain("h3", "Quick recap");
     const recap = UnitTwoRecaps[item.id + "_" + item.index];
@@ -78,14 +108,16 @@ function complete() {
         explain("h4", heading);
         explain("p", recap[index]);
     });
-    document.querySelectorAll("button, input, select, textarea").forEach(control => control.disabled = true);
+    if (workspace) Object.values(workspace.controls).forEach(control => control.disabled = true);
+    ['apply','run','verify','start','new','test-guess','preview-list','strategy','candidate-list','single-guess','recovered']
+        .forEach(id => byId(id).disabled = true);
     notify();
     byId("result").scrollIntoView({behavior: "smooth", block: "nearest"});
 }
 function apply() {
     const prerequisite = UnitTwoCaseFlow.prerequisite(item.id, item.index);
     if (prerequisite) { feedback(prerequisite); return; }
-    if (workspace && !resolved && !resolved) {
+    if (workspace && !resolved) {
         const problem = workspace.validate();
         if (problem) { feedback(problem); return; }
         complete();
@@ -138,7 +170,6 @@ function row(result) {
 async function newAttempt() {
     hashVerified = false;
     if (resolved) return;
-    hashAttemptCount++;
     const token = ++generation;
     record = null; working = false; deadline = null; tested = 0;
     roundExpired = false;
@@ -151,9 +182,8 @@ async function newAttempt() {
     byId("count").textContent = "0 candidates tested";
     byId("target").textContent = "Generating a fresh record…";
     byId("timer").textContent = timed ? "Two minutes · starts when you tap Start round" : "Untimed investigation";
-    byId("phase").textContent = "1 / 3 · Inspect the lesson and record";
+    byId("phase").textContent = "Problem 1 · Inspect the lesson and record";
     byId("strategy").value = "dictionary";
-    document.querySelectorAll(".repair-check").forEach(control => control.checked = false);
     setControls();
     try {
         const fresh = await HashExercise.create(item.index);
@@ -185,7 +215,7 @@ async function runSearch() {
     working = true;
     byId("log").replaceChildren();
     tested = 0;
-    byId("phase").textContent = "2 / 3 · Hash candidates and compare";
+    byId("phase").textContent = "Problem 1 · Hash candidates and compare";
     setControls();
     feedback("Comparing guesses with the stored hash…");
     try {
@@ -218,6 +248,7 @@ async function verify() {
         row(result);
         if (!result.match) { feedback("That candidate produces a different hash. Compare the full candidate digests with the target, including the displayed salt."); return; }
         hashVerified = true;
+        tested = Math.max(tested, 1);
         complete();
     } catch (_) { feedback("Could not verify this candidate. Try again."); }
     finally { if (token === generation) { working = false; setControls(); } }
@@ -241,9 +272,9 @@ byId("unit").textContent = "UNIT 2 / " + item.title + " / CASE " + (item.index +
 byId("title").textContent = item.caseTitle;
 setLessonText(byId("evidence"), item.evidence);
 setLessonText(byId("guide"), item.guide);
-byId("reading-title").textContent = learning.topic[0];
-setLessonText(byId("reading-one"), learning.topic[1]);
-setLessonText(byId("reading-two"), learning.topic[2]);
+byId("reading-title").textContent = learning.reading[0];
+setLessonText(byId("reading-one"), learning.reading[1]);
+setLessonText(byId("reading-two"), learning.reading[2]);
 
 const caseContext = UnitTwoCaseFlow.describe(item.id, item.index);
 UnitTwoPeople.mount(byId("person-panel"), item.id, item.index);
@@ -252,22 +283,20 @@ function journalText(tag, value) {
     const el = document.createElement(tag); setLessonText(el, value); journal.appendChild(el); return el;
 }
 journalText("h2", caseContext.title);
-journalText("p", "Case " + (caseContext.run?.id || "not started") + " · " + caseContext.account);
+journalText("p", caseContext.account);
 journalText("p", "Task " + (item.index + 1) + " of 3: " + caseContext.stage);
 if (caseContext.previous) journalText("p", "Carried forward: " + caseContext.previous.summary);
 if (caseContext.previous?.state.factor) journalText("p", "Enrolled sign-in protection carried forward: " + caseContext.previous.state.factor);
-if (caseContext.previous?.state.hash) journalText("p", "Verified audit digest from the previous record: " + caseContext.previous.state.hash);
 if (caseContext.previous?.state.settings?.["recovery-address"]) journalText("p", "Recovery mailbox carried forward: " + caseContext.previous.state.settings["recovery-address"]);
 const blocked = UnitTwoCaseFlow.prerequisite(item.id, item.index);
 if (blocked) journalText("p", blocked);
 if (item.index === 0) journalText("p", "All three tasks continue this case. Verified findings and repairs carry into the next task.");
 byId("case-journal").appendChild(journal);
-byId("phase").textContent = "1 / 3 · Learn and inspect";
+byId("phase").textContent = "Inspect the case, carry out the repair, and verify the result";
 byId("decision-panel").hidden = isHash;
 byId("hash-panel").hidden = !isHash;
 if (isHash) {
     byId("start").hidden = !timed;
-    byId("repair-panel").hidden = true;
     byId("test-guess").addEventListener("click", testGuess);
     byId("preview-list").addEventListener("click", () => {
         if (!record || working || resolved) return;
@@ -290,10 +319,15 @@ if (isHash) {
     workspace = AccountWorkspace.mount(byId("workspace"), item.id + "_" + item.index, feedback);
     byId("workspace").hidden = !workspace;
     if (workspace) {
-        byId("apply").textContent = "Save account changes";
+        byId("apply").textContent = "VERIFY TASK AND SAVE CASE";
         byId("apply").disabled = false;
     }
     byId("apply").addEventListener("click", apply);
+    ["input", "change", "click"].forEach(event=>byId("workspace").addEventListener(event, updateTaskProgress));
 }
+updateTaskProgress();
+['case','tool','notes'].forEach(view=>byId('tab-'+view).addEventListener('click',()=>showDesk(view)));
+byId('open-account-tool').addEventListener('click',()=>showDesk('tool'));
+showDesk('case');
 document.addEventListener("visibilitychange", tick);
 window.addEventListener("pagehide", () => { generation++; clearInterval(timer); });

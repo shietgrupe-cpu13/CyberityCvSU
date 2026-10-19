@@ -12,7 +12,7 @@ import java.util.Locale
 
 const val MAX_HEARTS = 5
 const val MIN_HEARTS_TO_START = 1
-const val HEART_REFILL_MILLIS = 10 * 1000L  // TESTING ONLY — revert to 30 * 60 * 1000L before shipping
+const val HEART_REFILL_MILLIS = 15 * 60 * 1000L
 
 @Immutable
 data class HeartState(val hearts: Int, val updatedAt: Long) {
@@ -43,7 +43,7 @@ data class HeartState(val hearts: Int, val updatedAt: Long) {
     }
 }
 
-/** 29:05 style countdown. The wait for one heart is never more than 30 minutes. */
+/** 14:05 style countdown. The wait for one heart is never more than 15 minutes. */
 fun formatRefill(millis: Long): String {
     val seconds = (millis + 999) / 1000
     return String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)

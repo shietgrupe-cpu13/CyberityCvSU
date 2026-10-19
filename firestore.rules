@@ -44,7 +44,13 @@ service cloud.firestore {
       let spent = data.get('xpSpent', 0);
       let oldSpent = previous.get('xpSpent', 0);
       let changed = data.diff(previous).affectedKeys();
-      return changed.hasOnly(['completedLevels', 'levelXp', 'xpSpent', 'lastHintPurchase', 'hearts', 'heartsUpdatedAt', 'clockPing']) &&
+      // Heart/clock-only writes preserve all score fields. Avoid re-evaluating
+      // the complete course award policy for each small timer transaction.
+      return changed.hasOnly(['hearts', 'heartsUpdatedAt', 'lastHeartDebit', 'clockPing']) ?
+        validHeartFields(data) && validHeartDebit(data, previous) &&
+          (!changed.hasAny(['clockPing']) || data.clockPing == request.time) :
+        changed.hasOnly(['completedLevels', 'levelXp', 'xpSpent', 'lastHintPurchase', 'hearts', 'heartsUpdatedAt', 'lastHeartDebit', 'clockPing', 'streakDays', 'streakLastActivityAt', 'streakLevelId']) &&
+        validStreak(data, previous) &&
         (!changed.hasAny(['lastHintPurchase']) || spent > oldSpent) &&
         (spent == oldSpent || validHintDebit(data, oldSpent, spent)) &&
         (!changed.hasAny(['clockPing']) || data.clockPing == request.time) &&
@@ -56,9 +62,69 @@ service cloud.firestore {
         (spent - oldSpent) in [0, 15, 30, 50] &&
         (!('hearts' in data) || (data.hearts is int && data.hearts >= 0 && data.hearts <= 5)) &&
         (!('heartsUpdatedAt' in data) || data.heartsUpdatedAt is timestamp) &&
-        (!changed.hasAny(['hearts', 'heartsUpdatedAt']) ||
-          (data.keys().hasAll(['hearts', 'heartsUpdatedAt']) && data.heartsUpdatedAt == request.time)) &&
+        validHeartDebit(data, previous) &&
         (added.size() == 0 || validNewAwards(xp, added, completed));
+    }
+    // Only a single-heart debit may materialize earned refill. The server's
+    // request.time decides elapsed time, regardless of client clock or count.
+    function availableHearts(previous) {
+      let old = previous.get('hearts', 5);
+      let at = previous.get('heartsUpdatedAt', request.time);
+      let gained = int((request.time.toMillis() - at.toMillis()) / 900000);
+      return old + gained >= 5 ? 5 : old + gained;
+    }
+    function validHeartDebit(data, previous) {
+      let changed = data.diff(previous).affectedKeys().hasAny(['hearts', 'heartsUpdatedAt', 'lastHeartDebit']);
+      return !changed || (validHeartSpend(data, previous) &&
+        (!data.diff(previous).affectedKeys().hasAny(['lastHeartDebit']) || validHeartDebitLink(data)));
+    }
+    function validHeartFields(data) {
+      return (!('hearts' in data) || (data.hearts is int && data.hearts >= 0 && data.hearts <= 5)) &&
+        (!('heartsUpdatedAt' in data) || data.heartsUpdatedAt is timestamp);
+    }
+    function validHeartSpend(data, previous) {
+      let balance = availableHearts(previous);
+      return data.keys().hasAll(['hearts', 'heartsUpdatedAt']) &&
+        data.heartsUpdatedAt == request.time &&
+        request.time >= previous.get('heartsUpdatedAt', request.time) &&
+        balance > 0 && data.hearts == balance - 1;
+    }
+    function validHeartDebitLink(data) {
+      let id = data.get('lastHeartDebit', '');
+      let receipt = /databases/$(database)/documents/userProgress/$(request.auth.uid)/heartDebits/$(id);
+      return id is string && id.matches('^[a-f0-9-]{36}$') && !exists(receipt) &&
+        getAfter(receipt).data.createdAt == request.time &&
+        getAfter(receipt).data.heartsAfter == data.hearts && getAfter(receipt).data.exhausted == false;
+    }
+    function validHeartReceipt(data, uid, id) {
+      let parent = /databases/$(database)/documents/userProgress/$(uid);
+      let progress = getAfter(parent).data;
+      return data.keys().hasOnly(['createdAt', 'heartsAfter', 'exhausted']) &&
+        id.matches('^[a-f0-9-]{36}$') && data.createdAt == request.time &&
+        data.heartsAfter is int && data.heartsAfter >= 0 && data.heartsAfter <= 4 && data.exhausted is bool &&
+        (data.exhausted ? data.heartsAfter == 0 && availableHearts(progress) == 0 :
+          progress.lastHeartDebit == id && progress.heartsUpdatedAt == request.time && progress.hearts == data.heartsAfter);
+    }
+    // Optional legacy-compatible progress fields: streakDays (positive int),
+    // streakLastActivityAt (server timestamp), streakLevelId (completed, awarded level).
+    // One learning day per Philippine calendar date; no client-supplied timestamps.
+    function validStreak(data, previous) {
+      let fields = ['streakDays', 'streakLastActivityAt', 'streakLevelId'];
+      let changed = data.diff(previous).affectedKeys().hasAny(fields);
+      return !changed || (data.keys().hasAll(fields) && validStreakActivity(data, previous));
+    }
+    function validStreakActivity(data, previous) {
+      let today = (request.time + duration.value(8, 'h')).date();
+      let last = previous.get('streakLastActivityAt', request.time - duration.value(3, 'd'));
+      let lastDay = (last + duration.value(8, 'h')).date();
+      let count = previous.get('streakDays', 0);
+      let expected = count <= 0 ? 1 : lastDay == today ? count :
+        (lastDay == today - duration.value(1, 'd') ? count + 1 : 1);
+      return data.streakDays is int && data.streakDays > 0 && data.streakDays == expected &&
+        data.streakLastActivityAt == request.time &&
+        data.streakLevelId in knownLevelIds() && data.streakLevelId != 200 &&
+        data.streakLevelId in data.get('completedLevels', []) &&
+        string(data.streakLevelId) in data.get('levelXp', {}).keys();
     }
     function validNewAwards(xp, added, completed) {
       return (!('101' in added) || (xp['101'] is int && xp['101'] >= 0 && xp['101'] <= 150 && 101 in completed)) &&
@@ -190,6 +256,12 @@ service cloud.firestore {
       allow create: if owner(uid) && sparkSessionActive() && validProgress(request.resource.data, {});
       allow update: if owner(uid) && sparkSessionActive() && validProgress(request.resource.data, resource.data);
       allow delete: if deletionOwner(uid);
+      match /heartDebits/{debitId} {
+        allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
+        allow create: if owner(uid) && sparkSessionActive() && validHeartReceipt(request.resource.data, uid, debitId);
+        allow update: if false;
+        allow delete: if deletionOwner(uid);
+      }
       match /hintPurchases/{purchaseId} {
         allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
         allow update: if false;
