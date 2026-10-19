@@ -26,7 +26,6 @@ let resolved = false, record = null, deadline = null, timer = null;
 let generation = 0, working = false, tested = 0;
 let roundExpired = false;
 let workspace = null;
-let hashAttemptCount = 0;
 let hashVerified = false;
 
 
@@ -60,7 +59,7 @@ function updateTaskProgress() {
         details.appendChild(row);
     });
     if (workspace) workspace.refreshSteps();
-    if (workspace) byId('apply').disabled=completeCount !== steps.length;
+    if (workspace) byId('apply').disabled=resolved || completeCount !== steps.length;
     byId("phase").textContent=resolved ? "All simulation steps verified · Resolved" :
         "TASK " + (item.index+1) + " OF 3 · " + completeCount + "/" + steps.length + " steps complete";
 }
@@ -96,19 +95,12 @@ function complete() {
     const explain = (tag, text) => {
         const element = document.createElement(tag); setLessonText(element, text); byId("debrief").appendChild(element);
     };
-    explain("h3", learning.topic[4]);
-    explain("p", learning.topic[5]);
-
-    explain("h3", "Your case outcome");
-    explain("p", item.feedback);
+    explain("h3", learning.outcome[0]);
+    explain("p", learning.outcome[1]);
     if (item.index === 2) {
         explain("h3", isFinalChallenge ? "Incident closure report" : "Your connected case results");
         const caseRun = UnitTwoCaseFlow.read(item.id);
         [0, 1, 2].forEach(index => explain("p", "Task " + (index + 1) + ": " + caseRun.outcomes[index].summary));
-    }
-    if (item.index === 2) {
-        explain("h3", "Carry this into the next lesson");
-        explain("p", "Use a unique unpredictable credential for each account, add supported sign-in protection, and protect recovery. If an account is compromised, inspect sessions and account changes rather than relying on a password change alone. When analysing a hash, reproduce its input exactly and compare the whole digest; the training timer does not predict real cracking speed.");
     }
     explain("h3", "Quick recap");
     const recap = UnitTwoRecaps[item.id + "_" + item.index];
@@ -116,14 +108,16 @@ function complete() {
         explain("h4", heading);
         explain("p", recap[index]);
     });
-    document.querySelectorAll("button, input, select, textarea").forEach(control => control.disabled = true);
+    if (workspace) Object.values(workspace.controls).forEach(control => control.disabled = true);
+    ['apply','run','verify','start','new','test-guess','preview-list','strategy','candidate-list','single-guess','recovered']
+        .forEach(id => byId(id).disabled = true);
     notify();
     byId("result").scrollIntoView({behavior: "smooth", block: "nearest"});
 }
 function apply() {
     const prerequisite = UnitTwoCaseFlow.prerequisite(item.id, item.index);
     if (prerequisite) { feedback(prerequisite); return; }
-    if (workspace && !resolved && !resolved) {
+    if (workspace && !resolved) {
         const problem = workspace.validate();
         if (problem) { feedback(problem); return; }
         complete();
@@ -176,7 +170,6 @@ function row(result) {
 async function newAttempt() {
     hashVerified = false;
     if (resolved) return;
-    hashAttemptCount++;
     const token = ++generation;
     record = null; working = false; deadline = null; tested = 0;
     roundExpired = false;
@@ -191,7 +184,6 @@ async function newAttempt() {
     byId("timer").textContent = timed ? "Two minutes · starts when you tap Start round" : "Untimed investigation";
     byId("phase").textContent = "Problem 1 · Inspect the lesson and record";
     byId("strategy").value = "dictionary";
-    document.querySelectorAll(".repair-check").forEach(control => control.checked = false);
     setControls();
     try {
         const fresh = await HashExercise.create(item.index);
@@ -280,9 +272,9 @@ byId("unit").textContent = "UNIT 2 / " + item.title + " / CASE " + (item.index +
 byId("title").textContent = item.caseTitle;
 setLessonText(byId("evidence"), item.evidence);
 setLessonText(byId("guide"), item.guide);
-byId("reading-title").textContent = learning.topic[0];
-setLessonText(byId("reading-one"), learning.topic[1]);
-setLessonText(byId("reading-two"), learning.topic[2]);
+byId("reading-title").textContent = learning.reading[0];
+setLessonText(byId("reading-one"), learning.reading[1]);
+setLessonText(byId("reading-two"), learning.reading[2]);
 
 const caseContext = UnitTwoCaseFlow.describe(item.id, item.index);
 UnitTwoPeople.mount(byId("person-panel"), item.id, item.index);
@@ -291,11 +283,10 @@ function journalText(tag, value) {
     const el = document.createElement(tag); setLessonText(el, value); journal.appendChild(el); return el;
 }
 journalText("h2", caseContext.title);
-journalText("p", "Case " + (caseContext.run?.id || "not started") + " · " + caseContext.account);
+journalText("p", caseContext.account);
 journalText("p", "Task " + (item.index + 1) + " of 3: " + caseContext.stage);
 if (caseContext.previous) journalText("p", "Carried forward: " + caseContext.previous.summary);
 if (caseContext.previous?.state.factor) journalText("p", "Enrolled sign-in protection carried forward: " + caseContext.previous.state.factor);
-if (caseContext.previous?.state.hash) journalText("p", "Verified audit digest from the previous record: " + caseContext.previous.state.hash);
 if (caseContext.previous?.state.settings?.["recovery-address"]) journalText("p", "Recovery mailbox carried forward: " + caseContext.previous.state.settings["recovery-address"]);
 const blocked = UnitTwoCaseFlow.prerequisite(item.id, item.index);
 if (blocked) journalText("p", blocked);
@@ -306,7 +297,6 @@ byId("decision-panel").hidden = isHash;
 byId("hash-panel").hidden = !isHash;
 if (isHash) {
     byId("start").hidden = !timed;
-    byId("repair-panel").hidden = true;
     byId("test-guess").addEventListener("click", testGuess);
     byId("preview-list").addEventListener("click", () => {
         if (!record || working || resolved) return;

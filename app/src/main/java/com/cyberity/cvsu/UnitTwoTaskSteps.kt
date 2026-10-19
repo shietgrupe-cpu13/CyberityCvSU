@@ -6,7 +6,7 @@ fun unitTwoTaskSteps(levelId: Int, index: Int): List<String> {
         201 -> listOf(
             listOf("Ask **Maya** where else she uses her old password. Inspect the portal credential.", "Enter a fictional replacement of **at least 20 characters** (or use the generator), confirm it, and save it.", "Test sign-in with the replacement and keep it **unique to the portal**."),
             listOf("Check that Maya's **portal replacement** was carried forward from Task 1.", "Enter and confirm a different **shopping credential**, save it, and test sign-in.", "Choose a **protected password manager** for the unique credentials."),
-            listOf("Read Maya's account of the **monthly reset policy**.", "Allow long passwords and autofill, block common or breached values, and reset when **compromise is suspected or confirmed**.")
+            listOf("Read Maya's account of the **monthly reset policy**.", "Allow long passwords and autofill, block common or breached values, and reset when **compromise is suspected or confirmed**.", "Use the weak sample and test that it is rejected. Then use the long sample and test that it is accepted. Both checks must pass.")
         )
         202 -> listOf(
             listOf("Ask **Jules** about the alert, then open **login evidence**.", "Identify how the guesses were chosen. Record the attack type and apply **online throttling** and common-password blocking."),
@@ -33,7 +33,7 @@ fun unitTwoTaskSteps(levelId: Int, index: Int): List<String> {
     }
     val finish = if (levelId == 250)
         "Compare the **entire digest** yourself and submit the candidate that matches. Retries start a fresh record."
-    else "When changing a credential, enter and confirm a **fictional password**, save it, and test the new sign-in. Use **Save account changes** to verify the complete investigation or repair."
+    else "When changing a credential, enter and confirm a **fictional password**, save it, and test the new sign-in. Use **VERIFY TASK AND SAVE CASE** to verify the complete investigation or repair."
     return listOf("Open the simulation and read the person's request for this task.") + actions[index] +
         listOf(finish, "Read the outcome. Return to the task panel and submit the **CASE code** earned by this task.")
 }

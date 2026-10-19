@@ -53,7 +53,7 @@ class Element {
   constructor(tag) {this.tag = tag; this.children = []; this.listeners = {}; this.attributes = {}; this.style = {}; this.textContent = ''; this.value = '';}
   set textContent(value) {this._text = value; this.children = [];}
   get textContent() {return this._text + this.children.map(child=>child.textContent).join('');}
-  appendChild(child) {this.children.push(child); if (this.tag === 'select' && this.children.length === 1) this.value = child.value;}
+  appendChild(child) {child.parentNode=this; this.children.push(child); if (this.tag === 'select' && this.children.length === 1) this.value = child.value;}
   replaceChildren() {this.children = []; this._text = '';}
   setAttribute(key,value) {this.attributes[key] = value;}
   addEventListener(key,fn) {this.listeners[key] = fn;}
@@ -335,4 +335,38 @@ test('Wi-Fi upgrade requires entering and confirming a new training passphrase',
   const input=h.all().find(n=>n.id === 'control-passphrase');
   input.value='Edited-After-Verification'; input.trigger('input');
   assert.equal(JSON.parse(h.storage.get('cyberity_net_502')).stages[1].verified,false);
+});
+
+test('all 18 tasks finish in order using visible, enabled evidence, replay and problem controls',()=>{
+  function human(el,event='click') {
+    assert.ok(el && !el.disabled,'Required control must be enabled');
+    for (let node=el;node;node=node.parentNode) assert.ok(!node.hidden,'Required control must be visible');
+    el.trigger(event);
+  }
+  for (const [level,stages] of Object.entries(cases)) {
+    const storage=new Map();
+    stages.forEach((scenario,index)=>{
+      const h=harness(level,index,{storage});
+      const evidence=h.all().find(n=>n.className === 'tool-btn evidence-next');
+      const run=h.all().find(n=>n.id === 'run-replay');
+      assert.equal(run.disabled,true,'Replay explains its evidence prerequisite');
+      for (let i=0;i<scenario.records.length;i++) human(evidence);
+      for (const [key,value] of Object.entries(correct[scenario.mode] || {})) {
+        const el=h.all().find(n=>n.id === 'control-'+key); el.value=value; human(el,'change');
+      }
+      if (scenario.mode === 'wifiUpgrade') for (const key of ['passphrase','confirmation']) {
+        const el=h.all().find(n=>n.id === 'control-'+key); el.value='Orbit-Lantern-Lake-42'; human(el,'input');
+      }
+      human(run);
+      for (let guard=0;guard<4;guard++) {
+        const section=h.all().find(n=>n.className === 'card task-problems');
+        if (!section) break;
+        const prompt=section.children.find(n=>n.tag === 'p').textContent;
+        const answer=vm.runInContext(`Object.values(TaskProblems.sets).flat().find(q=>q.prompt === ${JSON.stringify(prompt)}).choices[0]`,h.context);
+        human(section.children.find(n=>n.tag === 'button' && n.textContent === answer));
+        human(section.children.find(n=>n.tag === 'button' && /NEXT PROBLEM|FINISH TASK PROBLEMS/.test(n.textContent)));
+      }
+      assert.ok(h.events.includes(`net_${level}_${index}_verified`),level+'/'+index+' must finish');
+    });
+  }
 });

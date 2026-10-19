@@ -355,7 +355,6 @@ function renderNetworkDashboard() {
   netElement('div','SHIFT BRIEFING',root,'section-label');
   const briefing = netElement('section',null,root,'briefing');
   netElement('p',NETWORK_META.mission,briefing);
-  netElement('p','Inspect the evidence, operate the tool, and replay the consequences. Your work remains available when you return to this console.',briefing);
   netElement('div','INVESTIGATION TOOLS',root,'section-label');
   NETWORK_CASES[NETWORK_META.level].forEach((s,i) => {
     const tile = netElement('a',null,root,'choice tile'); tile.href = NETWORK_META.pages[i];
@@ -570,15 +569,13 @@ function mountNetworkCase(levelId,index) {
   }
   function showResult(result) {
     output.replaceChildren();
-    add('strong',result.ok ? 'VERIFIED · All acceptance checks passed' : 'NOT VERIFIED · Review the failed checks',output,'result-title');
+    add('strong',result.ok ? state.verified ? 'TASK VERIFIED' : 'PRACTICAL CHECKS PASSED' : 'NOT VERIFIED · Review the failed checks',output,'result-title');
     result.lines.forEach((line,i)=>{
       const row = add('div',null,output,`result-row ${/FAIL|EXPOSED|DISABLED|ACCEPTED.*redirected|not authenticated/i.test(line) ? 'bad' : ''}`);
       add('span',String(i+1).padStart(2,'0'),row,'result-number mono'); add('span',line,row,'result-text');
     });
-    add('p',result.ok ? state.verified ? 'All task problems complete. Return to the task panel.' : 'Practical problem verified. Complete the follow-up problems below.' : 'Adjust the configuration and run the replay again.',output);
     output.className = `output ${result.ok ? 'pass' : 'fail'}`;
     const handoff = add('div',null,output,'handoff');
-    add('strong',result.ok && state.verified ? 'Finding ready' : 'Keep investigating',handoff);
     add('span',result.ok ? state.verified ? 'Swipe the simulation handle down to submit your answer. Your work is saved here.' : 'Continue through the problems below to unlock your finding.' : 'Change the failed setting and replay. The evidence stays available.',handoff);
     if (result.ok && state.verified && index < 2) {const next = add('a','REVIEW NEXT TOOL → ' + NETWORK_CASES[levelId][index+1].title.split(' · ')[0],handoff,'next-tool'); next.href=NETWORK_META.pages[index+1];}
     if (result.ok && !state.verified) {
@@ -590,11 +587,6 @@ function mountNetworkCase(levelId,index) {
       }, state.problemProgress || 0, count => {state.problemProgress=count; saveNetworkState(); updateHud();});
     }
     team.result(result);
-    const reaction=add('div',null,output,'outcome-person');
-    add('span',NETWORK_STORY.person.split(' ').map(part=>part[0]).slice(0,2).join(''),reaction,'person-avatar');
-    const quote=add('div',null,reaction,'outcome-quote');
-    add('strong',NETWORK_STORY.person + ' · ' + NETWORK_STORY.role,quote);
-    add('p',result.ok ? NETWORK_STORY.pass[index] : NETWORK_STORY.fail[index],quote);
     if (visual.packets) visual.packets.textContent = result.lines.join('\n\n');
     if (visual.browser) {visual.browser.textContent = result.ok ? index === 0 ? 'OBSERVER REPLAY VERIFIED' : 'SAFE ACTION VERIFIED' : 'IDENTITY NOT VERIFIED'; visual.browser.className = result.ok ? 'badge good' : 'badge bad';}
     if (visual.threat) {visual.threat.textContent = result.ok && index > 0 ? 'UNAPPROVED PATH BLOCKED' : index === 0 ? 'OBSERVATION REPLAYED' : 'UNAPPROVED PATH'; visual.threat.className = result.ok ? 'threat-node contained' : 'threat-node';}

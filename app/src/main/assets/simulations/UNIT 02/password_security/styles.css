@@ -35,16 +35,6 @@ textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; 
 #workspace input[type=checkbox] { margin-left: 12px; vertical-align: middle; }
 .candidate-pick { margin: 0; padding: 8px; width: auto; min-width: 80px; font: inherit; }
 .reading p, #debrief p { line-height: 1.8; }
-.sorting-layout { display: grid; gap: 18px; }
-.drag-card { display: flex; align-items: center; gap: 12px; min-height: 64px; }
-.drag-card[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
-.drop-group { border: 1px dashed var(--border); padding: 12px; border-radius: 12px; margin: 12px 0; }
-.drop-zone { min-height: 56px; }
-.placed-cards p { padding: 8px 12px; background: var(--bg); border-radius: 8px; font-size: 14px; }
-.placed-entry { border: 1px solid var(--border); border-radius: 10px; margin-top: 10px; padding: 8px; }
-.return-card { font-size: inherit; padding: 10px; margin: 6px 0; }
-@media (min-width: 650px) { .sorting-layout { grid-template-columns: 1fr 1fr; } }
-#repairs label { display: flex; align-items: flex-start; gap: 12px; }
 input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--accent); margin-top: 3px; }
 dl { margin: 0; } dt { color: var(--muted); margin-top: 16px; } dd { margin: 4px 0; overflow-wrap: anywhere; }
 dd code { font-size: 14px; word-break: break-all; }
@@ -127,4 +117,4 @@ dd code, table { font-size: .9em; }
 #desk-case .lesson-grid .card {margin:14px 0}
 @keyframes workspace-enter {from {opacity:0;transform:translateY(6px)}to {opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce) {.workspace-step {animation:none}#task-progress progress::-webkit-progress-value {transition:none}}
-#hash-panel .log-wrap {max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:10px}#hash-panel details {padding:12px;border:1px solid var(--border);border-radius:10px}#hash-panel .actions {display:flex;gap:10px}#hash-panel .actions button {flex:1}
+#hash-panel details {padding:12px;border:1px solid var(--border);border-radius:10px}#hash-panel .actions {display:flex;gap:10px}#hash-panel .actions button {flex:1}

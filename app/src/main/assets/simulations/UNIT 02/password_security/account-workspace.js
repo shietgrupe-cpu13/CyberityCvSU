@@ -1,14 +1,39 @@
 "use strict";
+const UnitTwoStorage = (() => {
+    const prefix = 'cyberity_unit2:';
+    let memory = {};
+    function fallback() {
+        try {
+            if (window.name.startsWith(prefix)) {
+                const saved = JSON.parse(window.name.slice(prefix.length));
+                if (saved && typeof saved === 'object' && !Array.isArray(saved)) memory = saved;
+            }
+        } catch (_) {}
+        return memory;
+    }
+    function getItem(key) {
+        const saved = fallback();
+        if (Object.prototype.hasOwnProperty.call(saved, key)) return saved[key];
+        try { return sessionStorage.getItem(key); } catch (_) { return null; }
+    }
+    function setItem(key, value) {
+        memory = {...fallback(), [key]: value};
+        try { window.name = prefix + JSON.stringify(memory); } catch (_) {}
+        try { sessionStorage.setItem(key, value); } catch (_) {}
+    }
+    return {getItem, setItem};
+})();
+
 // One fictional registrar account carries its state across the capstone's three task pages.
 const CampusIncident = (() => {
     const key = "cyberity_unit2_incident_v1";
     let memory = null;
     function read() {
-        try { return JSON.parse(sessionStorage.getItem(key)) || memory; } catch (_) { return memory; }
+        try { return JSON.parse(UnitTwoStorage.getItem(key)) || memory; } catch (_) { return memory; }
     }
     function write(value) {
         memory = value;
-        try { sessionStorage.setItem(key, JSON.stringify(value)); } catch (_) {}
+        UnitTwoStorage.setItem(key, JSON.stringify(value));
         return value;
     }
     function begin(record) {
@@ -32,12 +57,12 @@ const UnitTwoCaseFlow = (() => {
     const memory = {};
     const storageKey = id => "cyberity_unit2_case_" + id;
     function read(id) {
-        try { return JSON.parse(sessionStorage.getItem(storageKey(id))) || memory[id]; }
+        try { return JSON.parse(UnitTwoStorage.getItem(storageKey(id))) || memory[id]; }
         catch (_) { return memory[id]; }
     }
     function write(id, value) {
         memory[id] = value;
-        try { sessionStorage.setItem(storageKey(id), JSON.stringify(value)); } catch (_) {}
+        UnitTwoStorage.setItem(storageKey(id), JSON.stringify(value));
         return value;
     }
     function begin(id) {
@@ -148,25 +173,15 @@ const AccountWorkspace = (() => {
         if (key === "201_0") {
             text("h3", "Maya's portal credential");
             text("p", "The old value CvSU2026! follows a public campus-name pattern. Enter a new secret for this portal only, or use the training generator. The linked shopping account will be repaired in the next task.");
-            select("length", "Generated password length", [["8", "8 characters"], ["12", "12 characters"], ["20", "20 characters"], ["24", "24 characters"]]);
-            const output = status("built-password", "Current password: CvSU2026!");
-            action("generate-password", "Generate portal replacement", () => {
-                state.password = generated(Number(controls.length.value));
-                state.generatedLength = state.password.length;
-                if (controls["portal-new"]) controls["portal-new"].value = state.password;
-                output.textContent = "Fictional replacement: " + state.password + " · " + state.password.length + " characters";
-                report("Check the length, confirm that this secret belongs only to the portal, then save the repair.");
-            });
-            check("unique", "Keep this generated credential unique to the portal");
-            validate = () => !state.password || state.password.length < 20 ? "Generate a replacement of at least 20 characters for this classroom exercise." :
-                !controls.unique.checked ? "Keep this credential unique to the portal." : "";
+            check("unique", "Keep this replacement unique to the portal");
+            validate = () => !controls.unique.checked ? "Keep this credential unique to the portal." : "";
 
         } else if (key === "201_1") {
             const previous = UnitTwoCaseFlow.read(201)?.outcomes[0]?.state;
-            const portal = status("portal-password", "Portal: " + (previous?.password || "credential not yet repaired"));
+            status("portal-password", "Portal: " + (previous?.password || "credential not yet repaired"));
             text("p", "Your portal replacement from Task 1 is preserved. The audit also found the old credential on the linked shopping account. Give shopping a different replacement and protect both in the vault.");
             state.portal = previous?.password;
-            const shop = status("shop-password", "Shopping account: same reused credential");
+            status("shop-password", "Shopping account: same reused credential");
             text("p", "Keep the already repaired portal credential. Use the shopping replacement form below to remove reuse on the other service.");
             select("vault", "Where to store them", [["shared", "Shared class document"], ["manager", "Protected password manager"]]);
             validate = () => !state.portal || !state.shop || state.portal === state.shop ? "Replace both reused credentials with different generated passwords." :
@@ -177,7 +192,16 @@ const AccountWorkspace = (() => {
             check("blocklist", "Reject common and breached passwords");
             check("autofill", "Allow password manager paste and autofill");
             field("policy-sample", "Try a fictional password against the proposed policy", "password");
-            const policyResult = status("policy-result", "Test a known weak value and a long unique training value before publishing.");
+            const policyResult = status("policy-result", "Run both checks: reject a weak password, then accept a long password. Load a sample and press Test after each one.");
+            const policyChecks = status("policy-checks", "Weak password: pending · Long password: pending");
+            action("policy-weak-sample", "Use weak sample", () => {
+                controls["policy-sample"].value = "passwordpasswordpassword";
+                report("Weak sample loaded. Press Test proposed password policy to check that the blocklist rejects it.");
+            });
+            action("policy-long-sample", "Use long sample", () => {
+                controls["policy-sample"].value = "Ocean!Lantern-Bicycle-42";
+                report("Long sample loaded. Press Test proposed password policy to check that it is accepted.");
+            });
             action("test-policy", "Test proposed password policy", () => {
                 const sample = controls["policy-sample"].value;
                 const settings = [controls.minimum.value, controls.rotation.value, controls.blocklist.checked, controls.autofill.checked].join(":");
@@ -186,8 +210,12 @@ const AccountWorkspace = (() => {
                 const accepted = sample.length >= Number(controls.minimum.value) && !(controls.blocklist.checked && weak);
                 if (weak && !accepted) state.policyTests.weak = true;
                 if (!weak && sample.length >= 15 && accepted) state.policyTests.long = true;
-                policyResult.textContent = accepted ? "Training password accepted by this policy." : "Training password rejected by this policy.";
-                report("Test both a blocked weak value and an allowed long training value. Changing the policy clears earlier test results.");
+                policyChecks.textContent = "Weak password: " + (state.policyTests.weak ? "rejected ✓" : "pending") +
+                    " · Long password: " + (state.policyTests.long ? "accepted ✓" : "pending");
+                policyResult.textContent = accepted ? "Training password accepted by this policy." :
+                    "Training password rejected" + (sample.length < Number(controls.minimum.value) ? ": use at least " + controls.minimum.value + " characters." : " by the blocklist.");
+                report(state.policyTests.weak && state.policyTests.long ? "Both tests passed. Select VERIFY TASK AND SAVE CASE to finish." :
+                    !state.policyTests.weak ? "Next: use the weak sample and test that it is rejected." : "Next: use the long sample and test that it is accepted.");
             });
             validate = () => Number(controls.minimum.value) < 15 || controls.rotation.value !== "compromise" || !controls.blocklist.checked || !controls.autofill.checked ?
                 "Enable long passwords, breached-password blocking and autofill, with resets on compromise." :
@@ -381,11 +409,11 @@ const AccountWorkspace = (() => {
             const groups = {
                 '201_0': [[], ['portal-login','portal-test'], ['unique']],
                 '201_1': [['portal-password'], ['shopping-new','shopping-confirm','shopping-suggest','save-shopping','shopping-login','shopping-test','shopping-status','shop-password'], ['vault']],
-                '201_2': [['minimum'], ['blocklist','autofill'], ['rotation'], ['policy-sample','test-policy','policy-result']],
+                '201_2': [['minimum'], ['blocklist','autofill'], ['rotation'], ['policy-sample','policy-weak-sample','policy-long-sample','test-policy','policy-result','policy-checks']],
                 '202_0': [['inspect-logins','login-records'], ['attack-classification'], ['throttle','block-common']],
                 '202_1': [['inspect-logins','login-records','attack-classification'], ['replacement-new','replacement-confirm','replacement-suggest','save-replacement','replacement-login','replacement-test','replacement-status','second-student-new','second-student-confirm','second-student-suggest','save-second-student','second-student-login','second-student-test','second-student-status'], ['reset-affected','remove-reuse','protect-signin'], ['inspect-sessions']],
                 '202_2': [['sample-a','sample-b','calculate-demo','digest-a','digest-b','digest-change'], ['storage'], ['replacement-new','replacement-confirm','replacement-suggest','reset-exposed','replacement-login','replacement-test','replacement-status']],
-                '203_0': [['factor','enroll-factor','enrollment-code'], ['factor-proof']],
+                '203_0': [['factor','enroll-factor'], ['enrollment-code','factor-proof']],
                 '203_1': [['deny-prompts','prompt-state'], ['review-logins'], ['report-prompts']],
                 '203_2': [['passkey-device','device-unlocked','enroll-passkey','passkey-state'], ['backup-location']],
                 '204_0': [['recovery-mailbox','recovery-address'], ['rotate-codes'], ['backup-location']],
@@ -408,11 +436,15 @@ const AccountWorkspace = (() => {
             const summary=document.createElement('summary'); summary.textContent='Account context and tools'; context.appendChild(summary);
             for (const node of original) {
                 const id=node.dataset.control;
-                if (!id || ['length','generate-password','built-password'].includes(id)) context.appendChild(node);
+                if (!id) context.appendChild(node);
                 else {const group=groups.findIndex(ids=>ids.includes(id)); panels[Math.max(0,group)].appendChild(node);}
             }
             let active=0;
             function refresh() {
+                if (key === '201_2' && state.policySettings !== [controls.minimum.value, controls.rotation.value, controls.blocklist.checked, controls.autofill.checked].join(':')) {
+                    state.policyTests = {};
+                    controls['policy-checks'].textContent = 'Weak password: pending · Long password: pending';
+                }
                 const steps=progress();
                 heading.textContent='Step ' + (active+1) + ' of ' + steps.length + ' · ' + steps[active][0];
                 dots.replaceChildren();
