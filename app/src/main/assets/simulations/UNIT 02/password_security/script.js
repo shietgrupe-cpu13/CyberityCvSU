@@ -29,11 +29,49 @@ let workspace = null;
 let hashAttemptCount = 0;
 let hashVerified = false;
 
+
 const pause = () => new Promise(resolve => setTimeout(resolve, 35));
 function notify() {
     try { AndroidLab.notifyClueFound("password_" + item.id + "_" + item.index); } catch (_) {}
 }
-function feedback(message) { byId("feedback").textContent = message; }
+function updateTaskProgress() {
+    const steps = workspace ? workspace.progress() : [
+        ["Inspect the current salted record", Boolean(record)],
+        ["Calculate candidate digests", tested > 0],
+        ["Verify the full matching digest", hashVerified]
+    ];
+    const completeCount = steps.filter(([,done])=>done).length;
+    const panel = byId("task-progress"); panel.replaceChildren();
+    const heading = document.createElement("h2");
+    heading.textContent = "Task progress · " + completeCount + " / " + steps.length;
+    panel.appendChild(heading);
+    const track = document.createElement('progress'); track.max=steps.length; track.value=completeCount;
+    track.setAttribute('aria-label','Practical steps complete'); panel.appendChild(track);
+    const next = document.createElement('p');
+    next.className='next-action'; next.textContent=steps.find(([,done])=>!done)?.[0] || 'All practical actions verified';
+    panel.appendChild(next);
+    const details=document.createElement('details');
+    const summary=document.createElement('summary'); summary.textContent='Review task steps'; details.appendChild(summary);
+    panel.appendChild(details);
+    steps.forEach(([label,done])=>{
+        const row=document.createElement("p");
+        row.textContent=(done ? "✓ " : "○ ") + label;
+        row.className=done ? "step-done" : "step-pending";
+        details.appendChild(row);
+    });
+    if (workspace) workspace.refreshSteps();
+    if (workspace) byId('apply').disabled=completeCount !== steps.length;
+    byId("phase").textContent=resolved ? "All simulation steps verified · Resolved" :
+        "TASK " + (item.index+1) + " OF 3 · " + completeCount + "/" + steps.length + " steps complete";
+}
+function feedback(message) { byId("feedback").textContent = message; updateTaskProgress(); }
+function showDesk(view) {
+    ['case','tool','notes'].forEach(name=>{
+        byId('desk-'+name).hidden=name!==view;
+        byId('tab-'+name).className=name===view ? 'on' : '';
+        byId('tab-'+name).setAttribute('aria-selected',String(name===view));
+    });
+}
 function complete() {
     if (resolved) return;
     if (workspace) { const problem = workspace.validate(); if (problem) {feedback(problem); return;} }
@@ -53,7 +91,7 @@ function complete() {
     if (isHash) byId("timer").textContent = "Investigation verified";
     byId("result").hidden = false;
     byId("code").textContent = "CASE-" + item.id + "-" + (item.index + 1);
-    byId("phase").textContent = "3 / 3 · Resolved";
+    byId("phase").textContent = "All simulation steps verified · Resolved";
     feedback(item.feedback);
     const explain = (tag, text) => {
         const element = document.createElement(tag); setLessonText(element, text); byId("debrief").appendChild(element);
@@ -151,7 +189,7 @@ async function newAttempt() {
     byId("count").textContent = "0 candidates tested";
     byId("target").textContent = "Generating a fresh record…";
     byId("timer").textContent = timed ? "Two minutes · starts when you tap Start round" : "Untimed investigation";
-    byId("phase").textContent = "1 / 3 · Inspect the lesson and record";
+    byId("phase").textContent = "Problem 1 · Inspect the lesson and record";
     byId("strategy").value = "dictionary";
     document.querySelectorAll(".repair-check").forEach(control => control.checked = false);
     setControls();
@@ -185,7 +223,7 @@ async function runSearch() {
     working = true;
     byId("log").replaceChildren();
     tested = 0;
-    byId("phase").textContent = "2 / 3 · Hash candidates and compare";
+    byId("phase").textContent = "Problem 1 · Hash candidates and compare";
     setControls();
     feedback("Comparing guesses with the stored hash…");
     try {
@@ -218,6 +256,7 @@ async function verify() {
         row(result);
         if (!result.match) { feedback("That candidate produces a different hash. Compare the full candidate digests with the target, including the displayed salt."); return; }
         hashVerified = true;
+        tested = Math.max(tested, 1);
         complete();
     } catch (_) { feedback("Could not verify this candidate. Try again."); }
     finally { if (token === generation) { working = false; setControls(); } }
@@ -262,7 +301,7 @@ const blocked = UnitTwoCaseFlow.prerequisite(item.id, item.index);
 if (blocked) journalText("p", blocked);
 if (item.index === 0) journalText("p", "All three tasks continue this case. Verified findings and repairs carry into the next task.");
 byId("case-journal").appendChild(journal);
-byId("phase").textContent = "1 / 3 · Learn and inspect";
+byId("phase").textContent = "Inspect the case, carry out the repair, and verify the result";
 byId("decision-panel").hidden = isHash;
 byId("hash-panel").hidden = !isHash;
 if (isHash) {
@@ -290,10 +329,15 @@ if (isHash) {
     workspace = AccountWorkspace.mount(byId("workspace"), item.id + "_" + item.index, feedback);
     byId("workspace").hidden = !workspace;
     if (workspace) {
-        byId("apply").textContent = "Save account changes";
+        byId("apply").textContent = "VERIFY TASK AND SAVE CASE";
         byId("apply").disabled = false;
     }
     byId("apply").addEventListener("click", apply);
+    ["input", "change", "click"].forEach(event=>byId("workspace").addEventListener(event, updateTaskProgress));
 }
+updateTaskProgress();
+['case','tool','notes'].forEach(view=>byId('tab-'+view).addEventListener('click',()=>showDesk(view)));
+byId('open-account-tool').addEventListener('click',()=>showDesk('tool'));
+showDesk('case');
 document.addEventListener("visibilitychange", tick);
 window.addEventListener("pagehide", () => { generation++; clearInterval(timer); });

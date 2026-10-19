@@ -303,6 +303,7 @@ onComplete: (xpEarned: Int, correct: Int, total: Int) -> Unit,
 onMistake: () -> Unit,
 hearts: Int,
 xpBalance: Int,
+unlimitedHearts: Boolean = false,
 modifier: Modifier = Modifier,
 /** True when this level was already completed — XP was paid out on the
  *  first clear, so nothing here should look like it's still up for grabs. */
@@ -332,6 +333,7 @@ isReplay: Boolean = false
             )
 
             SimStage.RUNNING -> ScenarioStage(
+                unlimitedHearts = unlimitedHearts,
                 scenario = quiz.scenarios[stepIndex],
                 stepIndex = stepIndex,
                 total = total,
@@ -350,7 +352,7 @@ isReplay: Boolean = false
                         chosenIndex = index
                         if (quiz.scenarios[stepIndex].choices[index].isSafe) {
                             correctCount++
-                        } else {
+                        } else if (!unlimitedHearts) {
                             heartsLost++
                             onMistake()
                         }
@@ -466,6 +468,7 @@ private fun BriefingStage(
 
 @Composable
 private fun ScenarioStage(
+    unlimitedHearts: Boolean,
     scenario: SimScenario,
     stepIndex: Int,
     total: Int,
@@ -504,7 +507,7 @@ private fun ScenarioStage(
                 trackColor = AppCard
             )
             Spacer(Modifier.width(12.dp))
-            HeartsRow(hearts = hearts, heartSize = 14.dp)
+            HeartsRow(hearts = hearts, heartSize = 14.dp, unlimited = unlimitedHearts)
             Spacer(Modifier.width(10.dp))
             XpIndicator(xp = xpBalance, iconSize = 14.dp, fontSize = 12.sp, showDelta = false)
             if (!isReplay) {

@@ -4,13 +4,13 @@ package com.cyberity.cvsu
 fun unitTwoTaskSteps(levelId: Int, index: Int): List<String> {
     val actions = when (levelId) {
         201 -> listOf(
-            listOf("Ask **Maya** where else she uses her old password. Inspect the portal credential.", "Choose **20 or 24 characters**, generate a replacement, and confirm that it belongs only to the portal."),
-            listOf("Check that Maya's **portal replacement** was carried forward from Task 1.", "Replace the **shopping credential** with a different generated value and choose a **protected password manager**."),
+            listOf("Ask **Maya** where else she uses her old password. Inspect the portal credential.", "Enter a fictional replacement of **at least 20 characters** (or use the generator), confirm it, and save it.", "Test sign-in with the replacement and keep it **unique to the portal**."),
+            listOf("Check that Maya's **portal replacement** was carried forward from Task 1.", "Enter and confirm a different **shopping credential**, save it, and test sign-in.", "Choose a **protected password manager** for the unique credentials."),
             listOf("Read Maya's account of the **monthly reset policy**.", "Allow long passwords and autofill, block common or breached values, and reset when **compromise is suspected or confirmed**.")
         )
         202 -> listOf(
             listOf("Ask **Jules** about the alert, then open **login evidence**.", "Identify how the guesses were chosen. Record the attack type and apply **online throttling** and common-password blocking."),
-            listOf("Inspect the **leaked credential pairs** and the successful sessions.", "Record the attack type. Reset affected credentials, remove reuse, add sign-in protection, and review **successful access**."),
+            listOf("Inspect the **leaked credential pairs** and the successful sessions.", "Record the attack type. Enter, confirm, save, and test **different replacements for both affected accounts**.", "Remove reuse, add sign-in protection, and review **successful access**."),
             listOf("Ask Jules why portal login limits cannot protect the **copied database**.", "Calculate both classroom digests. Change an input and recalculate to compare the outputs.", "Select **slow salted storage** and reset the exposed credentials.")
         )
         203 -> listOf(
@@ -33,7 +33,7 @@ fun unitTwoTaskSteps(levelId: Int, index: Int): List<String> {
     }
     val finish = if (levelId == 250)
         "Compare the **entire digest** yourself and submit the candidate that matches. Retries start a fresh record."
-    else "Use **Save account changes** to verify your investigation or repair."
+    else "When changing a credential, enter and confirm a **fictional password**, save it, and test the new sign-in. Use **Save account changes** to verify the complete investigation or repair."
     return listOf("Open the simulation and read the person's request for this task.") + actions[index] +
         listOf(finish, "Read the outcome. Return to the task panel and submit the **CASE code** earned by this task.")
 }

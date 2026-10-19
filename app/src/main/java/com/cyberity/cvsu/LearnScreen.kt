@@ -456,9 +456,13 @@ fun LearnScreen(
     val latestShownUnits by androidx.compose.runtime.rememberUpdatedState(shownUnits)
 
     var heartState by remember(uid) {
+        ServerClock.restore(context)
         mutableStateOf(uid?.let { ProgressCache.loadHearts(context, it) } ?: HeartState.FULL)
     }
-    var clockSynced by remember(uid) { mutableStateOf(false) }
+    var heartError by remember(uid) { mutableStateOf<String?>(null) }
+    var heartRefresh by remember(uid) { mutableIntStateOf(0) }
+    var pendingHeartDebits by remember(uid) { mutableStateOf(uid?.let { ProgressCache.pendingHeartDebits(context, it) }.orEmpty()) }
+    var heartSyncBusy by remember(uid) { mutableStateOf(false) }
     var levelXp by remember(uid) {
         mutableStateOf(uid?.let { ProgressCache.loadLevelXp(context, it) } ?: emptyMap())
     }
@@ -495,15 +499,41 @@ fun LearnScreen(
             ProgressCache.saveLevelXp(context, uid, remote.levelXp)
             ProgressCache.saveXpSpent(context, uid, remote.xpSpent)
         }
-        ServerClock.sync(uid) { clockSynced = true }
-        ProgressRepository.loadHearts(uid) { remote ->
-            if (remote != null) {
-                ProgressCache.saveHearts(context, uid, remote)
-                heartState = remote
+    }
+
+    // Show the per-account cache immediately. Retry in the background; a receipt
+    // makes resending an interrupted debit safe, even after an app restart.
+    LaunchedEffect(uid, pendingHeartDebits.firstOrNull(), heartRefresh) {
+        val id = uid ?: return@LaunchedEffect
+        val operation = pendingHeartDebits.firstOrNull()
+        var retries = 0
+        while (true) {
+            heartSyncBusy = true
+            try {
+                val remote = kotlinx.coroutines.withTimeout(10_000L) {
+                    if (operation == null) {
+                        ServerClock.syncTask(id).privacyAwait()
+                        ProgressRepository.loadHearts(id).privacyAwait()
+                    } else ProgressRepository.spendHeart(id, operation).privacyAwait()
+                }
+                if (FirebaseAuth.getInstance().currentUser?.uid != id) return@LaunchedEffect
+                ServerClock.save(context)
+                val remaining = pendingHeartDebits.filterNot { it == operation }
+                val projected = remaining.fold(remote) { state, _ -> state.loseHeart(ServerClock.now()) }
+                check(ProgressCache.saveHeartQueue(context, id, remaining, projected))
+                heartState = projected
+                pendingHeartDebits = remaining
+                heartError = null
+                heartSyncBusy = false
+                return@LaunchedEffect
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException && error !is kotlinx.coroutines.TimeoutCancellationException) throw error
+                heartSyncBusy = false
+                heartError = "Hearts saved on this device · syncing when connected"
+                delay(if (retries++ == 0) 3_000L else 15_000L)
             }
         }
     }
-
 
     // When non-null, the simulation takes over the whole Learn area.
     var runningLevel by remember { mutableStateOf<LearningLevel?>(null) }
@@ -544,33 +574,31 @@ fun LearnScreen(
         }
     }
 
-    // Refill is measured against server time, so it only needs to tick while a heart is missing.
-    var now by remember { mutableLongStateOf(ServerClock.now()) }
-    LaunchedEffect(heartState, clockSynced) {
-        now = ServerClock.now()
+    // A restored monotonic server anchor keeps the cached timer moving. After a
+    // reboot, freeze at the last observed server time until a fresh sync succeeds.
+    fun displayHeartTime(): Long = ServerClock.trustedNow()
+        ?: maxOf(heartState.updatedAt, uid?.let { ProgressCache.heartObservedAt(context, it) } ?: 0L)
+    var now by remember(uid) { mutableLongStateOf(displayHeartTime()) }
+    LaunchedEffect(heartState, heartSyncBusy) {
+        now = displayHeartTime()
         while (heartState.heartsAt(now) < MAX_HEARTS) {
             delay(1_000)
-            now = ServerClock.now()
+            now = displayHeartTime()
         }
     }
+    val hearts = DeveloperModePolicy.heartBalance(heartState, now, devUnlockAll)
+    val heartRefillIn = if (devUnlockAll) null else heartState.millisToNextHeart(now)?.let(::formatRefill)
 
-    val hearts = heartState.heartsAt(now)
-    val heartRefillIn = heartState.millisToNextHeart(now)?.let(::formatRefill)
-
-    // One mistake, one heart. Written optimistically, then reconciled with what
-    // the server actually stored.
     fun spendHeart() {
-        val next = heartState.loseHeart(ServerClock.now())
-        heartState = next
-        uid?.let { id ->
-            ProgressCache.saveHearts(context, id, next)
-            ProgressRepository.spendHeart(id, next.hearts) { stored ->
-                ProgressCache.saveHearts(context, id, stored)
-                heartState = stored
-            }
-        }
+        if (!DeveloperModePolicy.spendsHearts(devUnlockAll)) return
+        val id = uid ?: return
+        val next = heartState.loseHeart(displayHeartTime())
+        val queued = pendingHeartDebits + java.util.UUID.randomUUID().toString()
+        if (ProgressCache.saveHeartQueue(context, id, queued, next)) {
+            heartState = next
+            pendingHeartDebits = queued
+        } else heartError = "Heart usage could not be saved on this device. Free some storage and retry."
     }
-
 
     // What the student actually holds: everything levels paid out, less what
     // hints have cost. This is the figure hints are bought with.
@@ -801,6 +829,7 @@ fun LearnScreen(
                             )
 
                             is LevelContent.Scenarios -> ScenarioQuizScreen(
+                                unlimitedHearts = devUnlockAll,
                                 quiz = content.quiz,
                                 xpReward = MAX_LEVEL_XP,
                                 modifier = modifier,
@@ -813,6 +842,7 @@ fun LearnScreen(
                             )
 
                             is LevelContent.Lab -> LabScreen(
+                                unlimitedHearts = devUnlockAll,
                                 lab = content.lab,
                                 xpReward = MAX_LEVEL_XP,
                                 modifier = modifier,
@@ -859,6 +889,7 @@ fun LearnScreen(
             } else {
                 Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
                     LearnHeader(
+                        unlimitedHearts = devUnlockAll,
                         streak = learningStreak.days,
                         streakActive = learningStreak.activeToday,
                         xp = totalXp,
@@ -869,6 +900,12 @@ fun LearnScreen(
                         }
                     )
 
+                    androidx.compose.animation.AnimatedVisibility(visible = heartError != null) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(heartError.orEmpty(), color = AppGray, fontSize = 11.sp, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { heartRefresh++ }) { Text("SYNC", fontSize = 11.sp) }
+                        }
+                    }
                     if (hasCompletedOnboarding == false) {
                         NewToCyberityBanner(
                             onStartTutorial = {
@@ -879,7 +916,7 @@ fun LearnScreen(
 
                     if (devUnlockAll) {
                         Text(
-                            "DEV: all levels unlocked",
+                            "DEV: unlimited hearts · all levels unlocked",
                             color = AppCyan,
                             fontSize = 12.sp,
                             modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -1003,7 +1040,8 @@ fun LearnHeader(
     heartRefillIn: String?,
     onReplayTutorial: () -> Unit = {},
     modifier: Modifier = Modifier,
-    streakActive: Boolean = false
+    streakActive: Boolean = false,
+    unlimitedHearts: Boolean = false
 ) {
     var showSettings by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -1025,7 +1063,9 @@ fun LearnHeader(
             XpIndicator(xp = xp)
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StatPill(Icons.Filled.Favorite, hearts.toString(), AppHeart, "Hearts")
+                androidx.compose.animation.AnimatedContent(targetState = if (unlimitedHearts) "∞" else hearts.toString(), label = "heart balance") { count ->
+                    StatPill(Icons.Filled.Favorite, count, AppHeart, if (unlimitedHearts) "Unlimited hearts" else "Hearts")
+                }
                 if (heartRefillIn != null) {
                     Spacer(Modifier.width(4.dp))
                     Text(heartRefillIn, color = AppGray, fontSize = 11.sp)

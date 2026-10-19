@@ -170,42 +170,67 @@ object ProgressRepository {
 
     /**
      * Reads the stored heart state, converting the server Timestamp to millis.
-     * Null on first run or failure — callers keep whatever they already have.
+     * A missing record starts full; a failed server read fails the task.
      */
-    fun loadHearts(uid: String, onResult: (HeartState?) -> Unit) {
-        db.collection(COLLECTION).document(uid).get()
-            .addOnSuccessListener { snapshot ->
-                val hearts = snapshot.getLong(FIELD_HEARTS)
-                val updatedAt = snapshot.getTimestamp(FIELD_HEARTS_UPDATED_AT)?.toDate()?.time
-                onResult(
-                    if (hearts != null && updatedAt != null) HeartState(hearts.toInt(), updatedAt)
-                    else null
-                )
-            }
-            .addOnFailureListener { onResult(null) }
+    private fun heartState(snapshot: DocumentSnapshot): HeartState {
+        val hearts = snapshot.getLong(FIELD_HEARTS)
+        val updatedAt = snapshot.getTimestamp(FIELD_HEARTS_UPDATED_AT)?.toDate()?.time
+        return if (hearts != null && updatedAt != null) HeartState(hearts.toInt(), updatedAt)
+        else HeartState.FULL
     }
+
+    fun loadHearts(uid: String): Task<HeartState> =
+        db.collection(COLLECTION).document(uid).get(Source.SERVER).continueWith { read ->
+            heartState(read.result)
+        }
 
     /**
      * Records a mistake: the new count, and the moment it happened as stamped by
      * the server. The app never sends the time, so the refill clock can't be moved
      * by changing the device clock.
      *
-     * The write-back read returns what the server actually stored, letting the
-     * caller replace its optimistic local state with the authoritative one.
+     * The transaction serializes concurrent devices and reads the stored balance.
+     * Rules validate exactly one debit against server time before committing.
      */
-    fun spendHeart(uid: String, hearts: Int, onStored: (HeartState) -> Unit = {}) {
+    fun spendHeart(uid: String, operationId: String): Task<HeartState> {
+        require(operationId.matches(Regex("[a-f0-9-]{36}")))
+        return spendHeartAttempt(uid, operationId, 2)
+    }
+
+    private fun spendHeartAttempt(uid: String, operationId: String, retries: Int): Task<HeartState> {
         val doc = db.collection(COLLECTION).document(uid)
-        doc.set(
-            mapOf(
-                FIELD_HEARTS to hearts,
-                FIELD_HEARTS_UPDATED_AT to FieldValue.serverTimestamp()
-            ),
-            SetOptions.merge()
-        ).addOnSuccessListener {
-            doc.get(Source.SERVER).addOnSuccessListener { snapshot ->
-                val stored = snapshot.getLong(FIELD_HEARTS)
-                val at = snapshot.getTimestamp(FIELD_HEARTS_UPDATED_AT)?.toDate()?.time
-                if (stored != null && at != null) onStored(HeartState(stored.toInt(), at))
+        val receipt = doc.collection("heartDebits").document(operationId)
+        val clock = ServerClock.trustedNow()?.let { Tasks.forResult(it) } ?: ServerClock.syncTask(uid)
+        return clock.continueWithTask { synced ->
+            synced.result
+            db.runTransaction { transaction ->
+                val current = heartState(transaction.get(doc))
+                val existing = transaction.get(receipt)
+                if (existing.exists()) return@runTransaction current
+                val now = checkNotNull(ServerClock.trustedNow())
+                val exhausted = current.heartsAt(now) == 0
+                val next = if (exhausted) current else current.loseHeart(now)
+                if (!exhausted) transaction.set(doc, mapOf(
+                    FIELD_HEARTS to next.hearts, "lastHeartDebit" to operationId,
+                    FIELD_HEARTS_UPDATED_AT to FieldValue.serverTimestamp()), SetOptions.merge())
+                transaction.set(receipt, mapOf("createdAt" to FieldValue.serverTimestamp(),
+                    "heartsAfter" to next.heartsAt(now), "exhausted" to exhausted))
+                next
+            }
+        }.continueWithTask { debit ->
+            if (debit.isSuccessful) Tasks.forResult(debit.result) else {
+                val error = debit.exception ?: IllegalStateException("Heart usage unavailable.")
+                val denied = generateSequence<Throwable>(error) { it.cause }.any {
+                    it is com.google.firebase.firestore.FirebaseFirestoreException &&
+                        it.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED
+                }
+                // A racing debit or a refill boundary may invalidate the count
+                // before rules run. Only rejected writes are safe to retry.
+                if (denied && retries > 0) ServerClock.syncTask(uid).continueWithTask { clockSync ->
+                    clockSync.result
+                    spendHeartAttempt(uid, operationId, retries - 1)
+                }
+                else Tasks.forException(error)
             }
         }
     }

@@ -2,6 +2,7 @@ package com.cyberity.cvsu
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -10,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -34,10 +37,15 @@ private val HeartFilled: Color get() = AppHeart
 fun HeartsRow(
     hearts: Int,
     modifier: Modifier = Modifier,
-    heartSize: Dp = 16.dp
+    heartSize: Dp = 16.dp,
+    unlimited: Boolean = false
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        repeat(MAX_HEARTS) { index ->
+        if (unlimited) {
+            HeartIcon(filled = true, size = heartSize)
+            Spacer(Modifier.width(4.dp))
+            Text("∞", color = HeartFilled, fontSize = 20.sp)
+        } else repeat(MAX_HEARTS) { index ->
             if (index > 0) Spacer(Modifier.width(3.dp))
             HeartIcon(filled = index < hearts, size = heartSize)
         }
@@ -56,6 +64,7 @@ fun HeartsRow(
 private fun HeartIcon(filled: Boolean, size: Dp) {
     val scale = remember { Animatable(1f) }
     val isFirstPass = remember { mutableStateOf(true) }
+    val tint = animateColorAsState(if (filled) HeartFilled else AppGray.copy(alpha = 0.5f), tween(220), label = "heart tint")
 
     LaunchedEffect(filled) {
         if (isFirstPass.value) {
@@ -76,7 +85,7 @@ private fun HeartIcon(filled: Boolean, size: Dp) {
     Icon(
         imageVector = if (filled) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
         contentDescription = null,
-        tint = if (filled) HeartFilled else AppGray.copy(alpha = 0.5f),
+        tint = tint.value,
         modifier = Modifier.size(size).scale(scale.value)
     )
 }

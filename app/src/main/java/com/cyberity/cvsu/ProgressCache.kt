@@ -17,6 +17,21 @@ object ProgressCache {
     private const val XP_SPENT_KEY_SUFFIX = ":xpSpent"
     private const val LESSONS_KEY_SUFFIX = ":lessonsRead"
 
+    fun pendingHeartDebits(context: Context, uid: String): List<String> =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString("$uid:heartDebits", "").orEmpty().split(';')
+            .filter { it.matches(Regex("[a-f0-9-]{36}")) }.distinct()
+
+    /** Queue and visible balance are persisted together before showing the cost. */
+    fun saveHeartQueue(context: Context, uid: String, pending: List<String>, state: HeartState): Boolean =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+            .putString("$uid:heartDebits", pending.joinToString(";"))
+            .putString(uid + HEARTS_KEY_SUFFIX, "${state.hearts},${state.updatedAt}")
+            .putLong("$uid:heartObservedAt", ServerClock.trustedNow() ?: state.updatedAt).commit()
+
+    fun heartObservedAt(context: Context, uid: String): Long =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getLong("$uid:heartObservedAt", 0L)
+
     /** A result waiting for acknowledgement survives app restart and is safe to resend. */
     fun pendingAwards(context: Context, uid: String): Map<Int, Int> {
         val raw = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -111,6 +126,7 @@ object ProgressCache {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(uid + HEARTS_KEY_SUFFIX, "${state.hearts},${state.updatedAt}")
+            .putLong("$uid:heartObservedAt", ServerClock.trustedNow() ?: state.updatedAt)
             .apply()
     }
 }

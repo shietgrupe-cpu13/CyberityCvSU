@@ -98,3 +98,33 @@ dd code, table { font-size: .9em; }
   main { padding: 18px 12px 36px; }
   .card { padding: 16px; }
 }
+
+/* The Unit 04 desk pattern: a case, a focused tool, and optional reference. */
+.sim-ribbon {padding:8px 14px;background:var(--card);color:var(--muted);font-size:11px;text-align:center;border-bottom:1px solid var(--border)}
+.desk-tabs {display:flex;gap:6px;margin:16px 0;position:sticky;top:0;z-index:4;background:var(--bg);padding:8px 0}
+.desk-tabs button {flex:1;text-align:center;width:auto;font-size:12px;padding:10px 6px;margin:0;border-radius:9px}
+.desk-tabs button.on {background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:700}
+#task-progress {padding:14px 16px;margin:12px 0}
+#task-progress h2 {font-size:13px;margin-bottom:10px}
+#task-progress progress {width:100%;height:6px;accent-color:var(--accent);display:block;border:0;border-radius:8px;overflow:hidden}
+#task-progress progress::-webkit-progress-bar {background:var(--border)}
+#task-progress progress::-webkit-progress-value {background:var(--accent);transition:width .2s ease}
+#task-progress .next-action {font-size:12px;color:var(--accent);margin:10px 0}
+#task-progress details {margin:8px 0 0;font-size:12px}
+#task-progress details p {margin:7px 0;color:var(--muted)}
+.workspace-step-dots {display:flex;gap:8px;margin:12px 0 18px}
+.workspace-dot {display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-size:12px}
+.workspace-dot.current {border-color:var(--accent);color:var(--accent)}
+.workspace-dot.done {background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.workspace-step {animation:workspace-enter .2s ease-out}
+.workspace-navigation {display:flex;gap:10px;margin-top:18px}
+.workspace-navigation button {flex:1;text-align:center;margin:0}
+.workspace-context {border-top:1px solid var(--border);padding-top:16px;margin:18px 0 0;font-size:12px}
+.focused-workspace h2 {line-height:1.5;font-size:16px}
+.focused-workspace label {display:block;line-height:1.6}
+.focused-workspace input {font-size:16px}
+#desk-case .lesson-grid {display:block}
+#desk-case .lesson-grid .card {margin:14px 0}
+@keyframes workspace-enter {from {opacity:0;transform:translateY(6px)}to {opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce) {.workspace-step {animation:none}#task-progress progress::-webkit-progress-value {transition:none}}
+#hash-panel .log-wrap {max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:10px}#hash-panel details {padding:12px;border:1px solid var(--border);border-radius:10px}#hash-panel .actions {display:flex;gap:10px}#hash-panel .actions button {flex:1}

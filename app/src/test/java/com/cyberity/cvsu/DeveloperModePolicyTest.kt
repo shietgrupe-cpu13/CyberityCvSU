@@ -4,6 +4,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DeveloperModePolicyTest {
+    @Test fun unlimitedHeartsNeverRewriteTheNormalBalanceAndRevocationRestoresIt() {
+        val normal = HeartState(2, 1_000L)
+        assertEquals(2, DeveloperModePolicy.heartBalance(normal, 2_000L, false))
+        assertEquals(5, DeveloperModePolicy.heartBalance(normal, 2_000L, true))
+        assertFalse(DeveloperModePolicy.spendsHearts(true))
+        assertTrue(DeveloperModePolicy.spendsHearts(false))
+        assertEquals(2, DeveloperModePolicy.heartBalance(normal, 2_000L, false))
+        assertEquals(3, DeveloperModePolicy.heartBalance(normal, 901_000L, false))
+    }
     @Test fun missingOrMalformedGrantsNeverUnlockLevels() {
         assertFalse(DeveloperModePolicy.unlockAllLevels(null, false, false))
         assertFalse(DeveloperModePolicy.unlockAllLevels(emptyMap(), false, false))
