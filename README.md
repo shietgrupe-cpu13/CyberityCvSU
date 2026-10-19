@@ -4,9 +4,18 @@ Cyberity is an Android cybersecurity e-learning capstone application built with 
 
 ## Download
 
-[Download CyberityCvSU.apk — v1.0](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/download/v1.0/CyberityCvSU.apk) · [Release notes](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/tag/v1.0)
+[Download latest APK](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk) · [Latest release notes](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest) · [Changelog](CHANGELOG.md) · [SHA-256 checksum](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk.sha256)
 
-**Version 1.0 — Stable release.** Requires Android 7.0 or later. The APK is signed with the current Android debug key. Android may ask you to allow installation from your browser or file manager.
+**Version 1.0.1 · Android 7.0 or later.** The distributed APK is a debug build signed with the current Android debug key. Android may ask you to allow installation from your browser or file manager. Install it over your existing copy to keep app data; Android requires matching signing keys for an update.
+
+## What's new in 1.0.1
+
+- Unit 02 uses focused practical steps, connected case progress, and fictional password replacement forms with confirmation and sign-in tests.
+- Strong Passwords case 3 provides weak and long password samples, separate test results, and clear completion instructions. The MFA training code stays visible beside its entry field.
+- Unit 05 includes progressive follow-up problems, saved task progress, and Wi-Fi passphrase confirmation. Repeated instructions and unused content have been removed from both units.
+- Hearts use a per-account cache with queued deductions and a server-validated 15-minute refill interval. Administrator-enabled tester accounts have unlimited hearts; revocation restores the normal balance.
+
+Validation: 55 simulation checks passed, Android unit checks passed, and the debug APK built successfully. Simulation progression was checked with automated controls; these checks do not replace testing on an Android device.
 
 ## Features
 
@@ -23,7 +32,7 @@ Cyberity is an Android cybersecurity e-learning capstone application built with 
 
 Open **Settings > Completion certificate** to export a PDF after completing the required levels and adding the required student information. Optional walkthrough and reward nodes do not count as required levels. Signature names and roles can be edited in `CertificateBranding` in [CertificatePolicy.kt](app/src/main/java/com/cyberity/cvsu/CertificatePolicy.kt).
 
-For development, an administrator can set the Boolean field `isTester` to `true` on the student's `users/{uid}` document in the Firebase console. The app reads the server-confirmed flag to enable level access and a watermarked certificate preview. Set it to `false` to revoke access. Students cannot change this field themselves. Preview certificates are clearly marked and do not certify course completion.
+For development, an administrator can set the Boolean field `isTester` to `true` on the student's `users/{uid}` document in the Firebase console. The app reads the server-confirmed flag to enable level access, unlimited hearts, and a watermarked certificate preview. Set it to `false` to revoke tester access and restore normal heart usage. Students cannot change this field themselves. Preview certificates are clearly marked and do not certify course completion.
 
 See [tester mode](docs/developer-mode.md), [student information and certificates](docs/student-information-and-certificates.md), and [reliable progress and EXP saves](docs/atomic-learning-saves.md) for implementation details.
 
