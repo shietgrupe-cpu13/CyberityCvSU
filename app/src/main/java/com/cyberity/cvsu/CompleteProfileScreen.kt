@@ -55,7 +55,9 @@ fun CompleteProfileScreen(
     val user = auth.currentUser
     val debugBuild = remember { context.isDebugBuild() }
 
-    var fullName by rememberSaveable { mutableStateOf("") }
+    var firstName by rememberSaveable { mutableStateOf("") }
+    var middleName by rememberSaveable { mutableStateOf("") }
+    var lastName by rememberSaveable { mutableStateOf("") }
     var studentId by rememberSaveable { mutableStateOf("") }
     var yearLevel by rememberSaveable { mutableStateOf<Int?>(null) }
     // The username chosen at registration, if this account has one. When it
@@ -77,7 +79,9 @@ fun CompleteProfileScreen(
             if (existing != null) {
                 studentId = existing.studentId
                 yearLevel = existing.yearLevel
-                fullName = existing.fullName
+                firstName = existing.firstName
+                middleName = existing.middleName
+                lastName = existing.lastName
                 displayName = existing.displayName
                 if (existing.usernameChangeRequired) errorMessage =
                     "An earlier registered account owns this username. Please choose a different username to continue."
@@ -89,14 +93,15 @@ fun CompleteProfileScreen(
         val uid = user?.uid ?: return onSignOut()
         val idError = StudentIdRules.validateStudentId(studentId, debugBuild)
         val nameError = StudentIdRules.validateDisplayName(displayName)
-        errorMessage = idError ?: nameError ?: StudentIdRules.validateFullName(fullName) ?: if (!YearLevels.isValid(yearLevel)) "Please select your year level" else ""
+        errorMessage = idError ?: nameError ?: StudentIdRules.validateNameParts(firstName, middleName, lastName) ?: if (!YearLevels.isValid(yearLevel)) "Please select your year level" else ""
         if (errorMessage.isNotEmpty()) return
 
         val normalizedId = StudentIdRules.normalize(studentId)
         val profile = UserProfile(
             studentId = normalizedId,
             displayName = displayName.trim(),
-            fullName = fullName.trim(),
+            fullName = StudentIdRules.composeFullName(firstName, middleName, lastName),
+            firstName = firstName.trim(), middleName = middleName.trim(), lastName = lastName.trim(),
             // Tester access is assigned by an administrator in Firestore.
             isTester = false,
             yearLevel = yearLevel
@@ -203,7 +208,7 @@ fun CompleteProfileScreen(
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
-                AuthTextField(fullName, { fullName = it }, "Full name for certificate", Icons.Filled.Person, enabled = !isSaving)
+                StudentNameFields(firstName, { firstName = it }, middleName, { middleName = it }, lastName, { lastName = it }, enabled = !isSaving)
 
                 if (errorMessage.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))

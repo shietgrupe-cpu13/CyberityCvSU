@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.3 — 20 October 2026
+
+- Split student names into required first and last names plus an optional middle name in registration, profile completion, and settings.
+- Students without a middle name can leave it blank.
+- Save the three name fields and combined full name in the private database profile; certificates combine only the provided fields.
+- Preserve existing full-name-only records without guessing how to split them.
+- Added name validation and database tests for missing first/last names, optional middle names, and matching certificate names.
+- Version 1.0.3, build 4. Backend rules deployment and username migration remain pending as described in v1.0.2.
+
+
 ## 1.0.2 — 20 October 2026
 
 ### Student information and certificates

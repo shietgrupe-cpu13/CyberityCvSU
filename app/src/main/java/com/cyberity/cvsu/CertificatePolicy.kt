@@ -9,12 +9,12 @@ object CertificatePolicy {
         .filter { it.id != 200 && it.type != LevelType.REWARD }.map { it.id }.toSet()
 
     fun canDownload(profile: UserProfile?, completed: Set<Int>, required: Set<Int>): Boolean =
-        profile?.isComplete == true && StudentIdRules.validateFullName(profile.fullName) == null && YearLevels.isValid(profile.yearLevel) &&
+        profile?.isComplete == true && StudentIdRules.validateFullName(profile.certificateName) == null && YearLevels.isValid(profile.yearLevel) &&
             required.isNotEmpty() && completed.containsAll(required)
 
     fun downloadKind(profile: UserProfile?, completed: Set<Int>, required: Set<Int>, developerMode: Boolean): DownloadKind = when {
         canDownload(profile, completed, required) -> DownloadKind.COMPLETION
-        developerMode && profile?.isComplete == true && StudentIdRules.validateFullName(profile.fullName) == null -> DownloadKind.PREVIEW
+        developerMode && profile?.isComplete == true && StudentIdRules.validateFullName(profile.certificateName) == null -> DownloadKind.PREVIEW
         else -> DownloadKind.LOCKED
     }
 

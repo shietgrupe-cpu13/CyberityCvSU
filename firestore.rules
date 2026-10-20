@@ -199,10 +199,20 @@ service cloud.firestore {
         key == data.displayName.lower() &&
         getAfter(/databases/$(database)/documents/usernames/$(key)).data.uid == uid;
     }
+    function validNameParts(data) {
+      let first = data.get('firstName', '');
+      let middle = data.get('middleName', '');
+      let last = data.get('lastName', '');
+      return !data.keys().hasAny(['firstName', 'middleName', 'lastName']) ||
+        (first is string && first.size() >= 1 && first.size() <= 50 && first.matches('.*[^ ].*') &&
+          last is string && last.size() >= 1 && last.size() <= 50 && last.matches('.*[^ ].*') &&
+          middle is string && middle.size() <= 50 &&
+          data.get('fullName', '') == first + (middle == '' ? ' ' : ' ' + middle + ' ') + last);
+    }
     function validProfile(data, previous) {
       let tester = data.get('isTester', false);
       let studentId = data.get('studentId', '');
-      return tester is bool && studentId is string &&
+      return tester is bool && studentId is string && validNameParts(data) &&
         data.get('usernameChangeRequired', false) is bool &&
         (!data.get('usernameChangeRequired', false) || previous.get('usernameChangeRequired', false)) &&
         (!previous.get('usernameChangeRequired', false) || data.get('usernameChangeRequired', false) || validUsernameClaim(request.auth.uid, data)) &&

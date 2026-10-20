@@ -30,12 +30,29 @@ data class UserProfile(
     val hasCompletedOnboarding: Boolean = false,
     val yearLevel: Int? = null,
     val fullName: String = "",
-    val usernameChangeRequired: Boolean = false
+    val usernameChangeRequired: Boolean = false,
+    val firstName: String = "",
+    val lastName: String = "",
+    val middleName: String = ""
 ) {
+    val certificateName: String get() = if (firstName.isNotBlank() && lastName.isNotBlank())
+        StudentIdRules.composeFullName(firstName, middleName, lastName) else fullName
     val isComplete: Boolean get() = studentId.isNotBlank() && displayName.isNotBlank() && !usernameChangeRequired
 }
 
 object StudentIdRules {
+
+    fun composeFullName(firstName: String, middleName: String, lastName: String): String =
+        listOf(firstName.trim(), middleName.trim(), lastName.trim()).filter { it.isNotEmpty() }.joinToString(" ")
+
+    fun validateNameParts(firstName: String, middleName: String, lastName: String): String? {
+        for ((label, value) in listOf("First name" to firstName, "Last name" to lastName, "Middle name" to middleName)) {
+            if (label != "Middle name" && value.isBlank()) return "$label is required"
+            if (value.trim().length > 50) return "$label must be at most 50 characters"
+            if (value.any { it.isISOControl() }) return "$label cannot contain control characters"
+        }
+        return validateFullName(composeFullName(firstName, middleName, lastName))
+    }
 
     fun validateFullName(input: String): String? = when {
         input.trim().length !in 2..100 -> "Full name must be between 2 and 100 characters"
@@ -126,7 +143,7 @@ object UserProfileRepository {
             if (id == null || name == null) null else UserProfile(id, name,
                 document.getBoolean(FIELD_IS_TESTER) ?: false,
                 document.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false,
-                YearLevels.fromStored(document.get(FIELD_YEAR_LEVEL)), document.getString("fullName").orEmpty(), document.getBoolean("usernameChangeRequired") ?: false)
+                YearLevels.fromStored(document.get(FIELD_YEAR_LEVEL)), document.getString("fullName").orEmpty(), document.getBoolean("usernameChangeRequired") ?: false, document.getString("firstName").orEmpty(), document.getString("lastName").orEmpty(), document.getString("middleName").orEmpty())
         }
 
     /**
@@ -147,18 +164,18 @@ object UserProfileRepository {
 
                     if (userHasOnboarded != null) {
                         Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE: $userHasOnboarded")
-                        onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, userHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false))
+                        onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, userHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false, snapshot.getString("firstName").orEmpty(), snapshot.getString("lastName").orEmpty(), snapshot.getString("middleName").orEmpty()))
                     } else {
                         // Check if studentIds/{studentId} has the field
                         db.collection(STUDENT_IDS).document(id).get()
                             .addOnSuccessListener { studentDoc ->
                                 val studentHasOnboarded = studentDoc.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE from studentIds/$id: $studentHasOnboarded")
-                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, studentHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false))
+                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, studentHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false, snapshot.getString("firstName").orEmpty(), snapshot.getString("lastName").orEmpty(), snapshot.getString("middleName").orEmpty()))
                             }
                             .addOnFailureListener {
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding FIELD MISSING - DEFAULTING TO FALSE")
-                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, false, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false))
+                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, false, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false, snapshot.getString("firstName").orEmpty(), snapshot.getString("lastName").orEmpty(), snapshot.getString("middleName").orEmpty()))
                             }
                     }
                 } else {
@@ -241,11 +258,12 @@ object UserProfileRepository {
             }
     }
 
-    fun updateStudentInformation(uid: String, fullName: String, year: Int): com.google.android.gms.tasks.Task<Void> {
-        require(StudentIdRules.validateFullName(fullName) == null)
+    fun updateStudentInformation(uid: String, firstName: String, middleName: String, lastName: String, year: Int): com.google.android.gms.tasks.Task<Void> {
+        require(StudentIdRules.validateNameParts(firstName, middleName, lastName) == null)
         require(YearLevels.isValid(year))
         return db.collection(USERS).document(uid).update(mapOf(
-            "fullName" to fullName.trim(), FIELD_YEAR_LEVEL to year,
+            "firstName" to firstName.trim(), "middleName" to middleName.trim(), "lastName" to lastName.trim(),
+            "fullName" to StudentIdRules.composeFullName(firstName, middleName, lastName), FIELD_YEAR_LEVEL to year,
             FIELD_UPDATED_AT to FieldValue.serverTimestamp()))
     }
 
@@ -270,6 +288,9 @@ object UserProfileRepository {
         if (!YearLevels.isValid(profile.yearLevel)) {
             onResult(ProfileSaveResult.Failed("Please select your year level"))
             return
+        }
+        StudentIdRules.validateNameParts(profile.firstName, profile.middleName, profile.lastName)?.let {
+            onResult(ProfileSaveResult.Failed(it)); return
         }
         StudentIdRules.validateDisplayName(profile.displayName)?.let {
             onResult(ProfileSaveResult.Failed(it)); return
@@ -306,7 +327,10 @@ object UserProfileRepository {
                 mapOf(
                     "usernameKey" to usernameKey,
                     "usernameChangeRequired" to false,
-                    "fullName" to profile.fullName.trim(),
+                    "fullName" to profile.certificateName.trim(),
+                    "firstName" to profile.firstName.trim(),
+                    "middleName" to profile.middleName.trim(),
+                    "lastName" to profile.lastName.trim(),
                     FIELD_YEAR_LEVEL to profile.yearLevel,
                     FIELD_STUDENT_ID to profile.studentId,
                     FIELD_DISPLAY_NAME to profile.displayName,

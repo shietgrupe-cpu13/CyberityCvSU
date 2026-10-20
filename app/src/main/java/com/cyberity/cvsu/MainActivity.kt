@@ -1020,7 +1020,9 @@ fun RegisterScreen(
     onBackClick()
 }
     var username by remember { mutableStateOf("") }
-    var fullName by rememberSaveable { mutableStateOf("") }
+    var firstName by rememberSaveable { mutableStateOf("") }
+    var middleName by rememberSaveable { mutableStateOf("") }
+    var lastName by rememberSaveable { mutableStateOf("") }
     var studentId by remember { mutableStateOf("") }
     var yearLevel by rememberSaveable { mutableStateOf<Int?>(null) }
     var email by remember { mutableStateOf("") }
@@ -1077,7 +1079,7 @@ fun RegisterScreen(
             )
             AuthHint("Shown on the leaderboard.")
             Spacer(modifier = Modifier.height(10.dp))
-            AuthTextField(fullName, { fullName = it }, "Full name", Icons.Filled.Person, filled = true)
+            StudentNameFields(firstName, { firstName = it }, middleName, { middleName = it }, lastName, { lastName = it }, enabled = !isLoading)
             AuthHint("Use your full name as it should appear on your certificate.")
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -1157,7 +1159,7 @@ fun RegisterScreen(
                     val registerEmail = email.trim().lowercase()
                     errorMessage =
                         StudentIdRules.validateDisplayName(username)?.let { "Username: $it" }
-                            ?: StudentIdRules.validateFullName(fullName)
+                            ?: StudentIdRules.validateNameParts(firstName, middleName, lastName)
                             ?: StudentIdRules.validateStudentId(studentId, debugBuild)
                             ?: (if (!YearLevels.isValid(yearLevel)) "Please select your year level" else null)
                                     ?: when {
@@ -1180,7 +1182,8 @@ fun RegisterScreen(
                         val profile = UserProfile(
                             studentId = normalizedId,
                             displayName = username.trim(),
-                            fullName = fullName.trim(),
+                            fullName = StudentIdRules.composeFullName(firstName, middleName, lastName),
+                            firstName = firstName.trim(), middleName = middleName.trim(), lastName = lastName.trim(),
                             isTester = false,
                             yearLevel = yearLevel
                         )

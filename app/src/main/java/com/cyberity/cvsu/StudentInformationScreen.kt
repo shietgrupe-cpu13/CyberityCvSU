@@ -40,7 +40,9 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     var profile by remember(uid) { mutableStateOf<UserProfile?>(null) }
-    var fullName by rememberSaveable(uid) { mutableStateOf("") }
+    var firstName by rememberSaveable(uid) { mutableStateOf("") }
+    var middleName by rememberSaveable(uid) { mutableStateOf("") }
+    var lastName by rememberSaveable(uid) { mutableStateOf("") }
     var year by rememberSaveable(uid) { mutableStateOf<Int?>(null) }
     var loading by remember { mutableStateOf(true) }
     var saving by remember { mutableStateOf(false) }
@@ -54,7 +56,9 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
         else UserProfileRepository.load(uid, onResult = {
             profile = it
             year = it?.yearLevel
-            fullName = it?.fullName.orEmpty()
+            firstName = it?.firstName.orEmpty()
+            middleName = it?.middleName.orEmpty()
+            lastName = it?.lastName.orEmpty()
             loading = false
             if (it == null) { failed = true; message = "Your student information is unavailable. Try again." }
         }, onError = { loading = false; failed = true; message = "Couldn't load your student information. Try again." })
@@ -70,11 +74,11 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
             Text("Student ID", color = AppGray)
             Text(student.studentId, color = AppWhite, fontWeight = FontWeight.SemiBold)
         }
-        OutlinedTextField(value = fullName, onValueChange = { fullName = it; message = null },
-            label = { Text("Full name for certificate") }, singleLine = true,
-            supportingText = { Text(StudentIdRules.validateFullName(fullName) ?: "This name appears on your certificate.") },
-            isError = fullName.isNotEmpty() && StudentIdRules.validateFullName(fullName) != null,
-            enabled = !saving && !loading, modifier = Modifier.fillMaxWidth())
+        if (student.firstName.isBlank() && student.fullName.isNotBlank())
+            Text("Saved full name: "+student.fullName+". Enter your first and last names below to update it; middle name is optional.", color = AppGray)
+        StudentNameFields(firstName, { firstName = it; message = null },
+            middleName, { middleName = it; message = null }, lastName, { lastName = it; message = null },
+            enabled = !saving && !loading)
         YearLevelField(year, { year = it; message = null }, enabled = !saving && !loading)
         Button(onClick = {
             val selected = year ?: return@Button
@@ -82,10 +86,11 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
             saving = true
             onBusyChanged(true)
             message = null
-            UserProfileRepository.updateStudentInformation(account, fullName, selected)
+            UserProfileRepository.updateStudentInformation(account, firstName, middleName, lastName, selected)
                 .addOnSuccessListener {
                     if (FirebaseAuth.getInstance().currentUser?.uid == account) {
-                        profile = student.copy(yearLevel = selected, fullName = fullName.trim())
+                        profile = student.copy(yearLevel = selected, fullName = StudentIdRules.composeFullName(firstName, middleName, lastName),
+                            firstName = firstName.trim(), middleName = middleName.trim(), lastName = lastName.trim())
                         ProfileCache.saveDetails(context, account, student.displayName, student.studentId, selected)
                         message = "Your student information has been saved."
                     }
@@ -95,8 +100,9 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
                     saving = false; onBusyChanged(false)
                     message = "Couldn't save your student information. Check your connection and try again."
                 }
-        }, enabled = StudentIdRules.validateFullName(fullName) == null && YearLevels.isValid(year) &&
-                (year != student.yearLevel || fullName.trim() != student.fullName) && !saving && !loading,
+        }, enabled = StudentIdRules.validateNameParts(firstName, middleName, lastName) == null && YearLevels.isValid(year) &&
+                (year != student.yearLevel || firstName.trim() != student.firstName ||
+                    middleName.trim() != student.middleName || lastName.trim() != student.lastName) && !saving && !loading,
             modifier = Modifier.fillMaxWidth()) { Text(if (saving) "Saving..." else "Save student information") }
     }
     message?.let { Text(it, color = AppCyan) }

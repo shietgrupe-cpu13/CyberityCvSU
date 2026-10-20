@@ -32,6 +32,18 @@ class CertificatePolicyTest {
         assertFalse(CertificatePolicy.canDownload(duplicate, required, required))
     }
 
+    @Test fun middleNameIsOptionalAndCertificateUsesProvidedParts() {
+        assertNull(StudentIdRules.validateNameParts("Ana", "", "Cruz"))
+        assertEquals("Ana Cruz", StudentIdRules.composeFullName(" Ana ", "  ", " Cruz "))
+        assertEquals("Ana Maria Cruz", StudentIdRules.composeFullName("Ana", "Maria", "Cruz"))
+        assertNull(StudentIdRules.validateNameParts("A", "", "B"))
+        assertNotNull(StudentIdRules.validateNameParts("", "Maria", "Cruz"))
+        assertNotNull(StudentIdRules.validateNameParts("Ana", "", " "))
+        assertNotNull(StudentIdRules.validateNameParts("Ana", "x".repeat(51), "Cruz"))
+        assertEquals("Ana Cruz", student.copy(firstName = "Ana", lastName = "Cruz").certificateName)
+        assertEquals(student.fullName, student.certificateName)
+    }
+
     @Test fun optionalWalkthroughAndRewardAreExcludedButEveryRequiredLevelIsNeeded() {
         assertFalse(200 in required)
         assertFalse(450 in required)
