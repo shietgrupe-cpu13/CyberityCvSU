@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.2 — 20 October 2026
+
+### Student information and certificates
+
+- Added a separate full-name field to registration and profile completion, saved in the private user profile.
+- Existing students can add or correct their full name in Settings > Student information.
+- Completion certificates use the full name instead of the leaderboard username. A valid full name is required before downloading a certificate or developer sample.
+
+### Unique usernames
+
+- Reserved usernames atomically with account profiles, ignoring capitalization and surrounding spaces.
+- Added specific username-taken feedback, including simultaneous registration collisions.
+- Added an administrator migration that uses Firebase Authentication registration dates: the earliest registered account keeps the username; later duplicate accounts must choose another.
+- Prefilled existing student information during username repair and preserved onboarding and learning progress.
+- Included username claims in account data export and deletion.
+
+### Distribution and validation
+
+- Updated the app to version 1.0.2, build 3, using the existing debug signing key.
+- Android compilation and certificate unit tests passed; all 12 Firestore emulator checks and 2 migration ordering tests passed.
+- Live rollout requires the updated Firestore rules and username migration. These backend steps have not been applied because Firebase sign-in must be restored. Until then, uniqueness and existing-duplicate resolution are not active on the live database.
+
+
 ## 1.0.1 — 19 October 2026
 
 ### Learning simulations
