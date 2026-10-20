@@ -1,3 +1,4 @@
+const { saveProfile } = require('./profile-helper.cjs');
 const { test } = require('node:test');
 const { readFileSync } = require('node:fs');
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
@@ -21,7 +22,7 @@ test('Spark cutoff protects sessions and production collections', async () => {
     const row = { device: 'Test Android', androidVersion: '16', authTime: auth.auth_time,
       lastActive: serverTimestamp(), signedOut: false };
     await assertSucceeds(setDoc(doc(db, session), row));
-    await assertSucceeds(setDoc(doc(db, 'users/alice'), { displayName: 'Alice' }));
+    await assertSucceeds(saveProfile(doc(db, 'users/alice'), { displayName: 'Alice' }));
     await assertSucceeds(setDoc(doc(db, 'userProgress/alice'), { completedLevels: [101], levelXp: { 101: 10 } }));
     await assertSucceeds(setDoc(doc(db, 'studentIds/2026-001'), { uid: 'alice' }));
     const entry = { displayName: 'Alice', xp: 60, isTester: false, updatedAt: serverTimestamp() };

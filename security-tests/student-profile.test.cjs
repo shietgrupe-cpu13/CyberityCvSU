@@ -15,11 +15,15 @@ test('Year level supports legacy profiles, validates create/update, and remains 
     const other = env.authenticatedContext('year-other', auth).firestore();
     const ref = doc(db, 'users/year-student');
     const profile = { studentId: '202310502', displayName: 'Student User', isTester: false };
-    await assertSucceeds(setDoc(ref, profile));
+    await env.withSecurityRulesDisabled(async admin => { await setDoc(doc(admin.firestore(), ref.path), profile); });
     await assertSucceeds(updateDoc(ref, { yearLevel: 3, updatedAt: serverTimestamp() }));
     assert.equal((await getDoc(ref)).get('studentId'), profile.studentId);
     assert.equal((await getDoc(ref)).get('yearLevel'), 3);
-    await assertSucceeds(updateDoc(ref, { yearLevel: 4 }));
+    await assertSucceeds(updateDoc(ref, { yearLevel: 4, fullName: 'María O’Neil-Santos' }));
+    for (const fullName of ['', ' ', 'x'.repeat(101), null, 123, true]) {
+      await assertFails(updateDoc(ref, { fullName }));
+    }
+    await assertFails(updateDoc(doc(other, ref.path), { fullName: 'Other Name' }));
     for (const yearLevel of [0, 6, -1, 1.5, '3', null, true]) {
       await assertFails(updateDoc(ref, { yearLevel }));
       const fresh = env.authenticatedContext(`invalid-year-${String(yearLevel)}`, auth).firestore();

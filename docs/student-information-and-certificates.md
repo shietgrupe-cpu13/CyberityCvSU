@@ -67,3 +67,15 @@ remain. This implementation does not add a server certificate issuance registry.
 Pending device checks: registration with no year selected; selecting/saving year;
 legacy user sign-in and update; profile refresh; certificate field placement,
 three signature spaces, preview/download lock, export cancellation and PDF layout.
+
+## Full names and unique usernames (20 October 2026)
+
+Registration and profile completion collect a full name separately from the leaderboard username. Existing accounts can add or correct their full name in Settings > Student information. Full name validation accepts 2–100 characters and rejects control characters. Certificate previews and PDFs use the full name; downloads (including developer samples) require a valid full name. Missing full names do not block login or learning.
+
+New profiles reserve a lowercase, trimmed username in usernames/{usernameKey} in the same transaction as users/{uid} and studentIds/{id}. Collisions return a specific error, including when rules reject a competing commit. Username claims contain only uid; full names remain in the private profile. Account export and deletion include username claims.
+
+Before rollout, pause registration/profile writes, run node functions/migrate-usernames.cjs with Application Default Credentials for cyberitycvsu, review the report, then run with --apply to reserve each username for the earliest Firebase Authentication registration. Later duplicate accounts are marked usernameChangeRequired and removed from the leaderboard until they choose a unique username. Missing registration dates, tied earliest dates, and invalid names stop the audit for explicit resolution. The script never silently renames accounts. Publish the updated rules before distributing the new app and require old app versions to update for registration. Without this backfill, unclaimed legacy names cannot be protected from new registrations.
+
+Live database inspection/deployment was unavailable because the saved Firebase CLI login has expired. No live account records or rules were changed. Android compilation and certificate unit tests pass; all 12 emulator tests passed, including simultaneous username claims and legacy full-name updates.
+
+Duplicate ownership uses Firebase Auth metadata.creationTime, not profile updatedAt or document order. The repair screen loads the existing student ID, full name and year level; successful repair preserves onboarding and all learning progress. Rules prevent clearing usernameChangeRequired without owning a matching username claim. Full names are saved in users/{uid}.fullName during registration and settings updates, and are not published on the leaderboard.

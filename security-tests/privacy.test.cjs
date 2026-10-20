@@ -1,3 +1,4 @@
+const { saveProfile } = require('./profile-helper.cjs');
 const { test } = require('node:test');
 const { readFileSync } = require('node:fs');
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
@@ -22,7 +23,7 @@ test('Privacy visibility and deletion remain enforced against stale clients', as
     const session = `accountSecuritySpark/${uid}/sessions/${id}`;
     const row = { device: 'Android', androidVersion: '16', authTime: auth.auth_time, lastActive: serverTimestamp(), signedOut: false };
     const entry = { displayName: 'Privacy Alice', xp: 60, isTester: false, updatedAt: serverTimestamp() };
-    await assertSucceeds(setDoc(doc(db, `users/${uid}`), { displayName: 'Privacy Alice' }));
+    await assertSucceeds(saveProfile(doc(db, `users/${uid}`), { displayName: 'Privacy Alice' }));
     await assertSucceeds(setDoc(doc(db, `userProgress/${uid}`), { completedLevels: [101], levelXp: { 101: 10 } }));
     await assertSucceeds(setDoc(doc(db, 'studentIds/PRIVACY-001'), { uid }));
     await assertSucceeds(setDoc(doc(db, board), entry));
@@ -54,8 +55,10 @@ test('Privacy visibility and deletion remain enforced against stale clients', as
     await assertFails(setDoc(doc(db, board), entry));
     await assertFails(setDoc(doc(db, 'studentIds/PRIVACY-002'), { uid }));
     await assertSucceeds(getDocs(query(collection(db, 'studentIds'), where('uid', '==', uid))));
+    await assertSucceeds(getDocs(query(collection(db, 'usernames'), where('uid', '==', uid))));
+    await assertFails(getDocs(query(collection(other, 'usernames'), where('uid', '==', uid))));
     await assertSucceeds(getDocs(collection(db, `accountSecuritySpark/${uid}/sessions`)));
-    for (const path of [session, 'studentIds/PRIVACY-001', `users/${uid}`, `userProgress/${uid}`, board]) {
+    for (const path of [session, 'usernames/privacy alice', 'studentIds/PRIVACY-001', `users/${uid}`, `userProgress/${uid}`, board]) {
       await assertSucceeds(deleteDoc(doc(db, path)));
     }
     await assertSucceeds(setDoc(doc(db, `accountSecuritySpark/${uid}`), { revokedAt: serverTimestamp() }));

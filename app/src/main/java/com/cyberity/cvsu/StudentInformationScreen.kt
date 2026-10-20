@@ -40,6 +40,7 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
     val context = LocalContext.current
     val uid = FirebaseAuth.getInstance().currentUser?.uid
     var profile by remember(uid) { mutableStateOf<UserProfile?>(null) }
+    var fullName by rememberSaveable(uid) { mutableStateOf("") }
     var year by rememberSaveable(uid) { mutableStateOf<Int?>(null) }
     var loading by remember { mutableStateOf(true) }
     var saving by remember { mutableStateOf(false) }
@@ -53,12 +54,13 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
         else UserProfileRepository.load(uid, onResult = {
             profile = it
             year = it?.yearLevel
+            fullName = it?.fullName.orEmpty()
             loading = false
             if (it == null) { failed = true; message = "Your student information is unavailable. Try again." }
         }, onError = { loading = false; failed = true; message = "Couldn't load your student information. Try again." })
     }
     DisposableEffect(Unit) { onDispose { onBusyChanged(false) } }
-    SettingsNote("Your username, student ID and year level appear on your completion certificate. You can update your year level as you progress through school.")
+    SettingsNote("Your full name, student ID and year level appear on your completion certificate. Add or correct your full name here before downloading. Your username is shown on the leaderboard.")
     if (loading) CircularProgressIndicator(color = AppCyan)
     profile?.let { student ->
         SettingsCard {
@@ -68,6 +70,11 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
             Text("Student ID", color = AppGray)
             Text(student.studentId, color = AppWhite, fontWeight = FontWeight.SemiBold)
         }
+        OutlinedTextField(value = fullName, onValueChange = { fullName = it; message = null },
+            label = { Text("Full name for certificate") }, singleLine = true,
+            supportingText = { Text(StudentIdRules.validateFullName(fullName) ?: "This name appears on your certificate.") },
+            isError = fullName.isNotEmpty() && StudentIdRules.validateFullName(fullName) != null,
+            enabled = !saving && !loading, modifier = Modifier.fillMaxWidth())
         YearLevelField(year, { year = it; message = null }, enabled = !saving && !loading)
         Button(onClick = {
             val selected = year ?: return@Button
@@ -75,21 +82,22 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
             saving = true
             onBusyChanged(true)
             message = null
-            UserProfileRepository.updateYearLevel(account, selected)
+            UserProfileRepository.updateStudentInformation(account, fullName, selected)
                 .addOnSuccessListener {
                     if (FirebaseAuth.getInstance().currentUser?.uid == account) {
-                        profile = student.copy(yearLevel = selected)
+                        profile = student.copy(yearLevel = selected, fullName = fullName.trim())
                         ProfileCache.saveDetails(context, account, student.displayName, student.studentId, selected)
-                        message = "Your year level has been saved."
+                        message = "Your student information has been saved."
                     }
                     saving = false; onBusyChanged(false)
                 }
                 .addOnFailureListener {
                     saving = false; onBusyChanged(false)
-                    message = "Couldn't save your year level. Check your connection and try again."
+                    message = "Couldn't save your student information. Check your connection and try again."
                 }
-        }, enabled = YearLevels.isValid(year) && year != student.yearLevel && !saving && !loading,
-            modifier = Modifier.fillMaxWidth()) { Text(if (saving) "Saving..." else "Save year level") }
+        }, enabled = StudentIdRules.validateFullName(fullName) == null && YearLevels.isValid(year) &&
+                (year != student.yearLevel || fullName.trim() != student.fullName) && !saving && !loading,
+            modifier = Modifier.fillMaxWidth()) { Text(if (saving) "Saving..." else "Save student information") }
     }
     message?.let { Text(it, color = AppCyan) }
     if (failed) TextButton(onClick = { request++ }) { Text("Try again") }

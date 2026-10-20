@@ -28,12 +28,20 @@ data class UserProfile(
     val displayName: String,
     val isTester: Boolean = false,
     val hasCompletedOnboarding: Boolean = false,
-    val yearLevel: Int? = null
+    val yearLevel: Int? = null,
+    val fullName: String = "",
+    val usernameChangeRequired: Boolean = false
 ) {
-    val isComplete: Boolean get() = studentId.isNotBlank() && displayName.isNotBlank()
+    val isComplete: Boolean get() = studentId.isNotBlank() && displayName.isNotBlank() && !usernameChangeRequired
 }
 
 object StudentIdRules {
+
+    fun validateFullName(input: String): String? = when {
+        input.trim().length !in 2..100 -> "Full name must be between 2 and 100 characters"
+        input.any { it.isISOControl() } -> "Full name cannot contain control characters"
+        else -> null
+    }
 
     /**
      * CvSU student ID: 9 digits, the first 4 being the year of entry,
@@ -69,9 +77,12 @@ object StudentIdRules {
 
     private fun currentYear(): Int = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR)
 
+    fun usernameKey(input: String): String = input.trim().lowercase(Locale.ROOT)
+
     fun validateDisplayName(input: String): String? {
         val name = input.trim()
         return when {
+            name.contains('/') || name.any { it.isISOControl() } -> "Username cannot contain slashes or control characters"
             name.length < DISPLAY_NAME_MIN -> "Name must be at least $DISPLAY_NAME_MIN characters"
             name.length > DISPLAY_NAME_MAX -> "Name must be at most $DISPLAY_NAME_MAX characters"
             else -> null
@@ -86,6 +97,7 @@ fun Context.isDebugBuild(): Boolean =
 sealed interface ProfileSaveResult {
     data object Saved : ProfileSaveResult
     data object IdTaken : ProfileSaveResult
+    data object UsernameTaken : ProfileSaveResult
     data class Failed(val message: String) : ProfileSaveResult
 }
 
@@ -114,7 +126,7 @@ object UserProfileRepository {
             if (id == null || name == null) null else UserProfile(id, name,
                 document.getBoolean(FIELD_IS_TESTER) ?: false,
                 document.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false,
-                YearLevels.fromStored(document.get(FIELD_YEAR_LEVEL)))
+                YearLevels.fromStored(document.get(FIELD_YEAR_LEVEL)), document.getString("fullName").orEmpty(), document.getBoolean("usernameChangeRequired") ?: false)
         }
 
     /**
@@ -135,18 +147,18 @@ object UserProfileRepository {
 
                     if (userHasOnboarded != null) {
                         Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE: $userHasOnboarded")
-                        onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, userHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL))))
+                        onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, userHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false))
                     } else {
                         // Check if studentIds/{studentId} has the field
                         db.collection(STUDENT_IDS).document(id).get()
                             .addOnSuccessListener { studentDoc ->
                                 val studentHasOnboarded = studentDoc.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE from studentIds/$id: $studentHasOnboarded")
-                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, studentHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL))))
+                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, studentHasOnboarded, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false))
                             }
                             .addOnFailureListener {
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding FIELD MISSING - DEFAULTING TO FALSE")
-                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, false, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL))))
+                                onResult(UserProfile(id, name, snapshot.getBoolean(FIELD_IS_TESTER) ?: false, false, YearLevels.fromStored(snapshot.get(FIELD_YEAR_LEVEL)), snapshot.getString("fullName").orEmpty(), snapshot.getBoolean("usernameChangeRequired") ?: false))
                             }
                     }
                 } else {
@@ -160,7 +172,7 @@ object UserProfileRepository {
                                 val hasOnboarded = doc.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: false
                                 Log.d("CYBERITY_ONBOARDING", "STUDENT DOCUMENT FOUND in studentIds/$sId")
                                 Log.d("CYBERITY_ONBOARDING", "hasCompletedOnboarding VALUE: $hasOnboarded")
-                                onResult(UserProfile(sId, sName, false, hasOnboarded, YearLevels.fromStored(doc.get(FIELD_YEAR_LEVEL))))
+                                onResult(UserProfile(sId, sName, false, hasOnboarded, YearLevels.fromStored(doc.get(FIELD_YEAR_LEVEL)), doc.getString("fullName").orEmpty()))
                             } else {
                                 Log.e("CYBERITY_ONBOARDING", "STUDENT DOCUMENT NOT FOUND for $uid")
                                 onResult(null)
@@ -229,6 +241,14 @@ object UserProfileRepository {
             }
     }
 
+    fun updateStudentInformation(uid: String, fullName: String, year: Int): com.google.android.gms.tasks.Task<Void> {
+        require(StudentIdRules.validateFullName(fullName) == null)
+        require(YearLevels.isValid(year))
+        return db.collection(USERS).document(uid).update(mapOf(
+            "fullName" to fullName.trim(), FIELD_YEAR_LEVEL to year,
+            FIELD_UPDATED_AT to FieldValue.serverTimestamp()))
+    }
+
     /** Updates only the year field so older accounts keep their identity and progress. */
     fun updateYearLevel(uid: String, year: Int): com.google.android.gms.tasks.Task<Void> {
         require(YearLevels.isValid(year))
@@ -251,42 +271,70 @@ object UserProfileRepository {
             onResult(ProfileSaveResult.Failed("Please select your year level"))
             return
         }
+        StudentIdRules.validateDisplayName(profile.displayName)?.let {
+            onResult(ProfileSaveResult.Failed(it)); return
+        }
         val userDoc = db.collection(USERS).document(uid)
+        val usernameKey = StudentIdRules.usernameKey(profile.displayName)
+        val usernameDoc = db.collection("usernames").document(usernameKey)
         val newIdDoc = db.collection(STUDENT_IDS).document(profile.studentId)
 
         db.runTransaction { tx ->
             val owner = tx.get(newIdDoc).getString(FIELD_UID)
             if (owner != null && owner != uid) {
-                return@runTransaction false
+                return@runTransaction ProfileSaveResult.IdTaken
+            }
+            val usernameOwner = tx.get(usernameDoc).getString(FIELD_UID)
+            if (usernameOwner != null && usernameOwner != uid) {
+                return@runTransaction ProfileSaveResult.UsernameTaken
             }
             val previousProfile = tx.get(userDoc)
+            val previousUsername = previousProfile.getString("usernameKey")
+            // All reads precede writes; the claim and profile commit together.
+            if (previousUsername != null && previousUsername != usernameKey) {
+                tx.delete(db.collection("usernames").document(previousUsername))
+            }
+            tx.set(usernameDoc, mapOf(FIELD_UID to uid))
             val previousId = previousProfile.getString(FIELD_STUDENT_ID)
 
             if (previousId != null && previousId != profile.studentId) {
                 tx.delete(db.collection(STUDENT_IDS).document(previousId))
             }
-            tx.set(newIdDoc, mapOf(FIELD_UID to uid, FIELD_HAS_COMPLETED_ONBOARDING to profile.hasCompletedOnboarding), SetOptions.merge())
+            if (owner == null) tx.set(newIdDoc, mapOf(FIELD_UID to uid, FIELD_HAS_COMPLETED_ONBOARDING to (previousProfile.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: profile.hasCompletedOnboarding)), SetOptions.merge())
             tx.set(
                 userDoc,
                 mapOf(
+                    "usernameKey" to usernameKey,
+                    "usernameChangeRequired" to false,
+                    "fullName" to profile.fullName.trim(),
                     FIELD_YEAR_LEVEL to profile.yearLevel,
                     FIELD_STUDENT_ID to profile.studentId,
                     FIELD_DISPLAY_NAME to profile.displayName,
                     FIELD_EMAIL to email,
                     FIELD_IS_TESTER to (previousProfile.getBoolean(FIELD_IS_TESTER) ?: false),
-                    FIELD_HAS_COMPLETED_ONBOARDING to profile.hasCompletedOnboarding,
+                    FIELD_HAS_COMPLETED_ONBOARDING to (previousProfile.getBoolean(FIELD_HAS_COMPLETED_ONBOARDING) ?: profile.hasCompletedOnboarding),
                     FIELD_UPDATED_AT to FieldValue.serverTimestamp()
                 ),
                 SetOptions.merge()
             )
-            true
+            ProfileSaveResult.Saved
         }
             .addOnSuccessListener { claimed ->
-                onResult(if (claimed) ProfileSaveResult.Saved else ProfileSaveResult.IdTaken)
+                onResult(claimed)
             }
             .addOnFailureListener { e ->
                 Log.e("UserProfile", "Could not save profile for $uid", e)
-                onResult(ProfileSaveResult.Failed(e.localizedMessage ?: "Could not save your profile"))
+                // A competing commit can be denied by rules before the SDK retries.
+                // Recheck ownership so a collision still gets the actionable message.
+                usernameDoc.get(com.google.firebase.firestore.Source.SERVER)
+                    .addOnSuccessListener { claim ->
+                        val owner = claim.getString(FIELD_UID)
+                        onResult(if (owner != null && owner != uid) ProfileSaveResult.UsernameTaken
+                            else ProfileSaveResult.Failed(e.localizedMessage ?: "Could not save your profile"))
+                    }
+                    .addOnFailureListener {
+                        onResult(ProfileSaveResult.Failed("Couldn't save your profile. Check your connection and try again."))
+                    }
             }
     }
 }

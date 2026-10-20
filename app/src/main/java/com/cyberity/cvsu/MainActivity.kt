@@ -1020,6 +1020,7 @@ fun RegisterScreen(
     onBackClick()
 }
     var username by remember { mutableStateOf("") }
+    var fullName by rememberSaveable { mutableStateOf("") }
     var studentId by remember { mutableStateOf("") }
     var yearLevel by rememberSaveable { mutableStateOf<Int?>(null) }
     var email by remember { mutableStateOf("") }
@@ -1075,6 +1076,9 @@ fun RegisterScreen(
                 filled = true
             )
             AuthHint("Shown on the leaderboard.")
+            Spacer(modifier = Modifier.height(10.dp))
+            AuthTextField(fullName, { fullName = it }, "Full name", Icons.Filled.Person, filled = true)
+            AuthHint("Use your full name as it should appear on your certificate.")
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -1153,6 +1157,7 @@ fun RegisterScreen(
                     val registerEmail = email.trim().lowercase()
                     errorMessage =
                         StudentIdRules.validateDisplayName(username)?.let { "Username: $it" }
+                            ?: StudentIdRules.validateFullName(fullName)
                             ?: StudentIdRules.validateStudentId(studentId, debugBuild)
                             ?: (if (!YearLevels.isValid(yearLevel)) "Please select your year level" else null)
                                     ?: when {
@@ -1175,6 +1180,7 @@ fun RegisterScreen(
                         val profile = UserProfile(
                             studentId = normalizedId,
                             displayName = username.trim(),
+                            fullName = fullName.trim(),
                             isTester = false,
                             yearLevel = yearLevel
                         )
@@ -1205,11 +1211,12 @@ fun RegisterScreen(
 
                                         // ID belongs to someone else: undo the account so the
                                         // student can try again with the same email.
-                                        ProfileSaveResult.IdTaken -> newUser.delete()
+                                        ProfileSaveResult.IdTaken, ProfileSaveResult.UsernameTaken -> newUser.delete()
                                             .addOnCompleteListener {
                                                 isLoading = false
                                                 errorMessage =
-                                                    "This student ID is already linked to another account."
+                                                    if (saved == ProfileSaveResult.UsernameTaken) "This username is already taken. Choose another username."
+                                                    else "This student ID is already linked to another account."
                                             }
 
                                         // Couldn't save the profile (e.g. offline). The account

@@ -1,3 +1,4 @@
+const { saveProfile } = require('./profile-helper.cjs');
 const { test } = require('node:test');
 const { readFileSync } = require('node:fs');
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
@@ -13,7 +14,7 @@ test('Scores reject inflation, refunds, repeat awards and profile-role bypasses'
     const db = env.authenticatedContext('score-alice', auth).firestore();
     const progress = doc(db, 'userProgress/score-alice'), board = doc(db, 'leaderboard/score-alice');
     const profile = doc(db, 'users/score-alice');
-    await assertSucceeds(setDoc(profile, { displayName: 'Score Alice', studentId: '202610001', isTester: false }));
+    await assertSucceeds(saveProfile(profile, { displayName: 'Score Alice', studentId: '202610001', isTester: false }));
     const entry = xp => ({ displayName: 'Score Alice', xp, isTester: false, updatedAt: serverTimestamp() });
     await assertSucceeds(setDoc(board, entry(50))); // starting grant, even before progress exists
     await assertFails(setDoc(board, entry(999999)));
@@ -60,7 +61,7 @@ test('Scores reject inflation, refunds, repeat awards and profile-role bypasses'
     // Exercise the entire curriculum to detect rule expression-limit regressions.
     const ids = [101,102,103,104,105,106,200,201,202,203,204,205,250,301,302,303,304,305,350,401,402,403,404,405,450,501,502,503,504,505,550,601,602,603,604,605];
     const full = env.authenticatedContext('score-full', auth).firestore();
-    await assertSucceeds(setDoc(doc(full, 'users/score-full'), { displayName: 'Full Curriculum' }));
+    await assertSucceeds(saveProfile(doc(full, 'users/score-full'), { displayName: 'Full Curriculum' }));
     const allAwards = Object.fromEntries(ids.map(id => [id, id===200 ? 0 : 150]));
     await assertFails(setDoc(doc(full, 'userProgress/score-full'), { completedLevels: ids, levelXp: allAwards }));
     await env.withSecurityRulesDisabled(async context => {

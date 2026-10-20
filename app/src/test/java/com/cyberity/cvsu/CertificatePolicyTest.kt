@@ -5,13 +5,31 @@ import org.junit.Test
 
 class CertificatePolicyTest {
     private val required = CertificatePolicy.requiredLevels(sampleLearningUnits())
-    private val student = UserProfile("202310502", "Student User", yearLevel = 3)
+    private val student = UserProfile("202310502", "Student User", yearLevel = 3, fullName = "Student Full Name")
 
     @Test fun existingProfilesRemainUsableButNeedYearBeforeCertificateDownload() {
         val legacy = student.copy(yearLevel = null)
         assertTrue(legacy.isComplete)
         assertFalse(CertificatePolicy.canDownload(legacy, required, required))
         assertTrue(CertificatePolicy.canDownload(student, required, required))
+    }
+
+    @Test fun missingFullNameKeepsLegacyAccountUsableButLocksAllDownloads() {
+        val legacy = student.copy(fullName = "")
+        assertTrue(legacy.isComplete)
+        assertFalse(CertificatePolicy.canDownload(legacy, required, required))
+        assertEquals(CertificatePolicy.DownloadKind.LOCKED,
+            CertificatePolicy.downloadKind(legacy, required, required, true))
+        assertNull(StudentIdRules.validateFullName("  María O’Neil-Santos  "))
+        assertNotNull(StudentIdRules.validateFullName(" "))
+        assertNotNull(StudentIdRules.validateFullName("a".repeat(101)))
+        assertNotNull(StudentIdRules.validateFullName("Student\nName"))
+    }
+
+    @Test fun laterDuplicateMustChangeUsernameBeforeCertificateDownload() {
+        val duplicate = student.copy(usernameChangeRequired = true)
+        assertFalse(duplicate.isComplete)
+        assertFalse(CertificatePolicy.canDownload(duplicate, required, required))
     }
 
     @Test fun optionalWalkthroughAndRewardAreExcludedButEveryRequiredLevelIsNeeded() {

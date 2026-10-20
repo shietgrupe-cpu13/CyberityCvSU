@@ -96,16 +96,18 @@ fun CompletionCertificateScreen() {
     val downloadKind = if (loading || error != null) CertificatePolicy.DownloadKind.LOCKED
         else CertificatePolicy.downloadKind(profile, completed, required, developerMode)
     val details = profile?.let {
-        CertificateDetails(it.displayName, it.studentId, YearLevels.label(it.yearLevel),
+        CertificateDetails(it.fullName.ifBlank { "Add your full name in Settings" }, it.studentId, YearLevels.label(it.yearLevel),
             SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH).format(Date()),
             CertificatePolicy.certificateNumber(uid.orEmpty()), !eligible)
     }
-    SettingsNote("Your username, student ID and year level are filled in from Student information. Complete every required course level to download your certificate.")
+    SettingsNote("Your full name, student ID and year level are filled in from Student information. Complete every required course level to download your certificate.")
     if (loading) CircularProgressIndicator(color = AppCyan)
     SettingsCard {
         Text("${completed.intersect(required).size} of ${required.size} required levels completed", color = AppWhite)
         if (downloadKind == CertificatePolicy.DownloadKind.PREVIEW)
             Text("Developer access: you can download a sample marked PREVIEW. It does not certify course completion.", color = AppCyan)
+        else if (profile != null && StudentIdRules.validateFullName(profile!!.fullName) != null)
+            Text("Add your full name in Settings > Student information before downloading.", color = AppCyan)
         else if (profile != null && !YearLevels.isValid(profile?.yearLevel))
             Text("Add your year level in Settings > Student information before downloading.", color = AppCyan)
         else Text(if (eligible) "Your certificate is ready." else "Preview your certificate below. Download unlocks when the course is complete.", color = AppGray)

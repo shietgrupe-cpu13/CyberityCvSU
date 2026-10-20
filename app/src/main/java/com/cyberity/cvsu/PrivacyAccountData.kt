@@ -29,6 +29,8 @@ internal object PrivacyAccountData {
         }
         val claims = db.collection("studentIds").whereEqualTo("uid", uid).get(Source.SERVER).privacyAwait()
         claims.documents.forEach { records.put(it.reference.path, jsonValue(it.data)) }
+        val usernameClaims = db.collection("usernames").whereEqualTo("uid", uid).get(Source.SERVER).privacyAwait()
+        usernameClaims.documents.forEach { records.put(it.reference.path, jsonValue(it.data)) }
         val sessions = db.collection("accountSecuritySpark").document(uid).collection("sessions")
             .get(Source.SERVER).privacyAwait()
         sessions.documents.forEach { records.put(it.reference.path, jsonValue(it.data)) }
@@ -54,6 +56,7 @@ internal object PrivacyAccountData {
             // Marker blocks concurrent normal app writes, including from older devices.
             drain(db.collection("accountSecuritySpark").document(uid).collection("sessions"))
             drain(db.collection("studentIds").whereEqualTo("uid", uid))
+            drain(db.collection("usernames").whereEqualTo("uid", uid))
             drain(db.collection("userProgress").document(uid).collection("hintPurchases"))
             drain(db.collection("userProgress").document(uid).collection("heartDebits"))
             val batch = db.batch()

@@ -191,11 +191,23 @@ service cloud.firestore {
         data.spentBefore == oldSpent && data.spentAfter == oldSpent + data.cost &&
         progress.xpSpent == data.spentAfter && progress.lastHintPurchase == id && data.createdAt == request.time;
     }
+    // Private profile: optional fullName supports legacy accounts; usernames use
+    // lowercase displayName as their claim key. Claims contain only an owner UID.
+    function validUsernameClaim(uid, data) {
+      let key = data.get('usernameKey', '');
+      return key is string && key.size() >= 3 && key.size() <= 20 &&
+        key == data.displayName.lower() &&
+        getAfter(/databases/$(database)/documents/usernames/$(key)).data.uid == uid;
+    }
     function validProfile(data, previous) {
       let tester = data.get('isTester', false);
       let studentId = data.get('studentId', '');
       return tester is bool && studentId is string &&
+        data.get('usernameChangeRequired', false) is bool &&
+        (!data.get('usernameChangeRequired', false) || previous.get('usernameChangeRequired', false)) &&
+        (!previous.get('usernameChangeRequired', false) || data.get('usernameChangeRequired', false) || validUsernameClaim(request.auth.uid, data)) &&
         (!('yearLevel' in data) || (data.yearLevel is int && data.yearLevel >= 1 && data.yearLevel <= 5)) &&
+        (!('fullName' in data) || (data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 100 && data.fullName.matches('.*[^ ].*'))) &&
         tester == previous.get('isTester', false) &&
         (!('displayName' in data) || (data.displayName is string && data.displayName.size() >= 3 && data.displayName.size() <= 20));
     }
@@ -206,6 +218,7 @@ service cloud.firestore {
         getAfter(/databases/$(database)/documents/userProgress/$(uid)).data : {};
       return data.keys().hasAll(['displayName', 'xp', 'isTester', 'updatedAt']) &&
         data.keys().hasOnly(['displayName', 'xp', 'isTester', 'updatedAt']) &&
+        profile.get('usernameChangeRequired', false) == false &&
         data.displayName == profile.displayName && data.displayName is string &&
         data.displayName.size() >= 3 && data.displayName.size() <= 20 &&
         data.isTester == profile.get('isTester', false) && data.isTester is bool &&
@@ -271,9 +284,25 @@ service cloud.firestore {
     }
     match /users/{uid} {
       allow read: if owner(uid) && (sparkSessionActive() || deletionOwner(uid));
-      allow create: if owner(uid) && sparkSessionActive() && validProfile(request.resource.data, {});
-      allow update: if owner(uid) && sparkSessionActive() && validProfile(request.resource.data, resource.data);
+      allow create: if owner(uid) && sparkSessionActive() && validProfile(request.resource.data, {}) && validUsernameClaim(uid, request.resource.data);
+      allow update: if owner(uid) && sparkSessionActive() && validProfile(request.resource.data, resource.data) &&
+        ((!('usernameKey' in resource.data) &&
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['displayName', 'usernameKey'])) ||
+          validUsernameClaim(uid, request.resource.data));
       allow delete: if deletionOwner(uid);
+    }
+    match /usernames/{key} {
+      allow get: if request.auth != null && sparkSessionActive();
+      allow list: if request.auth != null && resource.data.uid == request.auth.uid &&
+        (sparkSessionActive() || deletionOwner(request.auth.uid));
+      allow create, update: if request.auth != null && sparkSessionActive() &&
+        request.resource.data.keys().hasOnly(['uid']) && request.resource.data.uid == request.auth.uid &&
+        (!exists(/databases/$(database)/documents/usernames/$(key)) || resource.data.uid == request.auth.uid) &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.usernameKey == key &&
+        getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.displayName.lower() == key;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid &&
+        (deletionOwner(request.auth.uid) || (sparkSessionActive() &&
+          getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.usernameKey != key));
     }
     match /studentIds/{id} {
       allow read: if request.auth != null &&

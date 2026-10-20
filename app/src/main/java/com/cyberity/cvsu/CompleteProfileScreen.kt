@@ -22,6 +22,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -54,6 +55,7 @@ fun CompleteProfileScreen(
     val user = auth.currentUser
     val debugBuild = remember { context.isDebugBuild() }
 
+    var fullName by rememberSaveable { mutableStateOf("") }
     var studentId by rememberSaveable { mutableStateOf("") }
     var yearLevel by rememberSaveable { mutableStateOf<Int?>(null) }
     // The username chosen at registration, if this account has one. When it
@@ -66,19 +68,35 @@ fun CompleteProfileScreen(
         )
     }
     var errorMessage by remember { mutableStateOf("") }
-    var isSaving by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(true) }
+
+    LaunchedEffect(user?.uid) {
+        val uid = user?.uid ?: return@LaunchedEffect
+        UserProfileRepository.load(uid, onResult = { existing ->
+            isSaving = false
+            if (existing != null) {
+                studentId = existing.studentId
+                yearLevel = existing.yearLevel
+                fullName = existing.fullName
+                displayName = existing.displayName
+                if (existing.usernameChangeRequired) errorMessage =
+                    "An earlier registered account owns this username. Please choose a different username to continue."
+            }
+        }, onError = { isSaving = false; errorMessage = "Couldn't load your profile. Check your connection and try again." })
+    }
 
     fun submit() {
         val uid = user?.uid ?: return onSignOut()
         val idError = StudentIdRules.validateStudentId(studentId, debugBuild)
-        val nameError = if (registeredName != null) null else StudentIdRules.validateDisplayName(displayName)
-        errorMessage = idError ?: nameError ?: if (!YearLevels.isValid(yearLevel)) "Please select your year level" else ""
+        val nameError = StudentIdRules.validateDisplayName(displayName)
+        errorMessage = idError ?: nameError ?: StudentIdRules.validateFullName(fullName) ?: if (!YearLevels.isValid(yearLevel)) "Please select your year level" else ""
         if (errorMessage.isNotEmpty()) return
 
         val normalizedId = StudentIdRules.normalize(studentId)
         val profile = UserProfile(
             studentId = normalizedId,
             displayName = displayName.trim(),
+            fullName = fullName.trim(),
             // Tester access is assigned by an administrator in Firestore.
             isTester = false,
             yearLevel = yearLevel
@@ -89,12 +107,14 @@ fun CompleteProfileScreen(
             isSaving = false
             when (result) {
                 ProfileSaveResult.Saved -> {
-                    if (registeredName == null) {
+                    if (user.displayName != profile.displayName) {
                         user.updateProfile(userProfileChangeRequest { this.displayName = profile.displayName })
                     }
                     ProfileCache.markComplete(context, uid)
                     onProfileSaved()
                 }
+                ProfileSaveResult.UsernameTaken ->
+                    errorMessage = "This username is already taken. Choose another username."
                 ProfileSaveResult.IdTaken ->
                     errorMessage = "This student ID is already linked to another account."
                 is ProfileSaveResult.Failed ->
@@ -171,16 +191,19 @@ fun CompleteProfileScreen(
                     { displayName = it },
                     "Username",
                     Icons.Filled.Person,
-                    enabled = registeredName == null
+                    enabled = !isSaving
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    if (registeredName != null) "The username you registered with."
+                    if (registeredName != null) "You can choose another username if this one is taken."
                     else "Shown to other students, e.g. on the leaderboard.",
                     color = AppGray,
                     fontSize = 12.sp,
                     modifier = Modifier.fillMaxWidth()
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+                AuthTextField(fullName, { fullName = it }, "Full name for certificate", Icons.Filled.Person, enabled = !isSaving)
 
                 if (errorMessage.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
