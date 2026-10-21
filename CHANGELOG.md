@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.5 — 21 October 2026
+
+- Show “This username is already taken.” directly beneath the registration username field after a server-confirmed collision; editing the username clears the field error.
+- Align registration guidance and validation with the verified live Firebase password policy: at least 8 characters, uppercase, lowercase, a number, and an accepted symbol. Matching confirmation is still required.
+- Show actionable password validation messages and handle server password-policy rejection without exposing raw errors.
+- Use “Invalid email or password. Please try again.” for incorrect credentials and unknown accounts. Connection failures and request throttling keep distinct messages.
+- Confirmed live password enforcement is enabled without forcing existing users to upgrade their password at sign-in.
+- Version 1.0.5, build 6.
+
+
 ## 1.0.4 — 21 October 2026
 
 - Added Check for updates in Settings > Help & About, using the latest published GitHub release.

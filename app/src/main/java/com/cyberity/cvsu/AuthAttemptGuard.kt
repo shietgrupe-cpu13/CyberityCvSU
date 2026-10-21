@@ -85,10 +85,11 @@ internal fun AuthThrottle.handleFailure(error: Exception, secondFactor: Boolean 
         finished()
         "Couldn't connect. Check your internet connection and try again."
     }
-    error is FirebaseAuthInvalidCredentialsException || error is FirebaseAuthInvalidUserException -> {
+    error is FirebaseAuthInvalidCredentialsException || error is FirebaseAuthInvalidUserException ||
+        (error is FirebaseAuthException && AuthCredentialErrors.messageFor(error.errorCode) != null) -> {
         rejected()
         if (secondFactor) "That code could not be verified. Try the current code."
-        else "Unable to sign in with those credentials. Check your email and password."
+        else AuthCredentialErrors.message
     }
     else -> {
         finished()

@@ -570,7 +570,8 @@ fun AuthTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     enabled: Boolean = true,
     /** The Login/Register look: card-filled, softer border, cyan focus. Off keeps the original style. */
-    filled: Boolean = false
+    filled: Boolean = false,
+    error: String? = null
 ) {
 
     var passwordVisible by rememberSaveable {
@@ -623,6 +624,8 @@ fun AuthTextField(
             else
                 VisualTransformation.None,
 
+        isError = error != null,
+        supportingText = error?.let { text -> { Text(text) } },
         singleLine = true,
 
         enabled = enabled,
@@ -1020,6 +1023,8 @@ fun RegisterScreen(
     onBackClick()
 }
     var username by remember { mutableStateOf("") }
+    var usernameError by remember { mutableStateOf<String?>(null) }
+    var passwordError by remember { mutableStateOf<String?>(null) }
     var firstName by rememberSaveable { mutableStateOf("") }
     var middleName by rememberSaveable { mutableStateOf("") }
     var lastName by rememberSaveable { mutableStateOf("") }
@@ -1072,9 +1077,10 @@ fun RegisterScreen(
 
             AuthTextField(
                 username,
-                { username = it },
+                { username = it; usernameError = null },
                 "Username",
                 Icons.Filled.Person,
+                enabled = !isLoading, error = usernameError,
                 filled = true
             )
             AuthHint("Shown on the leaderboard.")
@@ -1118,13 +1124,14 @@ fun RegisterScreen(
 
             AuthTextField(
                 password,
-                { password = it },
+                { password = it; passwordError = null },
                 "Password",
                 Icons.Filled.Lock,
                 isPassword = true,
                 filled = true
             )
-            AuthHint("At least 6 characters.")
+            passwordError?.let { Text(it, color = AppDanger) }
+            AuthHint(RegistrationPasswordPolicy.guidance)
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -1157,6 +1164,8 @@ fun RegisterScreen(
             } else {
                 AuthPrimaryButton("Create account") {
                     val registerEmail = email.trim().lowercase()
+                    usernameError = StudentIdRules.validateDisplayName(username)
+                    passwordError = RegistrationPasswordPolicy.validate(password)
                     errorMessage =
                         StudentIdRules.validateDisplayName(username)?.let { "Username: $it" }
                             ?: StudentIdRules.validateNameParts(firstName, middleName, lastName)
@@ -1170,8 +1179,7 @@ fun RegisterScreen(
                                 password != confirmPassword ->
                                     "Passwords do not match"
 
-                                password.length < 6 ->
-                                    "Password must be at least 6 characters"
+                                passwordError != null -> passwordError!!
 
                                 else -> ""
                             }
@@ -1217,9 +1225,10 @@ fun RegisterScreen(
                                         ProfileSaveResult.IdTaken, ProfileSaveResult.UsernameTaken -> newUser.delete()
                                             .addOnCompleteListener {
                                                 isLoading = false
-                                                errorMessage =
-                                                    if (saved == ProfileSaveResult.UsernameTaken) "This username is already taken. Choose another username."
-                                                    else "This student ID is already linked to another account."
+                                                if (saved == ProfileSaveResult.UsernameTaken) {
+                                                    usernameError = "This username is already taken."
+                                                    errorMessage = "Choose another username to continue."
+                                                } else errorMessage = "This student ID is already linked to another account."
                                             }
 
                                         // Couldn't save the profile (e.g. offline). The account
@@ -1230,8 +1239,15 @@ fun RegisterScreen(
                             }
                             .addOnFailureListener { exception ->
                                 isLoading = false
-                                errorMessage =
-                                    exception.localizedMessage ?: "Registration failed"
+                                when (exception) {
+                                    is com.google.firebase.auth.FirebaseAuthWeakPasswordException -> {
+                                        passwordError = RegistrationPasswordPolicy.guidance
+                                        errorMessage = "Please choose a password that meets all requirements."
+                                    }
+                                    is com.google.firebase.FirebaseNetworkException -> errorMessage = "Couldn't connect. Check your internet connection and try again."
+                                    is com.google.firebase.auth.FirebaseAuthUserCollisionException -> errorMessage = "Unable to create this account. Try signing in or resetting your password."
+                                    else -> errorMessage = "Registration failed. Please try again."
+                                }
                             }
                     }
                 }
