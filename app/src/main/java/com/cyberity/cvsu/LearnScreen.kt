@@ -1,11 +1,20 @@
 package com.cyberity.cvsu
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -38,21 +47,35 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
@@ -82,7 +105,12 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 
 
 // ===========================================================================
@@ -132,10 +160,10 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         levels = listOf(
             LearningLevel(101, "Inbox Triage", "Security lab: investigate a live mailbox, follow the phishing link in a sandboxed browser, capture the flag.", 50, LevelType.SIMULATION, LevelStatus.CURRENT, durationMinutes = 12),
             LearningLevel(102, "Cybersecurity Threats", "Security lab: triage a night's worth of SOC alerts, classify the real threat, and pivot on the indicator.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 10),
-            LearningLevel(103, "CIA Triad", "Confidentiality, Integrity, Availability — the core model.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(150, "Bonus XP Cache", "A quick reward for clearing the first three levels.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 1),
-            LearningLevel(104, "Security Principles", "Least privilege, defence in depth, and fail-safe defaults.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(105, "Fundamentals Quiz", "Prove you've got the basics locked down.", 40, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 8)
+            LearningLevel(103, "CIA Triad", "Security lab: work three registrar incidents — one per pillar — then prove, contain, and restore.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(104, "Security Principles", "Security lab: audit roles, fix a fail-open lock, and stack defences until the attack replay fails.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(106, "Risk Assessment", "Security lab: inventory assets, scan the campus, and rank every risk by likelihood and impact.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(105, "Fundamentals Quiz", "Five campus situations, one for each idea in this unit: alerts, the CIA triad, least privilege, failing safe and risk.", 40, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 5),
         )
     ),
     LearningUnit(
@@ -143,12 +171,13 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Password & Account Security",
         description = "Credentials are the front door — learn to lock it",
         levels = listOf(
-            LearningLevel(201, "Strong Passwords", "What actually makes a password hard to crack.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(202, "Password Attacks", "Brute force, dictionary attacks, and credential stuffing.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(203, "Multi-Factor Authentication", "Why a second factor defeats most credential theft.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(250, "Cyber Challenge", "Crack a weak password set against the clock.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 10),
-            LearningLevel(204, "Account Protection", "Recovery options, session hygiene, and breach response.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(205, "Password Security Challenge", "Audit a set of real-world account configurations.", 50, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12)
+            LearningLevel(200, "Level 0: Unit 2 Walkthrough", "Learn the investigation, repair, and proof-code workflow before starting Level 1. You can skip the walkthrough.", 0, LevelType.LESSON, LevelStatus.LOCKED, durationMinutes = 3),
+            LearningLevel(201, "Strong Passwords", "Repair predictable passwords, credential reuse, and a weak password policy.", 20, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 8),
+            LearningLevel(202, "Password Attacks", "Investigate attacks and learn hash comparisons with two classroom examples.", 20, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(203, "Multi-Factor Authentication", "Choose a second factor, deny suspicious prompts, and understand passkeys.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 8),
+            LearningLevel(204, "Account Protection", "Secure recovery, revoke a shared-device session, and contain a breach.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 10),
+            LearningLevel(250, "Hash Cracking Practice", "Recover fresh fictional passwords using dictionary, pattern, and brute-force hash comparisons.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 8),
+            LearningLevel(205, "Password Security Challenge", "Recover a registrar credential, strengthen sign-in, and contain the same incident.", 50, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -156,12 +185,12 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Phishing & Social Engineering",
         description = "The attacks that target people, not systems",
         levels = listOf(
-            LearningLevel(301, "What is Phishing?", "How deceptive messages bypass technical controls.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(302, "Identifying Suspicious Emails", "Headers, domains, and the tells that give it away.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(303, "Social Engineering", "Pretexting, baiting, and manufactured urgency.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(304, "Scam Messages", "Smishing and vishing in the Philippine context.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(350, "Quick Quiz", "Six questions, sixty seconds.", 30, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 3),
-            LearningLevel(305, "Phishing Simulation", "Inspect a live inbox and flag every malicious message.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
+            LearningLevel(301, "What is Phishing?", "Security lab: sort a week of reported messages, name each phishing type, and find out why the filters let them through.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(302, "Identifying Suspicious Emails", "Security lab: join the ITSO awareness team and build a practice phishing email, trick by trick — then catch a teammate's before the clock runs out.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(303, "Social Engineering", "Security lab: review a week of campus incidents — a tailgater, a helpful caller, a found flash drive, and a friend's hijacked account.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(304, "Scam Messages", "Security lab: one week on your own phone — a prize you never entered, a parcel you never ordered, and a bank officer who wants your OTP.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(350, "Quick Quiz", "Six questions, sixty seconds, one clock for the whole set. Everything from Unit 3; each failed run costs 10 XP.", 30, LevelType.QUIZ, LevelStatus.LOCKED, durationMinutes = 3),
+            LearningLevel(305, "Phishing Simulation", "Security lab: one day on your own phone — emails, a chat, a canteen poster and a live call, some real and some not. Every choice follows you to 21:00.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -169,12 +198,12 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Malware",
         description = "Recognise hostile code and stop it spreading",
         levels = listOf(
-            LearningLevel(401, "What is Malware?", "Classify hostile software by how it behaves.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(402, "Viruses & Trojans", "Replication, payloads, and disguised installers.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(403, "Ransomware", "Encryption extortion and why backups matter most.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(404, "Malware Prevention", "Patching, allowlisting, and endpoint hardening.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(450, "Bonus XP Cache", "Reward for surviving the malware unit.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 1),
-            LearningLevel(405, "Malware Identification Simulation", "Triage suspicious processes on a compromised host.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
+            LearningLevel(401, "What is Malware?", "Security lab: work the ITSO quarantine vault — five flagged files, four families of malware, and one that isn't malware at all.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(402, "Viruses & Trojans", "Security lab: replay a macro virus across campus on a live map, dissect its code, catch a trojan installer red-handed, and spot a swapped download by its hash.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(403, "Ransomware", "Security lab: 2 AM, a department share is being encrypted — stop the counter, talk to the gang, test the backups, and restore from before the break-in.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(404, "Malware Prevention", "Security lab: harden a brand-new computer lab before Monday — patch, allowlist, least privilege, settings, and layers that stop every attack in this unit.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(450, "Bonus XP Cache", "Reward for surviving the malware unit: crack the lock with four clues and collect a field guide to every malware family.", 50, LevelType.REWARD, LevelStatus.LOCKED, durationMinutes = 2),
+            LearningLevel(405, "Malware Identification Simulation", "Security lab: four hostile processes on one lab PC — classify each by what it does, not by what it is called.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -182,12 +211,12 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Network Security",
         description = "Defend the traffic moving between machines",
         levels = listOf(
-            LearningLevel(501, "Network Basics", "Packets, ports, and how traffic actually flows.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(502, "Wi-Fi Security", "WPA generations and the risk of open networks.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(503, "Safe Browsing", "TLS, certificate warnings, and hostile networks.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(504, "Network Threats", "Sniffing, spoofing, and man-in-the-middle attacks.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(550, "Cyber Challenge", "Spot the rogue access point in a campus network.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 10),
-            LearningLevel(505, "Network Security Simulation", "Configure a firewall against live hostile traffic.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
+            LearningLevel(501, "Network Basics", "Security lab: trace a library request, compare service ports, and repair the portal connection.", 20, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(502, "Wi-Fi Security", "Security lab: audit wireless protection, upgrade a mixed fleet, and isolate guests from staff records.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(503, "Safe Browsing", "Security lab: compare HTTP and HTTPS, investigate a certificate warning, and expose a secure lookalike.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(504, "Network Threats", "Security lab: inspect traffic visibility, reject a forged gateway mapping, and repair unauthorized DNS.", 25, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(550, "Cyber Challenge", "Security challenge: correlate radios with inventory, report the rogue AP, and reconnect with verified identity.", 60, LevelType.CHALLENGE, LevelStatus.LOCKED, durationMinutes = 10),
+            LearningLevel(505, "Network Security Simulation", "Security lab: configure narrow firewall rules, repair first-match ordering, and verify connection state.", 60, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 15)
         )
     ),
     LearningUnit(
@@ -195,11 +224,11 @@ fun sampleLearningUnits(): List<LearningUnit> = listOf(
         title = "Incident Response",
         description = "What to do when defences have already failed",
         levels = listOf(
-            LearningLevel(601, "Security Incidents", "What counts as an incident, and who to tell.", 20, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(602, "Detection", "Logs, alerts, and separating signal from noise.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(603, "Containment", "Isolate the damage before you start cleaning up.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(604, "Recovery", "Restore safely and close the hole behind you.", 25, LevelType.LESSON, LevelStatus.LOCKED),
-            LearningLevel(605, "Incident Response Simulation", "Run point on a live breach from alert to write-up.", 80, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 20)
+            LearningLevel(601, "Security Incidents", "Security lab: Monday morning on the ITSO incident hotline — seven weekend texts, chats and emails, three real incidents, and a \"probably spam\" text that is still sending phishing as you read.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(602, "Detection", "Security lab: rewind the breach on the campus monitoring console — sort real alerts from false alarms, read the logs, find three hidden victims, and build the alert that was missing.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(603, "Containment", "Security lab: four hijacked accounts and a phishing counter that won't stop — cut the attacker off, keep the evidence, follow the harm, and prove they can't get back in.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(604, "Recovery", "Security lab: the morning after — hand accounts back to the right people, restore without the backdoor, stop a ₱486,000 payment, and close the hole the attacker came through.", 35, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 12),
+            LearningLevel(605, "Incident Response Simulation", "Security lab: stipend day — credential stuffing on the student portal and ₱92,000 heading to the wrong GCash numbers. Run the whole response yourself before the 5 PM payout.", 80, LevelType.SIMULATION, LevelStatus.LOCKED, durationMinutes = 20)
         )
     )
 )
@@ -247,6 +276,24 @@ fun List<LearningUnit>.withLevelsCompleted(completedIds: Set<Int>): List<Learnin
     return result
 }
 
+
+// ===========================================================================
+// DEVELOPER ACCESS
+// ===========================================================================
+// Per-account, read-only Firebase grants replace the old all-builds constant.
+// Missing access keeps normal progression. See DeveloperMode.kt.
+
+/**
+ * Display-only: shows every LOCKED level as playable. Saved progress is not
+ * touched, so turning off developer access restores normal locking.
+ */
+fun List<LearningUnit>.withAllLevelsUnlocked(): List<LearningUnit> = map { unit ->
+    unit.copy(
+        levels = unit.levels.map { level ->
+            if (level.status == LevelStatus.LOCKED) level.copy(status = LevelStatus.CURRENT) else level
+        }
+    )
+}
 
 /** Ids currently marked COMPLETED — what actually gets cached and persisted. */
 private fun completedIdsOf(units: List<LearningUnit>): Set<Int> =
@@ -340,8 +387,8 @@ private val NodeSizeCurrent: Dp = 78.dp
 private val NodeSizeReward: Dp = 58.dp
 private val TrailWidth: Dp = 11.dp
 
-private val AccentSuccess = Color(0xFF27E0A8)
-private val AccentReward = Color(0xFF7FD4FF)
+private val AccentSuccess: Color get() = AppSuccess
+private val AccentReward: Color get() = AppReward
 
 private fun nodeSizeFor(level: LearningLevel): Dp = when {
     level.status == LevelStatus.CURRENT -> NodeSizeCurrent
@@ -374,10 +421,13 @@ private fun typeLabel(type: LevelType): String = when (type) {
 fun LearnScreen(
     modifier: Modifier = Modifier,
     onStartLevel: (LearningLevel) -> Unit = {},
-    onLevelRunningChanged: (Boolean) -> Unit = {}
+    onLevelRunningChanged: (Boolean) -> Unit = {},
+    tutorialRequest: Int = 0,
+    onTutorialRequestHandled: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val uid = FirebaseAuth.getInstance().currentUser?.uid
+    val learningStreak = rememberLearningStreak(uid)
 
     // Seeded from the on-device cache, synchronously, so the first frame already
     // shows real progress instead of the all-locked default while Firestore answers.
@@ -385,7 +435,25 @@ fun LearnScreen(
         val cached = uid?.let { ProgressCache.load(context, it) } ?: emptySet()
         mutableStateOf(sampleLearningUnits().withLevelsCompleted(cached))
     }
+    // Null until the profile answers, so the "New to Cyberity" banner never flashes
+    // up before we know. Saveable, so coming back from another tab keeps the answer.
+    var hasCompletedOnboarding by rememberSaveable(uid) { mutableStateOf<Boolean?>(null) }
     var selected by remember { mutableStateOf<Pair<LearningUnit, LearningLevel>?>(null) }
+
+    var devUnlockAll by remember(uid) { mutableStateOf(false) }
+    DisposableEffect(uid) {
+        val listener = DeveloperModeRepository.listen(uid) { devUnlockAll = it }
+        onDispose { listener?.remove() }
+    }
+    LaunchedEffect(devUnlockAll) {
+        // Close a preview that was opened using access which has since been revoked.
+        if (!devUnlockAll) selected = null
+    }
+    val shownUnits = remember(units, devUnlockAll) {
+        if (devUnlockAll) units.withAllLevelsUnlocked() else units
+    }
+
+    val latestShownUnits by androidx.compose.runtime.rememberUpdatedState(shownUnits)
 
     var heartState by remember(uid) {
         mutableStateOf(uid?.let { ProgressCache.loadHearts(context, it) } ?: HeartState.FULL)
@@ -398,23 +466,36 @@ fun LearnScreen(
         mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
     }
 
+    var savedRevision by remember(uid) { mutableIntStateOf(0) }
+
+    // Name and tester flag for the public leaderboard entry.
+    var leaderboardProfile by remember(uid) { mutableStateOf<UserProfile?>(null) }
+
     // Reconciles against Firestore in the background. Normally a no-op visually,
     // since it usually matches what the cache already showed.
     LaunchedEffect(uid) {
         if (uid == null) return@LaunchedEffect
-        ProgressRepository.loadCompletedLevels(uid) { remoteIds ->
-            ProgressCache.save(context, uid, remoteIds)
-            units = sampleLearningUnits().withLevelsCompleted(remoteIds)
+        UserProfileRepository.load(
+            uid,
+            onResult = { profile ->
+                if (profile != null) {
+                    hasCompletedOnboarding = profile.hasCompletedOnboarding
+                    leaderboardProfile = profile
+                }
+            },
+            onError = {}
+        )
+        val loadingRevision = savedRevision
+        ProgressRepository.load(uid).addOnSuccessListener { remote ->
+            if (savedRevision != loadingRevision || FirebaseAuth.getInstance().currentUser?.uid != uid) return@addOnSuccessListener
+            units = sampleLearningUnits().withLevelsCompleted(remote.completed)
+            levelXp = remote.levelXp
+            xpSpent = remote.xpSpent
+            ProgressCache.save(context, uid, remote.completed)
+            ProgressCache.saveLevelXp(context, uid, remote.levelXp)
+            ProgressCache.saveXpSpent(context, uid, remote.xpSpent)
         }
         ServerClock.sync(uid) { clockSynced = true }
-        ProgressRepository.loadLevelXp(uid) { remote ->
-            ProgressCache.saveLevelXp(context, uid, remote)
-            levelXp = remote
-        }
-        ProgressRepository.loadXpSpent(uid) { remote ->
-            ProgressCache.saveXpSpent(context, uid, remote)
-            xpSpent = remote
-        }
         ProgressRepository.loadHearts(uid) { remote ->
             if (remote != null) {
                 ProgressCache.saveHearts(context, uid, remote)
@@ -429,8 +510,38 @@ fun LearnScreen(
 
     var showExitConfirm by remember { mutableStateOf(false) }
 
-    LaunchedEffect(runningLevel) {
-        onLevelRunningChanged(runningLevel != null)
+    // The running level's lesson is shown first while this is set. Its finish
+    // screen lets the student start the level or go back to the path.
+    var showingLesson by remember { mutableStateOf(false) }
+    var lessonsRead by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadLessonsRead(context, it) } ?: emptySet())
+    }
+
+    /**
+     * Starting or leaving a level also shows or hides the bottom navigation bar,
+     * which changes how much room this screen gets. Both have to move together:
+     * reporting it from a LaunchedEffect lands a frame late, so the new screen
+     * is laid out once at the old size and then jumps when the padding changes.
+     * Every caller goes through here, and all of them are event handlers, so the
+     * two updates land in the same frame and the screen lays out once.
+     */
+    fun setRunningLevel(level: LearningLevel?) {
+        if (level == null) showingLesson = false
+        runningLevel = level
+        onLevelRunningChanged(level != null)
+    }
+
+    fun startTutorial() {
+        selected = null
+        showExitConfirm = false
+        setRunningLevel(tutorialLevel())
+    }
+
+    LaunchedEffect(tutorialRequest) {
+        if (tutorialRequest > 0) {
+            startTutorial()
+            onTutorialRequestHandled()
+        }
     }
 
     // Refill is measured against server time, so it only needs to tick while a heart is missing.
@@ -465,148 +576,379 @@ fun LearnScreen(
     // hints have cost. This is the figure hints are bought with.
     val totalXp = xpBalance(earned = levelXp.values.sum(), spent = xpSpent)
 
-    // Charging is immediate and final — a hint stays bought even if the level
-    // is abandoned straight afterwards.
-    fun spendXp(amount: Int) {
-        if (amount <= 0) return
-        xpSpent += amount
+    // Keeps this student's leaderboard entry in step with the balance above:
+    // a level paying out, a hint being bought, or the first open after an update.
+    LaunchedEffect(uid, leaderboardProfile, totalXp) {
+        val id = uid ?: return@LaunchedEffect
+        val profile = leaderboardProfile ?: return@LaunchedEffect
+        LeaderboardRepository.publish(id)
+    }
+
+    fun acceptSaved(saved: SavedProgress) {
+        savedRevision++
+        val completed = completedIdsOf(units) + saved.completed
+        units = sampleLearningUnits().withLevelsCompleted(completed)
+        levelXp = levelXp + saved.levelXp
+        xpSpent = maxOf(xpSpent, saved.xpSpent)
         uid?.let { id ->
+            ProgressCache.save(context, id, completed)
+            ProgressCache.saveLevelXp(context, id, levelXp)
             ProgressCache.saveXpSpent(context, id, xpSpent)
-            ProgressRepository.addXpSpent(id, amount)
         }
     }
 
+    var savingCompletion by remember { mutableStateOf(false) }
+    var completionError by remember { mutableStateOf<String?>(null) }
+    var pendingLevel by rememberSaveable { mutableStateOf<Int?>(null) }
+    var pendingXp by rememberSaveable { mutableIntStateOf(0) }
+
+    fun finishLevel(levelId: Int, earned: Int) {
+        if (savingCompletion) return
+        val id = uid ?: return
+        val award = ProgressCache.pendingAwards(context, id)[levelId] ?: earned
+        pendingLevel = levelId
+        pendingXp = award
+        if (!ProgressCache.queueAward(context, id, levelId, award)) {
+            completionError = "Your device couldn't keep this result. Free some storage and retry."
+            return
+        }
+        savingCompletion = true
+        completionError = null
+        ProgressRepository.completeLevel(id, levelId, award)
+            .addOnSuccessListener { saved ->
+                if (FirebaseAuth.getInstance().currentUser?.uid == id) {
+                    acceptSaved(saved)
+                    ProgressCache.acknowledgeAward(context, id, levelId)
+                    pendingLevel = null
+                    setRunningLevel(null)
+                }
+                savingCompletion = false
+            }
+            .addOnFailureListener { error ->
+                savingCompletion = false
+                completionError = completionSaveMessage(error)
+            }
+    }
+
+    LaunchedEffect(uid) {
+        val id = uid ?: return@LaunchedEffect
+        for ((level, xp) in ProgressCache.pendingAwards(context, id)) {
+            if (FirebaseAuth.getInstance().currentUser?.uid != id) break
+            try {
+                val restored = ProgressRepository.completeLevel(id, level, xp).privacyAwait()
+                if (FirebaseAuth.getInstance().currentUser?.uid == id) {
+                    acceptSaved(restored)
+                    ProgressCache.acknowledgeAward(context, id, level)
+                }
+            } catch (error: Exception) {
+                if (error is kotlinx.coroutines.CancellationException) throw error
+                pendingLevel = level
+                pendingXp = xp
+                completionError = completionSaveMessage(error)
+                break
+            }
+        }
+    }
+
+    if (savingCompletion || completionError != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(if (savingCompletion) "Saving your progress" else "Progress not confirmed") },
+            text = { Text(if (savingCompletion) "Please wait while your completion and XP are saved together." else completionError.orEmpty()) },
+            confirmButton = {
+                if (!savingCompletion) TextButton(onClick = { pendingLevel?.let { finishLevel(it, pendingXp) } }) { Text("Retry save") }
+            },
+            dismissButton = {
+                if (!savingCompletion) TextButton(onClick = {
+                    completionError = null
+                    setRunningLevel(null)
+                }) { Text("Save later") }
+            }
+        )
+    }
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
-    val running = runningLevel
-    if (running != null) {
-        val requestExit = { showExitConfirm = true }
+    val pathListState = rememberLazyListState()
 
-        // Hardware/gesture back always asks for confirmation too. LabScreen has its
-        // own BackHandler for stepping back inside its WebView first — that one takes
-        // priority while active; this one is the fallback for every other level type
-        // and for LabScreen whenever its own handler is disabled.
-        BackHandler(enabled = true) { requestExit() }
+    // Opening a level or lesson pushes it in from the right over the path;
+    // leaving slides it back out and the path returns from the left.
+    AnimatedContent(
+        targetState = runningLevel,
+        transitionSpec = {
+            if (targetState != null) {
+                slideInHorizontally(tween(250)) { it } togetherWith
+                    slideOutHorizontally(tween(250)) { -it / 4 }
+            } else {
+                (slideInHorizontally(tween(250)) { -it / 4 } togetherWith
+                    slideOutHorizontally(tween(250)) { it }).apply { targetContentZIndex = -1f }
+            }
+        },
+        label = "level"
+    ) { running ->
+        // Opaque, so the screen sliding over never shows the one underneath.
+        Box(Modifier.fillMaxSize().background(AppNavy)) {
+            if (running != null) {
+                val requestExit = { showExitConfirm = true }
 
-        // Out of hearts mid-level: the attempt ends here and progress is lost.
-        if (hearts < MIN_HEARTS_TO_START) {
-            OutOfHeartsLevel(
-                level = running,
-                refillIn = heartRefillIn,
-                modifier = modifier,
-                onBack = { runningLevel = null }
-            )
-        } else when (val content = contentFor(running.id)) {
-            is LevelContent.Inbox -> InboxSimulationScreen(
-                simulation = content.simulation,
-                xpReward = MAX_LEVEL_XP,
-                modifier = modifier,
-                onExit = requestExit,
-                onComplete = { _, _, _ ->
-                    units = units.withLevelCompleted(running.id)
-                    uid?.let {
-                        ProgressRepository.markLevelCompleted(it, running.id)
-                        ProgressCache.save(context, it, completedIdsOf(units))
-                    }
-                    runningLevel = null
+                val levelPrefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
+                var fontSizeChoice by remember {
+                    mutableStateOf(levelPrefs.getString("font_size", "medium") ?: "medium")
                 }
-            )
 
-            is LevelContent.Scenarios -> ScenarioQuizScreen(
-                quiz = content.quiz,
-                xpReward = MAX_LEVEL_XP,
-                modifier = modifier,
-                onExit = requestExit,
-                onMistake = { spendHeart() },
-                hearts = hearts,
-                xpBalance = totalXp,
-                onComplete = { earned, _, _ ->
-                    val firstClear = running.status != LevelStatus.COMPLETED
-                    units = units.withLevelCompleted(running.id)
-                    uid?.let {
-                        ProgressRepository.markLevelCompleted(it, running.id)
-                        ProgressCache.save(context, it, completedIdsOf(units))
-                        if (firstClear) {
-                            val updated = levelXp + (running.id to earned)
-                            levelXp = updated
-                            ProgressCache.saveLevelXp(context, it, updated)
-                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                DisposableEffect(levelPrefs) {
+                    val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+                        if (key == "font_size") {
+                            fontSizeChoice = p.getString("font_size", "medium") ?: "medium"
                         }
                     }
-                    runningLevel = null
+                    levelPrefs.registerOnSharedPreferenceChangeListener(listener)
+                    onDispose {
+                        levelPrefs.unregisterOnSharedPreferenceChangeListener(listener)
+                    }
                 }
-            )
 
-            is LevelContent.Lab -> LabScreen(
-                lab = content.lab,
-                xpReward = MAX_LEVEL_XP,
-                modifier = modifier,
-                clueLabels = content.clueLabels,
-                onExit = requestExit,
-                onMistake = { spendHeart() },
-                hearts = hearts,
-                xpBalance = totalXp,
-                onSpendXp = { spendXp(it) },
-                onComplete = { earned, _, _ ->
-                    val firstClear = running.status != LevelStatus.COMPLETED
-                    units = units.withLevelCompleted(running.id)
-                    uid?.let {
-                        ProgressRepository.markLevelCompleted(it, running.id)
-                        ProgressCache.save(context, it, completedIdsOf(units))
-                        if (firstClear) {
-                            val updated = levelXp + (running.id to earned)
-                            levelXp = updated
-                            ProgressCache.saveLevelXp(context, it, updated)
-                            ProgressRepository.saveLevelXp(it, running.id, earned)
+                val fontScaleFactor = when (fontSizeChoice.lowercase()) {
+                    "small" -> 0.85f
+                    "large" -> 1.25f
+                    else -> 1.0f
+                }
+                val currentDensity = LocalDensity.current
+                val levelDensity = remember(currentDensity, fontScaleFactor) {
+                    Density(density = currentDensity.density, fontScale = currentDensity.fontScale * fontScaleFactor)
+                }
+
+                CompositionLocalProvider(LocalDensity provides levelDensity) {
+                    // Hardware/gesture back always asks for confirmation too. LabScreen has its
+                    // own BackHandler for stepping back inside its WebView first — that one takes
+                    // priority while active; this one is the fallback for every other level type
+                    // and for LabScreen whenever its own handler is disabled.
+                    BackHandler(enabled = runningLevel != null) { requestExit() }
+
+                    // Reading costs no hearts, so the lesson comes before the hearts check.
+                    val lesson = remember(running.id) { lessonFor(running.id) }
+
+                    // Out of hearts mid-level: the attempt ends here and progress is lost.
+                    if (showingLesson && lesson != null) {
+                        LessonScreen(
+                            lesson = lesson,
+                            startLabel = if (running.status == LevelStatus.COMPLETED) "REVIEW LEVEL" else "START LEVEL",
+                            // Same rule as the level sheet's START button.
+                            canStart = running.id == 200 || running.type == LevelType.REWARD ||
+                                    hearts >= MIN_HEARTS_TO_START,
+                            modifier = modifier,
+                            onRead = {
+                                if (running.id !in lessonsRead) {
+                                    lessonsRead = lessonsRead + running.id
+                                    uid?.let { ProgressCache.saveLessonsRead(context, it, lessonsRead) }
+                                }
+                            },
+                            onBackToPath = { setRunningLevel(null) },
+                            onStartLevel = { showingLesson = false }
+                        )
+                    } else if (running.id == 100) {
+                        LevelZeroTutorialScreen(
+                            onCompleteTutorial = {
+                                uid?.let { id ->
+                                    UserProfileRepository.load(
+                                        id,
+                                        onResult = { profile ->
+                                            UserProfileRepository.setOnboardingCompleted(id, profile?.studentId) { success, _ ->
+                                                if (success) hasCompletedOnboarding = true
+                                            }
+                                        },
+                                        onError = {
+                                            UserProfileRepository.setOnboardingCompleted(id) { success, _ ->
+                                                if (success) hasCompletedOnboarding = true
+                                            }
+                                        }
+                                    )
+                                }
+                                setRunningLevel(null)
+                            },
+                            onExit = requestExit
+                        )
+                    } else if (running.id == 200) {
+                        UnitTwoWalkthroughScreen(
+                            onExit = { setRunningLevel(null) },
+                            onComplete = { finishLevel(running.id, 0) }
+                        )
+                    } else if (hearts < MIN_HEARTS_TO_START) {
+                        OutOfHeartsLevel(
+                            level = running,
+                            refillIn = heartRefillIn,
+                            modifier = modifier,
+                            onBack = { setRunningLevel(null) }
+                        )
+                    }
+                    // Replaying an already-completed level pays out no further XP — that
+                    // happened on the first clear — so the screens below need to know not
+                    // to show XP as still up for grabs.
+                    else {
+                        val isReplay = running.status == LevelStatus.COMPLETED
+                        // Remembered per level: building a lab allocates its whole definition
+                        // — every task, hint and guide string — and a fresh instance each
+                        // recomposition would also stop the level screen below from skipping.
+                        val content = remember(running.id) { contentFor(running.id) }
+                        when (content) {
+                            is LevelContent.Inbox -> InboxSimulationScreen(
+                                simulation = content.simulation,
+                                xpReward = MAX_LEVEL_XP,
+                                modifier = modifier,
+                                onExit = requestExit,
+                                onComplete = { earned, _, _ -> finishLevel(running.id, earned) }
+                            )
+
+                            is LevelContent.Scenarios -> ScenarioQuizScreen(
+                                quiz = content.quiz,
+                                xpReward = MAX_LEVEL_XP,
+                                modifier = modifier,
+                                onExit = requestExit,
+                                onMistake = { spendHeart() },
+                                hearts = hearts,
+                                xpBalance = totalXp,
+                                isReplay = isReplay,
+                                onComplete = { earned, _, _ -> finishLevel(running.id, earned) }
+                            )
+
+                            is LevelContent.Lab -> LabScreen(
+                                lab = content.lab,
+                                xpReward = MAX_LEVEL_XP,
+                                modifier = modifier,
+                                clueLabels = content.clueLabels,
+                                onExit = requestExit,
+                                onMistake = { spendHeart() },
+                                hearts = hearts,
+                                xpBalance = totalXp,
+                                onPurchaseHint = { purchase, done ->
+                                    val id = uid
+                                    if (id == null) done(Result.failure(IllegalStateException("Please sign in again.")))
+                                    else ProgressRepository.purchaseHint(id, purchase)
+                                        .addOnSuccessListener { saved ->
+                                            if (FirebaseAuth.getInstance().currentUser?.uid == id) {
+                                                acceptSaved(saved)
+                                                done(Result.success(Unit))
+                                            } else done(Result.failure(IllegalStateException("Your account changed.")))
+                                        }
+                                        .addOnFailureListener { done(Result.failure(it)) }
+                                },
+                                isReplay = isReplay,
+                                onComplete = { earned, _, _ -> finishLevel(running.id, earned) }
+
+                            )
+
+                            null -> ComingSoonLevel(
+                                level = running,
+                                modifier = modifier,
+                                onBack = { setRunningLevel(null) }
+                            )
                         }
                     }
-                    runningLevel = null
+
+                    if (showExitConfirm) {
+                        ExitLevelDialog(
+                            onDismiss = { showExitConfirm = false },
+                            onConfirm = {
+                                showExitConfirm = false
+                                setRunningLevel(null)
+                            }
+                        )
+                    }
+                }
+            } else {
+                Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
+                    LearnHeader(
+                        streak = learningStreak.days,
+                        streakActive = learningStreak.activeToday,
+                        xp = totalXp,
+                        hearts = hearts,
+                        heartRefillIn = heartRefillIn,
+                        onReplayTutorial = {
+                            startTutorial()
+                        }
+                    )
+
+                    if (hasCompletedOnboarding == false) {
+                        NewToCyberityBanner(
+                            onStartTutorial = {
+                                startTutorial()
+                            }
+                        )
+                    }
+
+                    if (devUnlockAll) {
+                        Text(
+                            "DEV: all levels unlocked",
+                            color = AppCyan,
+                            fontSize = 12.sp,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+
+                    LearningPath(
+                        units = shownUnits,
+                        modifier = Modifier.weight(1f),
+                        listState = pathListState,
+                        onLevelClick = { unit, level -> selected = unit to level }
+                    )
                 }
 
-            )
-
-            null -> ComingSoonLevel(
-                level = running,
-                modifier = modifier,
-                onBack = { runningLevel = null }
-            )
-        }
-
-        if (showExitConfirm) {
-            ExitLevelDialog(
-                onDismiss = { showExitConfirm = false },
-                onConfirm = {
-                    showExitConfirm = false
-                    runningLevel = null
+                selected?.let { (unit, level) ->
+                    LevelPreviewBottomSheet(
+                        unit = unit,
+                        level = level,
+                        prerequisiteTitle = prerequisiteFor(shownUnits, level),
+                        hearts = hearts,
+                        heartRefillIn = heartRefillIn,
+                        sheetState = sheetState,
+                        onDismiss = { selected = null },
+                        onReadLesson = if (lessonFor(level.id) == null) null else {
+                            {
+                                scope.launch {
+                                    try {
+                                        sheetState.hide()
+                                    } finally {
+                                        selected = null
+                                        val current = latestShownUnits.flatMap { it.levels }.firstOrNull { it.id == level.id }
+                                        if (current != null && current.status != LevelStatus.LOCKED) {
+                                            showingLesson = true
+                                            setRunningLevel(current)
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        onStart = {
+                            // The sheet is its own window. Closing that window and
+                            // swapping the whole screen underneath it in one frame is
+                            // the hitch you see on START LEVEL — so let the sheet
+                            // animate away first, then bring the level up.
+                            scope.launch {
+                                // finally, so an interrupted hide still starts the level
+                                // rather than leaving the tap doing nothing.
+                                try {
+                                    sheetState.hide()
+                                } finally {
+                                    selected = null
+                                    // A first attempt opens with the lesson until it has
+                                    // been read once; READ LESSON stays available after.
+                                    val current = latestShownUnits.flatMap { it.levels }.firstOrNull { it.id == level.id }
+                                    if (current != null && current.status != LevelStatus.LOCKED) {
+                                    showingLesson = current.status == LevelStatus.CURRENT &&
+                                            level.id !in lessonsRead &&
+                                            !TutorialManager.isTutorialActive &&
+                                            lessonFor(level.id) != null
+                                    setRunningLevel(current)
+                                    onStartLevel(current)
+                                    }
+                                }
+                            }
+                        }
+                    )
                 }
-            )
-        }
-    } else {
-        Column(modifier = modifier.fillMaxSize().background(AppNavy)) {
-            LearnHeader(streak = 0, xp = totalXp, hearts = hearts, heartRefillIn = heartRefillIn)
-
-            LearningPath(
-                units = units,
-                modifier = Modifier.weight(1f),
-                onLevelClick = { unit, level -> selected = unit to level }
-            )
-        }
-
-        selected?.let { (unit, level) ->
-            LevelPreviewBottomSheet(
-                unit = unit,
-                level = level,
-                prerequisiteTitle = prerequisiteFor(units, level),
-                hearts = hearts,
-                heartRefillIn = heartRefillIn,
-                sheetState = sheetState,
-                onDismiss = { selected = null },
-                onStart = {
-                    selected = null
-                    runningLevel = level
-                    onStartLevel(level)
-                }
-            )
+            }
         }
     }
 }
@@ -630,7 +972,7 @@ private fun ExitLevelDialog(
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("EXIT", color = AccentReward, fontWeight = FontWeight.Bold)
+                Text("EXIT", color = AppDanger, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -659,24 +1001,115 @@ fun LearnHeader(
     xp: Int,
     hearts: Int,
     heartRefillIn: String?,
-    modifier: Modifier = Modifier
+    onReplayTutorial: () -> Unit = {},
+    modifier: Modifier = Modifier,
+    streakActive: Boolean = false
 ) {
+    var showSettings by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val authInst = FirebaseAuth.getInstance()
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(AppCard)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        StatPill(Icons.Filled.DateRange, streak.toString(), AppCyan, "Day streak")
-        XpIndicator(xp = xp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            StreakIndicator(streak, streakActive)
+            XpIndicator(xp = xp)
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatPill(Icons.Filled.Favorite, hearts.toString(), AccentReward, "Hearts")
-            if (heartRefillIn != null) {
-                Spacer(Modifier.width(6.dp))
-                Text(heartRefillIn, color = AppGray, fontSize = 12.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatPill(Icons.Filled.Favorite, hearts.toString(), AppHeart, "Hearts")
+                if (heartRefillIn != null) {
+                    Spacer(Modifier.width(4.dp))
+                    Text(heartRefillIn, color = AppGray, fontSize = 11.sp)
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .background(AppNavy, RoundedCornerShape(10.dp))
+                .clickable { showSettings = true },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Settings,
+                contentDescription = "Settings",
+                tint = AppCyan,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+
+        if (showSettings) {
+            SettingsDialog(
+                onDismiss = { showSettings = false },
+                xp = xp,
+                onSignOut = {
+                    showSettings = false
+                    authInst.signOut()
+                    (context as? android.app.Activity)?.recreate()
+                },
+                onReplayTutorial = {
+                    showSettings = false
+                    onReplayTutorial()
+                }
+            )
+        }
+    }
+}
+
+@Composable
+fun NewToCyberityBanner(onStartTutorial: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { onStartTutorial() },
+        colors = CardDefaults.cardColors(containerColor = AppCard),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, AppCyan.copy(alpha = 0.4f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(AppBlue.copy(alpha = 0.25f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Info,
+                    contentDescription = null,
+                    tint = AppCyan,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "NEW TO CYBERITY?",
+                    color = AppCyan,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "Play Level 0 — Tutorial first to understand the basics and learn how challenges work.",
+                    color = AppWhite,
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                )
             }
         }
     }
@@ -705,32 +1138,121 @@ fun LearningPath(
     units: List<LearningUnit>,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(bottom = 40.dp),
+    listState: LazyListState = rememberLazyListState(),
     onLevelClick: (LearningUnit, LearningLevel) -> Unit
 ) {
     val rows = remember(units) { buildPathRows(units) }
-    val listState = rememberLazyListState()
 
-    LazyColumn(
-        state = listState,
-        modifier = modifier.fillMaxSize().background(AppNavy),
-        contentPadding = contentPadding
-    ) {
-        items(
-            items = rows,
-            key = { row ->
+    // Which unit owns the top of the screen right now. Null while a unit's own
+    // banner is still in view — the card is already saying the name, so the bar
+    // would only repeat it. The moment the banner scrolls off, the bar takes
+    // over, and it swaps the instant the next unit's levels reach the top.
+    val scrolledUnit by remember(rows, listState) {
+        derivedStateOf {
+            (rows.getOrNull(listState.firstVisibleItemIndex) as? PathRow.Level)?.unit
+        }
+    }
+
+    // Held separately so the bar has something to draw while it slides out.
+    var barUnit by remember { mutableStateOf<LearningUnit?>(null) }
+    LaunchedEffect(scrolledUnit) {
+        if (scrolledUnit != null) barUnit = scrolledUnit
+    }
+
+    Box(modifier = modifier.fillMaxSize().background(AppNavy)) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = contentPadding
+        ) {
+            items(
+                items = rows,
+                key = { row ->
+                    when (row) {
+                        is PathRow.UnitBanner -> "unit_${row.unit.id}"
+                        is PathRow.Level -> "level_${row.level.id}"
+                    }
+                }
+            ) { row ->
                 when (row) {
-                    is PathRow.UnitBanner -> "unit_${row.unit.id}"
-                    is PathRow.Level -> "level_${row.level.id}"
+                    is PathRow.UnitBanner -> UnitHeader(row)
+                    is PathRow.Level -> LevelRow(
+                        row = row,
+                        onClick = { onLevelClick(row.unit, row.level) }
+                    )
                 }
             }
-        ) { row ->
-            when (row) {
-                is PathRow.UnitBanner -> UnitHeader(row)
-                is PathRow.Level -> LevelRow(
-                    row = row,
-                    onClick = { onLevelClick(row.unit, row.level) }
+        }
+
+        AnimatedVisibility(
+            visible = scrolledUnit != null,
+            enter = slideInVertically { -it } + fadeIn(tween(160)),
+            exit = slideOutVertically { -it } + fadeOut(tween(160)),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            barUnit?.let { UnitStickyBar(unit = it) }
+        }
+    }
+}
+
+/**
+ * The condensed unit card, pinned while the student scrolls that unit's levels.
+ *
+ * Deliberately short: it exists to answer "which unit am I in" without taking
+ * the room the full card needs. Same colours as the card, so it reads as the
+ * same object rather than a new one.
+ */
+@Composable
+private fun UnitStickyBar(unit: LearningUnit) {
+    val locked = unit.isLocked
+    val progress = if (unit.totalCount == 0) 0f
+        else unit.completedCount.toFloat() / unit.totalCount
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(if (locked) AppCard else AppBlue)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "UNIT ${unit.id}",
+                    color = if (locked) AppGray else AppOnBlueAccent,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = unit.title,
+                    color = if (locked) AppGray else AppOnBlue,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
             }
+
+            Spacer(Modifier.width(12.dp))
+
+            Text(
+                text = if (locked) "Locked" else "${unit.completedCount} / ${unit.totalCount}",
+                color = if (locked) AppGray else AppOnBlue.copy(alpha = 0.85f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (!locked) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(2.dp),
+                color = AppOnBlueAccent,
+                trackColor = AppNavy.copy(alpha = 0.5f)
+            )
         }
     }
 }
@@ -739,38 +1261,13 @@ fun LearningPath(
 // 8. UNIT HEADER — also carries the trail through its own height
 // ===========================================================================
 
-/**
- * Row wrapper: draws the connector passing behind the banner, then lays the
- * banner card on top of it. Private because it takes the internal row type.
- */
+/** Row wrapper for the unit card. Units are separate sections, so no trail is drawn through it. */
 @Composable
 private fun UnitHeader(row: PathRow.UnitBanner) {
-    val density = LocalDensity.current
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 14.dp)
-            .drawBehind {
-                if (row.incomingStatus == null) return@drawBehind
-
-                val amplitude = size.width * AMPLITUDE_RATIO
-                val centerX = size.width / 2f
-                val fromX = centerX + amplitude * horizontalFactor(row.incomingIndex)
-                val toX = centerX + amplitude * horizontalFactor(row.outgoingIndex)
-                // Both neighbouring level rows terminate their halves at this same
-                // midpoint x, so one straight stroke spanning the banner's height
-                // reads as the path continuing underneath it.
-                val seamX = (fromX + toX) / 2f
-
-                drawPathConnector(
-                    start = Offset(seamX, 0f),
-                    end = Offset(seamX, size.height),
-                    strokeWidth = with(density) { TrailWidth.toPx() },
-                    lit = row.incomingStatus == LevelStatus.COMPLETED,
-                    straight = true
-                )
-            }
     ) {
         UnitBanner(unit = row.unit)
     }
@@ -801,7 +1298,7 @@ fun UnitBanner(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "UNIT ${unit.id}",
-                    color = if (locked) AppGray else AppCyan,
+                    color = if (locked) AppGray else AppOnBlueAccent,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -809,14 +1306,14 @@ fun UnitBanner(
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = unit.title,
-                    color = if (locked) AppGray else AppWhite,
+                    color = if (locked) AppGray else AppOnBlue,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = if (locked) "Locked" else "${unit.completedCount} / ${unit.totalCount} levels completed",
-                    color = if (locked) AppGray.copy(alpha = 0.7f) else AppWhite.copy(alpha = 0.75f),
+                    color = if (locked) AppGray.copy(alpha = 0.7f) else AppOnBlue.copy(alpha = 0.75f),
                     fontSize = 12.sp
                 )
 
@@ -828,29 +1325,28 @@ fun UnitBanner(
                             else unit.completedCount.toFloat() / unit.totalCount
                         },
                         modifier = Modifier.fillMaxWidth().height(5.dp),
-                        color = AppCyan,
+                        color = AppOnBlueAccent,
                         trackColor = AppNavy.copy(alpha = 0.5f)
                     )
                 }
             }
 
-            Spacer(Modifier.width(14.dp))
+            if (locked) {
+                Spacer(Modifier.width(14.dp))
 
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(
-                        color = if (locked) AppNavy.copy(alpha = 0.5f) else AppNavy.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(12.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (locked) Icons.Filled.Lock else Icons.Filled.List,
-                    contentDescription = if (locked) "Unit locked" else "Unit syllabus",
-                    tint = if (locked) AppGray else AppWhite,
-                    modifier = Modifier.size(20.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .background(AppNavy.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = "Unit locked",
+                        tint = AppGray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }
@@ -993,12 +1489,19 @@ fun LevelNode(
 
     val fill = when (level.status) {
         LevelStatus.CURRENT -> AppCyan
-        LevelStatus.COMPLETED -> AppBlue
+        LevelStatus.COMPLETED -> AppSuccess
         LevelStatus.LOCKED -> AppCard
     }
 
     Box(
-        modifier = modifier.size(size + 14.dp).scale(pulse),
+        modifier = modifier
+            .size(size + 14.dp)
+            .scale(pulse)
+            .onGloballyPositioned { coordinates ->
+                if (level.id == 101 && TutorialManager.isTutorialActive) {
+                    TutorialManager.targetBounds = coordinates.boundsInWindow()
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -1012,7 +1515,7 @@ fun LevelNode(
                             drawCircle(AppCyan.copy(alpha = 0.30f), radius = r, style = Stroke(ringStrokePx))
                         }
                         LevelStatus.COMPLETED -> {
-                            drawCircle(AppCyan.copy(alpha = 0.55f), radius = r, style = Stroke(ringStrokePx))
+                            drawCircle(AppSuccess.copy(alpha = 0.55f), radius = r, style = Stroke(ringStrokePx))
                         }
                         LevelStatus.LOCKED -> {
                             drawCircle(AppGray.copy(alpha = 0.14f), radius = r, style = Stroke(ringStrokePx * 0.6f))
@@ -1041,7 +1544,7 @@ fun LevelNode(
                 contentDescription = "${typeLabel(level.type)}: ${level.title}",
                 tint = when (level.status) {
                     LevelStatus.CURRENT -> AppNavy
-                    LevelStatus.COMPLETED -> AppWhite
+                    LevelStatus.COMPLETED -> AppNavy
                     LevelStatus.LOCKED -> AppGray
                 },
                 modifier = Modifier.size(if (level.status == LevelStatus.CURRENT) 30.dp else 26.dp)
@@ -1049,8 +1552,10 @@ fun LevelNode(
         }
 
         // Type badge for simulations/challenges so they read as different activities.
-        if (level.status != LevelStatus.LOCKED &&
-            (level.type == LevelType.SIMULATION || level.type == LevelType.CHALLENGE)
+        // A simulation's warning triangle only marks the level you are on: once it
+        // is completed the node shows its check mark alone.
+        if ((level.type == LevelType.SIMULATION && level.status == LevelStatus.CURRENT) ||
+            (level.type == LevelType.CHALLENGE && level.status != LevelStatus.LOCKED)
         ) {
             Box(
                 modifier = Modifier
@@ -1143,7 +1648,9 @@ fun LevelPreviewBottomSheet(
     heartRefillIn: String?,
     sheetState: androidx.compose.material3.SheetState,
     onDismiss: () -> Unit,
-    onStart: () -> Unit
+    onStart: () -> Unit,
+    /** Null when the level has no lesson yet. */
+    onReadLesson: (() -> Unit)? = null
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1190,7 +1697,7 @@ fun LevelPreviewBottomSheet(
             Spacer(Modifier.height(24.dp))
 
             // Bonus nodes have no mistakes to make, so they never need hearts.
-            val outOfHearts = level.type != LevelType.REWARD && hearts < MIN_HEARTS_TO_START
+            val outOfHearts = level.id != 200 && level.type != LevelType.REWARD && hearts < MIN_HEARTS_TO_START
             if (outOfHearts && level.status != LevelStatus.LOCKED) {
                 Row(
                     modifier = Modifier
@@ -1202,6 +1709,22 @@ fun LevelPreviewBottomSheet(
                     Icon(Icons.Filled.Favorite, contentDescription = null, tint = AppGray, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(10.dp))
                     Text("Out of hearts. Next heart in ${heartRefillIn ?: "a moment"}.", color = AppGray, fontSize = 13.sp)
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            // Reading is always free, so this stays enabled when out of hearts.
+            if (onReadLesson != null && level.status != LevelStatus.LOCKED) {
+                OutlinedButton(
+                    onClick = onReadLesson,
+                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    border = BorderStroke(1.dp, AppCyan),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AppCyan)
+                ) {
+                    Icon(Icons.Filled.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("READ LESSON", fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(12.dp))
             }
@@ -1238,7 +1761,7 @@ fun LevelPreviewBottomSheet(
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppBlue,
-                            contentColor = AppWhite,
+                            contentColor = AppOnBlue,
                             disabledContainerColor = AppNavy,
                             disabledContentColor = AppGray
                         )
@@ -1251,7 +1774,14 @@ fun LevelPreviewBottomSheet(
                     Button(
                         onClick = onStart,
                         enabled = !outOfHearts,
-                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .onGloballyPositioned { coordinates ->
+                                if (TutorialManager.isTutorialActive) {
+                                    TutorialManager.targetBounds = coordinates.boundsInWindow()
+                                }
+                            },
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = AppCyan,
@@ -1308,9 +1838,41 @@ sealed interface LevelContent {
 
 
 fun contentFor(levelId: Int): LevelContent? = when (levelId) {
+    201 -> LevelContent.Lab(strongPasswordsLab(), strongPasswordsClueLabels)
+    202 -> LevelContent.Lab(passwordAttacksLab(), passwordAttacksClueLabels)
+    203 -> LevelContent.Lab(multiFactorAuthenticationLab(), multiFactorAuthenticationClueLabels)
+    204 -> LevelContent.Lab(accountProtectionLab(), accountProtectionClueLabels)
+    205 -> LevelContent.Lab(passwordSecurityChallengeLab(), passwordSecurityChallengeClueLabels)
+    250 -> LevelContent.Lab(hashCrackingPracticeLab(), hashCrackingPracticeClueLabels)
     101 -> LevelContent.Lab(inboxTriageLab(), inboxClueLabels)
     102 -> LevelContent.Lab(threatConsoleLab(), threatClueLabels)
+    103 -> LevelContent.Lab(ciaTriadLab(), ciaClueLabels)
+    104 -> LevelContent.Lab(hardeningReviewLab(), principleClueLabels)
     105 -> LevelContent.Scenarios(spotTheThreatQuiz())
+    106 -> LevelContent.Lab(riskRegisterLab(), riskClueLabels)
+    301 -> LevelContent.Lab(phishDeskLab(), phishDeskClueLabels)
+    302 -> LevelContent.Lab(baitWorkshopLab(), baitWorkshopClueLabels)
+    303 -> LevelContent.Lab(socialEngineeringLab(), socialEngClueLabels)
+    304 -> LevelContent.Lab(scamMessagesLab(), scamMsgClueLabels)
+    305 -> LevelContent.Lab(oneDayPhoneLab(), oneDayClueLabels)
+    350 -> LevelContent.Lab(quickQuizLab(), quickQuizClueLabels)
+    401 -> LevelContent.Lab(whatIsMalwareLab(), whatIsMalwareClueLabels)
+    402 -> LevelContent.Lab(virusesTrojansLab(), virusesTrojansClueLabels)
+    403 -> LevelContent.Lab(ransomwareLab(), ransomwareClueLabels)
+    404 -> LevelContent.Lab(malwarePreventionLab(), malwarePreventionClueLabels)
+    450 -> LevelContent.Lab(bonusCacheLab(), bonusCacheClueLabels)
+    405 -> LevelContent.Lab(malwareTriageLab(), malwareClueLabels)
+    501 -> LevelContent.Lab(networkSecurityLab(501), networkSecurityClueLabels(501))
+    502 -> LevelContent.Lab(networkSecurityLab(502), networkSecurityClueLabels(502))
+    503 -> LevelContent.Lab(networkSecurityLab(503), networkSecurityClueLabels(503))
+    504 -> LevelContent.Lab(networkSecurityLab(504), networkSecurityClueLabels(504))
+    505 -> LevelContent.Lab(networkSecurityLab(505), networkSecurityClueLabels(505))
+    550 -> LevelContent.Lab(networkSecurityLab(550), networkSecurityClueLabels(550))
+    601 -> LevelContent.Lab(securityIncidentsLab(), securityIncidentsClueLabels)
+    602 -> LevelContent.Lab(detectionLab(), detectionClueLabels)
+    603 -> LevelContent.Lab(containmentLab(), containmentClueLabels)
+    604 -> LevelContent.Lab(recoveryLab(), recoveryClueLabels)
+    605 -> LevelContent.Lab(incidentResponseSimLab(), incidentResponseSimClueLabels)
     else -> null
 }
 
@@ -1345,7 +1907,7 @@ fun ComingSoonLevel(
         Button(
             onClick = onBack,
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue)
         ) {
             Text("BACK TO PATH", fontWeight = FontWeight.Bold)
         }
@@ -1368,7 +1930,7 @@ fun OutOfHeartsLevel(
         Icon(
             imageVector = Icons.Filled.Favorite,
             contentDescription = null,
-            tint = AccentReward,
+            tint = AppHeart,
             modifier = Modifier.size(48.dp)
         )
         Spacer(Modifier.height(16.dp))
@@ -1386,7 +1948,7 @@ fun OutOfHeartsLevel(
         Button(
             onClick = onBack,
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppWhite)
+            colors = ButtonDefaults.buttonColors(containerColor = AppBlue, contentColor = AppOnBlue)
         ) {
             Text("BACK TO PATH", fontWeight = FontWeight.Bold)
         }

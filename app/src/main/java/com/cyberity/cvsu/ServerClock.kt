@@ -1,9 +1,11 @@
 package com.cyberity.cvsu
 
+import android.os.SystemClock
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
+import com.google.android.gms.tasks.Task
 
 // ===========================================================================
 // SERVER CLOCK
@@ -14,14 +16,18 @@ import com.google.firebase.firestore.Source
 //
 // The countdown still has to tick locally, though, which needs a current time.
 // sync() writes a timestamp the server fills in, reads back what the server
-// actually recorded, and keeps the difference against the device clock. now()
-// then reports server time without a network call per tick.
+// actually recorded, and keeps the difference against the device's uptime
+// counter (SystemClock.elapsedRealtime). now() then reports server time without
+// a network call per tick. Uptime is used rather than the wall clock because
+// changing the phone's date or time doesn't move it, so a student can't speed
+// up heart refill by setting the clock forward after a sync.
 
 object ServerClock {
 
     private const val COLLECTION = "userProgress"
     private const val FIELD_PING = "clockPing"
 
+    /** Server time minus device uptime, measured by the last sync. */
     @Volatile
     private var offsetMillis: Long = 0L
 
@@ -31,7 +37,11 @@ object ServerClock {
         private set
 
     /** Best available estimate of server time, in milliseconds. */
-    fun now(): Long = System.currentTimeMillis() + offsetMillis
+    fun now(): Long =
+        if (isSynced) SystemClock.elapsedRealtime() + offsetMillis else System.currentTimeMillis()
+
+    /** Streaks never use the device wall clock, even before the first sync. */
+    fun trustedNow(): Long? = if (isSynced) SystemClock.elapsedRealtime() + offsetMillis else null
 
     /**
      * Measures the offset between this device's clock and Firestore's.
@@ -45,18 +55,26 @@ object ServerClock {
      * blocking the Learn screen when offline.
      */
     fun sync(uid: String, onSynced: () -> Unit = {}) {
-        val doc = FirebaseFirestore.getInstance().collection(COLLECTION).document(uid)
-        val sentAt = System.currentTimeMillis()
+        syncTask(uid).addOnSuccessListener { onSynced() }
+    }
 
-        doc.set(mapOf(FIELD_PING to FieldValue.serverTimestamp()), SetOptions.merge())
-            .addOnSuccessListener {
-                doc.get(Source.SERVER).addOnSuccessListener { snapshot ->
-                    val serverAt = snapshot.getTimestamp(FIELD_PING)?.toDate()?.time ?: return@addOnSuccessListener
-                    val deviceMidpoint = (sentAt + System.currentTimeMillis()) / 2
-                    offsetMillis = serverAt - deviceMidpoint
-                    isSynced = true
-                    onSynced()
-                }
+    /** Callers that require trusted time must wait for a successful server response. */
+    fun syncTask(uid: String): Task<Long> {
+        val doc = FirebaseFirestore.getInstance().collection(COLLECTION).document(uid)
+        val sentAt = SystemClock.elapsedRealtime()
+
+        return doc.set(mapOf(FIELD_PING to FieldValue.serverTimestamp()), SetOptions.merge())
+            .continueWithTask { written ->
+                written.result // Propagate failure; never substitute device time.
+                doc.get(Source.SERVER)
+            }.continueWith { read ->
+                val snapshot = read.result
+                check(!snapshot.metadata.isFromCache && !snapshot.metadata.hasPendingWrites())
+                val serverAt = checkNotNull(snapshot.getTimestamp(FIELD_PING)) { "Server time unavailable." }.toDate().time
+                val deviceMidpoint = (sentAt + SystemClock.elapsedRealtime()) / 2
+                offsetMillis = serverAt - deviceMidpoint
+                isSynced = true
+                checkNotNull(trustedNow())
             }
     }
 }

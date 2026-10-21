@@ -1,5 +1,6 @@
 package com.cyberity.cvsu
 
+import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -12,8 +13,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -44,10 +48,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 
 // ===========================================================================
 // 1. SIMULATION MODEL
@@ -83,164 +90,190 @@ data class ScenarioQuiz(
 )
 
 // ===========================================================================
-// 2. LEVEL 1 CONTENT — "Spot the Threat"
+// 2. LEVEL 105 CONTENT — "Fundamentals Quiz"
 // ===========================================================================
+// One scenario per Unit 1 idea: alert triage (102), the CIA triad (103),
+// least privilege and fail-safe (104), and likelihood x impact (106). Every
+// wrong option is a mistake people really make, the options are the same
+// length and shape, and the safe choice moves between positions.
 
 fun spotTheThreatQuiz(): ScenarioQuiz = ScenarioQuiz(
-    levelId = 101,
-    title = "Spot the Threat",
-    briefing = "Five everyday campus situations. Choose what you'd actually do — " +
-            "you'll see the consequence either way.",
+    levelId = 105,
+    title = "Fundamentals Quiz",
+    briefing = "Five situations from a week at the CvSU IT Services Office, one for each idea " +
+            "in this unit: alerts, the CIA triad, least privilege, failing safe and risk. " +
+            "Choose what you'd actually do — you'll see the consequence either way.",
     scenarios = listOf(
         SimScenario(
             id = 1,
-            setting = "UNIVERSITY LIBRARY",
-            situation = "You find an unlabeled USB flash drive on a study table. Someone has " +
-                    "written \"SCHOLARSHIP LIST 2026\" on it with a marker.",
-            question = "What do you do?",
+            setting = "ITSO NIGHT SHIFT",
+            situation = "2:04 AM. A HIGH alert fires: \"Large outbound transfer: 38 GB from " +
+                    "records-db to an external address.\" The asset notes say records-db is " +
+                    "backed up every night at 2:00 AM to the university's contracted cloud " +
+                    "backup provider. Last night's transfer was 37 GB, to the same address.",
+            question = "What's the right call?",
             choices = listOf(
                 SimChoice(
-                    "Plug it into your laptop to find the owner",
-                    isSafe = false,
-                    consequence = "The drive auto-runs a payload the moment it mounts. Your laptop " +
-                            "is now compromised — and it's connected to the campus network."
-                ),
-                SimChoice(
-                    "Hand it to the library staff or the IT office",
+                    "Check it matches the backup schedule and address, then close it as a " +
+                            "false positive",
                     isSafe = true,
-                    consequence = "Correct. Staff can handle it safely, and if it is malicious, " +
-                            "IT learns someone is running a drop attack on campus."
+                    consequence = "Correct. The time, the size and the destination all match a " +
+                            "documented nightly job. You proved it with evidence, closed it, and " +
+                            "kept the rule watching for the night it doesn't match."
                 ),
                 SimChoice(
-                    "Plug it into a lab computer instead of your own",
+                    "Escalate it as a data breach, since it's HIGH and leaving the network at night",
                     isSafe = false,
-                    consequence = "Worse. Shared lab machines reach more students and more of the " +
-                            "network than your personal laptop would."
+                    consequence = "The incident team spent the morning on the backup job, and the " +
+                            "real alerts from that night waited. Severity is the tool's guess, " +
+                            "not a verdict."
+                ),
+                SimChoice(
+                    "Switch the alert rule off, because it fires every night and wastes the shift",
+                    isSafe = false,
+                    consequence = "Now nothing watches records-db at all. The night someone copies " +
+                            "it to their own server at 2:00 AM, there won't be an alert to ignore."
                 )
             ),
-            conceptName = "USB Drop Attack",
-            conceptExplanation = "Attackers deliberately leave infected drives where curious people " +
-                    "will find them. The enticing label is the bait — curiosity is the exploit."
+            conceptName = "False Positives",
+            conceptExplanation = "An alert that fires on real but legitimate activity is a false " +
+                    "positive. Prove it with something that explains it, like a schedule, a " +
+                    "documented process or the host's role, then close it. Don't escalate by " +
+                    "severity, and don't silence the rule."
         ),
         SimScenario(
             id = 2,
-            setting = "YOUR INBOX",
-            situation = "An email arrives: \"CvSU Student Portal — your account will be DELETED in " +
-                    "24 hours. Verify now.\" The sender address is cvsu-portal-verify@gmail.com.",
-            question = "What's your move?",
+            setting = "REGISTRAR'S OFFICE",
+            situation = "A student's final grade changed from 2.75 to 1.25 two weeks after the " +
+                    "instructor submitted it. The instructor didn't change it. The records " +
+                    "system was online all week, and the file was never shared outside the " +
+                    "office.",
+            question = "Which part of the CIA triad was broken?",
             choices = listOf(
                 SimChoice(
-                    "Click the link and log in to save your account",
+                    "Confidentiality: someone reached a record they had no right to see",
                     isSafe = false,
-                    consequence = "The page was a convincing fake. Your portal credentials were " +
-                            "captured the instant you typed them."
+                    consequence = "Close, but the report rules it out: the file never left the " +
+                            "office. What's wrong is that the grade itself can't be trusted " +
+                            "anymore."
                 ),
                 SimChoice(
-                    "Check the sender domain, then report it to IT",
+                    "Availability: the correct grade wasn't there when the student needed it",
+                    isSafe = false,
+                    consequence = "The system was online all week and the record opened fine. " +
+                            "Nothing was out of reach. The record was wrong."
+                ),
+                SimChoice(
+                    "Integrity: the record was changed by someone who wasn't allowed to change it",
                     isSafe = true,
-                    consequence = "Correct. A real university notice never comes from a gmail.com " +
-                            "address. Reporting it protects everyone else too."
-                ),
-                SimChoice(
-                    "Forward it to your classmates to warn them",
-                    isSafe = false,
-                    consequence = "Well-meant, but you just spread a live phishing link to more " +
-                            "people — some of whom will click it."
+                    consequence = "Correct. The data was altered without authorisation. The fix " +
+                            "is verification, like hashes and an audit trail, not tighter sharing " +
+                            "or more uptime."
                 )
             ),
-            conceptName = "Phishing & Urgency Pressure",
-            conceptExplanation = "Artificial deadlines exist to stop you from thinking. Slow down " +
-                    "and verify the sender before you act on any urgent message."
+            conceptName = "The CIA Triad",
+            conceptExplanation = "Ask of any incident: was the data seen, changed, or unreachable? " +
+                    "Seen by the wrong people is confidentiality, changed without permission is " +
+                    "integrity, out of reach is availability. Each points to a different fix."
         ),
         SimScenario(
             id = 3,
-            setting = "CAFÉ NEAR CAMPUS",
-            situation = "You need to check your bank balance. You see two open networks: " +
-                    "\"CafeWiFi\" and \"CafeWiFi_FREE\". Neither asks for a password.",
-            question = "How do you check your balance?",
+            setting = "COMPUTER LAB 2",
+            situation = "Your new student assistant will reset lab PCs between classes and log " +
+                    "broken equipment. On day one they ask for the same administrator account " +
+                    "you use, \"so I won't have to bother you every time.\"",
+            question = "How do you set up their access?",
             choices = listOf(
                 SimChoice(
-                    "Connect to the stronger signal and log in",
+                    "Give them the admin account, and ask them to use it only for lab work",
                     isSafe = false,
-                    consequence = "One of those networks was a laptop under the next table. Your " +
-                            "session was intercepted in transit."
+                    consequence = "A month later their laptop catches an infostealer. The " +
+                            "attacker now has an account that can change every system you " +
+                            "manage, not just Lab 2."
                 ),
                 SimChoice(
-                    "Use your mobile data instead",
+                    "Make them their own account that can only reset lab PCs and log issues",
                     isSafe = true,
-                    consequence = "Correct. Mobile data costs a little, but no stranger sits " +
-                            "between you and your bank."
+                    consequence = "Correct. They can do the whole job, and if that account is " +
+                            "ever stolen, the damage stops at resetting lab PCs."
                 ),
                 SimChoice(
-                    "Connect, but only browse social media",
+                    "Share your admin password for this week, then change it on Friday",
                     isSafe = false,
-                    consequence = "Social sessions get hijacked too — and your email is usually the " +
-                            "reset path for every other account you own."
+                    consequence = "For a week, every action they take is logged under your name, " +
+                            "and the password can be copied long before Friday comes."
                 )
             ),
-            conceptName = "Evil Twin & Man-in-the-Middle",
-            conceptExplanation = "Anyone can broadcast a network with a trustworthy-looking name. " +
-                    "On an untrusted network, assume someone is reading the traffic."
+            conceptName = "Least Privilege",
+            conceptExplanation = "Give each person the smallest access that still lets them do " +
+                    "the work, and nothing beyond it. Access you never gave can't be misused or " +
+                    "stolen."
         ),
         SimScenario(
             id = 4,
-            setting = "GROUP CHAT",
-            situation = "A classmate messages you: \"Pre, pahiram ng portal password mo, I'll " +
-                    "submit our group requirement for you. Deadline na bukas.\"",
-            question = "How do you respond?",
+            setting = "SERVER ROOM",
+            situation = "During a brownout, the electronic lock on the server room door clicked " +
+                    "open and stayed open for 40 minutes until power came back. Facilities asks " +
+                    "how the lock should behave the next time the power fails.",
+            question = "What do you tell them?",
             choices = listOf(
                 SimChoice(
-                    "Send it — you trust them, it's just a requirement",
+                    "Stay unlocked, so ITSO can get in quickly to check on the servers",
                     isSafe = false,
-                    consequence = "Their account was already compromised. The message wasn't from " +
-                            "your classmate at all, and now your portal is exposed."
+                    consequence = "That's exactly what happened during the brownout: 40 minutes " +
+                            "with the most valuable room on campus open to anyone walking past."
                 ),
                 SimChoice(
-                    "Decline and submit the requirement yourself",
+                    "Stay unlocked, but turn CCTV recording on until the power comes back",
+                    isSafe = false,
+                    consequence = "The camera records someone walking out with a server. It " +
+                            "doesn't stop them. Watching an open door isn't the same as closing it."
+                ),
+                SimChoice(
+                    "Stay locked from outside, with a key for ITSO and a free exit from inside",
                     isSafe = true,
-                    consequence = "Correct. Credentials are never shared, even with people you " +
-                            "trust — and especially not under deadline pressure."
-                ),
-                SimChoice(
-                    "Share it, then change your password afterwards",
-                    isSafe = false,
-                    consequence = "Too late. The account can be accessed, and recovery details " +
-                            "changed, long before you get around to resetting it."
+                    consequence = "Correct. When the power fails, the door fails into its secure " +
+                            "state. ITSO still gets in with a key, and nobody is trapped inside."
                 )
             ),
-            conceptName = "Social Engineering via Trust",
-            conceptExplanation = "The most effective attacks come from someone you know — because " +
-                    "their account was taken over first. Verify through another channel."
+            conceptName = "Fail-Safe",
+            conceptExplanation = "Every control fails sometimes. Decide in advance which way it " +
+                    "fails, and make it fail into the secure state, not the open one. Plan a " +
+                    "safe way for authorised people to get through when it does."
         ),
         SimScenario(
             id = 5,
-            setting = "YOUR PHONE",
-            situation = "While reading an article, a full-screen popup appears: \"⚠ YOUR DEVICE IS " +
-                    "INFECTED! 3 viruses detected. Install CleanerPro NOW to remove them.\"",
-            question = "What do you do?",
+            setting = "ITSO BUDGET MEETING",
+            situation = "There's money for one fix this month. Risk A: lab mice go missing almost " +
+                    "every week, about ₱300 each. Risk B: the enrollment database has no offsite " +
+                    "backup. A fire or ransomware is unlikely in any given year, but either would " +
+                    "wipe every student record.",
+            question = "Which risk do you fund first?",
             choices = listOf(
                 SimChoice(
-                    "Install the app it recommends",
-                    isSafe = false,
-                    consequence = "There were no viruses — until now. You installed the malware the " +
-                            "popup was advertising."
-                ),
-                SimChoice(
-                    "Close the tab and run your real security app if worried",
+                    "Offsite backups for enrollment: rare, but the damage would be catastrophic",
                     isSafe = true,
-                    consequence = "Correct. A web page can't scan your device. Only software " +
-                            "already installed can tell you anything real."
+                    consequence = "Correct. Low likelihood times catastrophic impact still " +
+                            "outranks frequent but cheap losses. The mice can wait a month; " +
+                            "18,000 student records can't be bought back."
                 ),
                 SimChoice(
-                    "Tap the popup to read the scan details first",
+                    "Locks for the lab mice: they go missing every week, so they're more likely",
                     isSafe = false,
-                    consequence = "The whole overlay was one big button. Tapping anywhere inside it " +
-                            "triggered the download."
+                    consequence = "You saved about ₱1,200 this month. The enrollment database is " +
+                            "still one bad night away from being gone for good."
+                ),
+                SimChoice(
+                    "Split the money evenly, so both risks get at least some protection",
+                    isSafe = false,
+                    consequence = "Half a backup isn't a backup, and half the mouse locks still " +
+                            "lose mice. Spreading money thin leaves both risks open."
                 )
             ),
-            conceptName = "Scareware",
-            conceptExplanation = "Fake alerts manufacture panic to make you install something " +
-                    "harmful. A website has no ability to scan your phone for viruses."
+            conceptName = "Likelihood × Impact",
+            conceptExplanation = "A risk's size is how likely it is times how bad it would be. " +
+                    "Rank by that, not by which one happens most often or which one you hear " +
+                    "about most."
         )
     )
 )
@@ -249,8 +282,8 @@ fun spotTheThreatQuiz(): ScenarioQuiz = ScenarioQuiz(
 // 3. PALETTE (file-scoped)
 // ===========================================================================
 
-private val SimSuccess = Color(0xFF27E0A8)
-private val SimDanger = Color(0xFFFF5C7A)
+private val SimSuccess: Color get() = AppSuccess
+private val SimDanger: Color get() = AppDanger
 
 // ===========================================================================
 // 4. SIMULATION SCREEN
@@ -270,11 +303,17 @@ onComplete: (xpEarned: Int, correct: Int, total: Int) -> Unit,
 onMistake: () -> Unit,
 hearts: Int,
 xpBalance: Int,
-modifier: Modifier = Modifier
+modifier: Modifier = Modifier,
+/** True when this level was already completed — XP was paid out on the
+ *  first clear, so nothing here should look like it's still up for grabs. */
+isReplay: Boolean = false
 ) {
 
     var stage by remember { mutableStateOf(SimStage.BRIEFING) }
     var stepIndex by remember { mutableIntStateOf(0) }
+    // Tapping an option only selects it; SUBMIT ANSWER commits it, so a
+    // misclick can still be changed before it counts.
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var chosenIndex by remember { mutableStateOf<Int?>(null) }
     var correctCount by remember { mutableIntStateOf(0) }
     var heartsLost by remember { mutableIntStateOf(0) }
@@ -287,6 +326,7 @@ modifier: Modifier = Modifier
             SimStage.BRIEFING -> BriefingStage(
                 quiz = quiz,
                 xpReward = xpReward,
+                isReplay = isReplay,
                 onExit = onExit,
                 onBegin = { stage = SimStage.RUNNING }
             )
@@ -298,9 +338,15 @@ modifier: Modifier = Modifier
                 hearts = hearts,
                 liveXp = scoreLevelXp(true, heartsLost, 0, true),
                 xpBalance = xpBalance,
+                isReplay = isReplay,
+                selectedIndex = selectedIndex,
                 chosenIndex = chosenIndex,
-                onChoose = { index ->
-                    if (chosenIndex == null) {
+                onSelect = { index ->
+                    if (chosenIndex == null) selectedIndex = index
+                },
+                onSubmit = {
+                    val index = selectedIndex
+                    if (chosenIndex == null && index != null) {
                         chosenIndex = index
                         if (quiz.scenarios[stepIndex].choices[index].isSafe) {
                             correctCount++
@@ -315,6 +361,7 @@ modifier: Modifier = Modifier
                         stage = SimStage.RESULT
                     } else {
                         stepIndex++
+                        selectedIndex = null
                         chosenIndex = null
                     }
                 },
@@ -322,7 +369,7 @@ modifier: Modifier = Modifier
             )
 
             SimStage.RESULT -> {
-                val earned = scoreLevelXp(
+                val award = awardFor(
                     completed = true,
                     heartsLost = heartsLost,
                     hintsUsed = 0,
@@ -331,23 +378,12 @@ modifier: Modifier = Modifier
                 ResultStage(
                     correct = correctCount,
                     total = total,
-                    xpEarned = earned,
-                    onFinish = { onComplete(earned, correctCount, total) }
+                    heartsLost = heartsLost,
+                    award = award,
+                    isReplay = isReplay,
+                    onFinish = { onComplete(award.total, correctCount, total) }
                 )
             }
-            SimStage.RESULT -> ResultStage(
-                correct = correctCount,
-                total = total,
-                // Partial credit: you keep what you earned, never zero for trying.
-                xpEarned = if (total == 0) 0 else (xpReward * correctCount) / total,
-                onFinish = {
-                    onComplete(
-                        if (total == 0) 0 else (xpReward * correctCount) / total,
-                        correctCount,
-                        total
-                    )
-                }
-            )
         }
     }
 }
@@ -362,6 +398,7 @@ private enum class SimStage { BRIEFING, RUNNING, RESULT }
 private fun BriefingStage(
     quiz: ScenarioQuiz,
     xpReward: Int,
+    isReplay: Boolean,
     onExit: () -> Unit,
     onBegin: () -> Unit
 ) {
@@ -370,38 +407,51 @@ private fun BriefingStage(
             Icon(Icons.Filled.Close, contentDescription = "Exit quiz", tint = AppGray)
         }
 
-        Spacer(Modifier.weight(1f))
-
-        Box(
-            modifier = Modifier.size(84.dp).background(AppBlue, CircleShape),
-            contentAlignment = Alignment.Center
+        // Starts at the top and scrolls when it overflows — briefings vary in
+        // length and small screens shouldn't push the start button off.
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
         ) {
-            Icon(
-                Icons.Filled.Warning,
-                contentDescription = null,
-                tint = AppWhite,
-                modifier = Modifier.size(38.dp)
-            )
+            Spacer(Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier.size(84.dp).background(AppBlue, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = AppOnBlue,
+                    modifier = Modifier.size(38.dp)
+                )
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            Text("SCENARIO QUIZ", color = AppCyan, fontSize = 12.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            Spacer(Modifier.height(6.dp))
+            Text(quiz.title, color = AppWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(12.dp))
+            Text(quiz.briefing, color = AppGray, fontSize = 15.sp, lineHeight = 22.sp)
+
+            Spacer(Modifier.height(20.dp))
+
+            Row {
+                SimChip("${quiz.scenarios.size} scenarios")
+                Spacer(Modifier.width(10.dp))
+                if (isReplay) {
+                    SimChip("Review · already completed")
+                } else {
+                    SimChip("up to +$xpReward XP")
+                }
+            }
         }
 
         Spacer(Modifier.height(20.dp))
-
-        Text("SCENARIO QUIZ", color = AppCyan, fontSize = 12.sp,
-            fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        Spacer(Modifier.height(6.dp))
-        Text(quiz.title, color = AppWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(12.dp))
-        Text(quiz.briefing, color = AppGray, fontSize = 15.sp)
-
-        Spacer(Modifier.height(20.dp))
-
-        Row {
-            SimChip("${quiz.scenarios.size} scenarios")
-            Spacer(Modifier.width(10.dp))
-            SimChip("up to +$xpReward XP")
-        }
-
-        Spacer(Modifier.weight(1f))
 
         Button(
             onClick = onBegin,
@@ -422,8 +472,11 @@ private fun ScenarioStage(
     hearts: Int,
     liveXp: Int,
     xpBalance: Int,
+    isReplay: Boolean,
+    selectedIndex: Int?,
     chosenIndex: Int?,
-    onChoose: (Int) -> Unit,
+    onSelect: (Int) -> Unit,
+    onSubmit: () -> Unit,
     onContinue: () -> Unit,
     onExit: () -> Unit
 ) {
@@ -454,12 +507,15 @@ private fun ScenarioStage(
             HeartsRow(hearts = hearts, heartSize = 14.dp)
             Spacer(Modifier.width(10.dp))
             XpIndicator(xp = xpBalance, iconSize = 14.dp, fontSize = 12.sp, showDelta = false)
-            Spacer(Modifier.width(4.dp))
-            Text("+$liveXp", color = AppCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            if (!isReplay) {
+                Spacer(Modifier.width(4.dp))
+                Text("+$liveXp", color = AppCyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            }
             Spacer(Modifier.width(10.dp))
             Text("${stepIndex + 1}/$total", color = AppGray, fontSize = 13.sp,
                 fontWeight = FontWeight.Bold)
             Spacer(Modifier.width(8.dp))
+            QuizSettingsButton()
         }
 
         Column(
@@ -470,19 +526,44 @@ private fun ScenarioStage(
         ) {
             Spacer(Modifier.height(8.dp))
 
-            Text(scenario.setting, color = AppCyan, fontSize = 11.sp,
-                fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-
-            Spacer(Modifier.height(10.dp))
-
-            // Situation card
-            Box(
+            // Situation card. Same frame the simulations use for anything the
+            // student has to judge: a rail down the left edge and a corner
+            // badge naming the setting. The rail says what kind of thing this
+            // is, never whether it is safe.
+            val frameShape = RoundedCornerShape(3.dp, 16.dp, 16.dp, 3.dp)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(AppCard, RoundedCornerShape(16.dp))
-                    .padding(18.dp)
+                    .height(IntrinsicSize.Min)
+                    .clip(frameShape)
+                    .background(AppCard)
+                    .border(1.dp, AppCyan.copy(alpha = 0.30f), frameShape)
             ) {
-                Text(scenario.situation, color = AppWhite, fontSize = 16.sp, lineHeight = 24.sp)
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(AppCyan)
+                )
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .background(AppCyan, RoundedCornerShape(0.dp, 0.dp, 11.dp, 0.dp))
+                            .padding(horizontal = 11.dp, vertical = 3.dp)
+                    ) {
+                        Text(scenario.setting, color = AppNavy, fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    }
+                    Text(
+                        scenario.situation,
+                        color = AppWhite,
+                        fontSize = 16.sp,
+                        lineHeight = 24.sp,
+                        modifier = Modifier.padding(
+                            start = 14.dp, end = 16.dp, top = 12.dp, bottom = 16.dp
+                        )
+                    )
+                }
             }
 
             Spacer(Modifier.height(18.dp))
@@ -496,8 +577,9 @@ private fun ScenarioStage(
                 ChoiceRow(
                     choice = choice,
                     answered = answered,
+                    isSelected = selectedIndex == index,
                     isChosen = chosenIndex == index,
-                    onClick = { onChoose(index) }
+                    onClick = { onSelect(index) }
                 )
                 Spacer(Modifier.height(10.dp))
             }
@@ -519,23 +601,28 @@ private fun ScenarioStage(
             Spacer(Modifier.height(20.dp))
         }
 
-        // Continue bar
-        AnimatedVisibility(visible = answered, enter = fadeIn(tween(200))) {
-            Box(modifier = Modifier.fillMaxWidth().background(AppCard).padding(16.dp)) {
-                Button(
-                    onClick = onContinue,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AppCyan,
-                        contentColor = AppNavy
-                    )
-                ) {
-                    Text(
-                        text = if (stepIndex == total - 1) "SEE RESULTS" else "CONTINUE",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+        // Submit / continue bar
+        Box(modifier = Modifier.fillMaxWidth().background(AppCard).padding(16.dp)) {
+            Button(
+                onClick = if (answered) onContinue else onSubmit,
+                enabled = answered || selectedIndex != null,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = AppCyan,
+                    contentColor = AppNavy,
+                    disabledContainerColor = AppNavy,
+                    disabledContentColor = AppGray
+                )
+            ) {
+                Text(
+                    text = when {
+                        !answered -> "SUBMIT ANSWER"
+                        stepIndex == total - 1 -> "SEE RESULTS"
+                        else -> "CONTINUE"
+                    },
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -545,12 +632,15 @@ private fun ScenarioStage(
 private fun ChoiceRow(
     choice: SimChoice,
     answered: Boolean,
+    isSelected: Boolean,
     isChosen: Boolean,
     onClick: () -> Unit
 ) {
-    // Before answering every option looks neutral. After answering, the safe
-    // option is always revealed — not just the one the user picked.
+    // Before answering only the pending selection is highlighted. After
+    // answering, the safe option is always revealed — not just the one the
+    // user picked.
     val borderColor = when {
+        !answered && isSelected -> AppCyan
         !answered -> AppGray.copy(alpha = 0.3f)
         choice.isSafe -> SimSuccess
         isChosen -> SimDanger
@@ -568,7 +658,11 @@ private fun ChoiceRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = if (answered && choice.isSafe) SimSuccess.copy(alpha = 0.10f) else AppCard,
+                color = when {
+                    answered && choice.isSafe -> SimSuccess.copy(alpha = 0.10f)
+                    !answered && isSelected -> AppCyan.copy(alpha = 0.14f)
+                    else -> AppCard
+                },
                 shape = RoundedCornerShape(14.dp)
             )
             .border(1.5.dp, borderColor, RoundedCornerShape(14.dp))
@@ -644,7 +738,9 @@ private fun FeedbackPanel(
 private fun ResultStage(
     correct: Int,
     total: Int,
-    xpEarned: Int,
+    heartsLost: Int,
+    award: XpAward,
+    isReplay: Boolean,
     onFinish: () -> Unit
 ) {
     val passed = correct >= (total + 1) / 2  // majority correct
@@ -691,18 +787,16 @@ private fun ResultStage(
 
         Spacer(Modifier.height(28.dp))
 
-        Row(
-            modifier = Modifier
-                .background(AppCard, RoundedCornerShape(16.dp))
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(Icons.Filled.Star, contentDescription = null, tint = AppCyan,
-                modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(10.dp))
-            Text("+$xpEarned XP", color = AppWhite, fontSize = 20.sp,
-                fontWeight = FontWeight.Bold)
+        if (isReplay) {
+            ReplayNotice()
+        } else {
+            XpBreakdown(
+                award = award,
+                heartsLost = heartsLost,
+                hintsUsed = 0,
+                hintsPaid = 0,
+                quiz = true
+            )
         }
 
         Spacer(Modifier.weight(1f))
@@ -715,6 +809,39 @@ private fun ResultStage(
         ) {
             Text("CONTINUE", fontWeight = FontWeight.Bold, fontSize = 15.sp)
         }
+    }
+}
+
+/** Same gear and dialog as the lab header, so every level offers the same settings. */
+@Composable
+private fun QuizSettingsButton() {
+    var showSettings by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .background(AppCard, RoundedCornerShape(10.dp))
+            .clickable { showSettings = true },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Settings,
+            contentDescription = "Settings",
+            tint = AppCyan,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+
+    if (showSettings) {
+        SettingsDialog(
+            onDismiss = { showSettings = false },
+            onSignOut = {
+                showSettings = false
+                FirebaseAuth.getInstance().signOut()
+                (context as? Activity)?.recreate()
+            }
+        )
     }
 }
 

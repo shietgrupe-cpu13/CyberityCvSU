@@ -1,0 +1,300 @@
+/* Cyberity — Sixty Seconds (level 350).
+ * Local only. Six recall questions from Unit 3 against one 60-second clock.
+ *
+ * The clock is wall-clock based rather than a tick count, so a WebView that
+ * throttles timers in the background cannot hand the student extra seconds.
+ */
+
+var Cyberity = (function () {
+  function safe(fn) {
+    try { if (typeof AndroidLab !== 'undefined') fn(); } catch (e) { /* preview */ }
+  }
+  return {
+    clueFound: function (id) { safe(function () { AndroidLab.notifyClueFound(id); }); },
+    flagDiscovered: function (token) { safe(function () { AndroidLab.notifyFlagDiscovered(token); }); }
+  };
+})();
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+var TOTAL_SECONDS = 60;
+var PASS_MARK = 5;
+var PASS_CODE = 'CYBERITY{s1xty_s3c0nds_fl4t}';
+
+/* ---------------------------------------------------------------------------
+ * The six questions. Kept short on purpose: at ten seconds each, a long stem
+ * tests reading speed rather than recall.
+ * ------------------------------------------------------------------------ */
+var QUESTIONS = [
+  {
+    from: '301',
+    q: 'An email from a real classmate\u2019s address passes every mail check and asks you to sign in again. What does the pass prove?',
+    options: [
+      'She typed it herself',
+      'It came from her real account \u2014 which may be in someone else\u2019s hands',
+      'The sign-in page is safe',
+      'Nothing at all \u2014 the checks are always fake'
+    ],
+    correct: 1,
+    why: 'The checks confirm which domain sent it, not who was typing. A stolen password ' +
+      'lets an attacker send from inside the real account.'
+  },
+  {
+    from: '302',
+    q: 'Which part of this address decides who owns the page?<br>' +
+       '<span class="mono q-url">cvsu.edu.ph.grades-portal.example/login</span>',
+    options: ['cvsu.edu.ph', 'grades-portal.example', 'login', 'ph'],
+    correct: 1,
+    why: 'The owner is the two pieces just before the first single slash. Everything to ' +
+      'the left is a label the attacker chose.'
+  },
+  {
+    from: '303',
+    q: 'Someone with full hands asks you to hold the badge door. What is the risk called?',
+    options: ['Phishing', 'Tailgating', 'Vishing', 'Smishing'],
+    correct: 1,
+    why: 'Tailgating: following an authorised person through a controlled door. The badge ' +
+      'log shows one swipe and two people.'
+  },
+  {
+    from: '304',
+    q: 'A text lands in the same thread as your real GCash receipts. What does that prove?',
+    options: [
+      'It is genuine — only GCash can post there',
+      'Nothing. The sender ID is a label anyone can set',
+      'Your SIM was cloned',
+      'Your phone is infected'
+    ],
+    correct: 1,
+    why: 'Your phone groups messages by sender ID and never checks who set it, so a scam ' +
+      'text lands under the real receipts.'
+  },
+  {
+    from: '304',
+    q: 'You have won a prize you never entered for. What gives every version of this away?',
+    options: [
+      'Bad grammar',
+      'It comes from a mobile number',
+      'You must send money or details before you receive anything',
+      'The amount is large'
+    ],
+    correct: 2,
+    why: 'Pay-to-receive is the constant. Fees, taxes and "refundable" deposits are the ' +
+      'same move wearing different words.'
+  },
+  {
+    from: '304',
+    q: 'A caller from your bank’s fraud desk needs the OTP to cancel a fraudulent charge. What settles it?',
+    options: [
+      'He knew the last four digits of the card',
+      'He called from a landline',
+      'No bank ever asks for an OTP — the request itself is the proof',
+      'He would not give an employee number'
+    ],
+    correct: 2,
+    why: 'An OTP exists to prove the account owner authorises a transaction, so anyone ' +
+      'asking for yours is authorising theirs.'
+  }
+];
+
+/* ---------------------------------------------------------------------------
+ * Run state
+ * ------------------------------------------------------------------------ */
+var run = null;
+var ticker = null;
+// Once passed, later runs are practice: they no longer report a failed run.
+var passedOnce = false;
+
+/* Fisher-Yates. Every run deals the questions, and each question's options, in
+ * a fresh order, so a retry tests the material rather than a remembered
+ * sequence of positions. Answers are stored by original index, so scoring and
+ * the results screen never depend on what order anything was shown in. */
+function shuffled(n) {
+  var a = [];
+  for (var i = 0; i < n; i++) a.push(i);
+  for (var j = n - 1; j > 0; j--) {
+    var k = Math.floor(Math.random() * (j + 1));
+    var t = a[j]; a[j] = a[k]; a[k] = t;
+  }
+  return a;
+}
+
+function startQuiz() {
+  run = {
+    index: 0,
+    order: shuffled(QUESTIONS.length),
+    optionOrder: QUESTIONS.map(function (q) { return shuffled(q.options.length); }),
+    answers: {},
+    endsAt: Date.now() + TOTAL_SECONDS * 1000,
+    over: false
+  };
+  Cyberity.clueFound('quiz_attempted');
+
+  var label = document.querySelector('.timer-label');
+  if (label) label.textContent = 'Time remaining';
+
+  if (ticker) clearInterval(ticker);
+  ticker = setInterval(tick, 100);
+
+  renderQuestion();
+  tick();
+}
+
+function secondsLeft() {
+  if (!run) return TOTAL_SECONDS;
+  return Math.max(0, (run.endsAt - Date.now()) / 1000);
+}
+
+function tick() {
+  if (!run || run.over) return;
+
+  var left = secondsLeft();
+  var bar = document.getElementById('timer-fill');
+  var num = document.getElementById('timer-num');
+
+  if (bar) bar.style.width = (left / TOTAL_SECONDS * 100) + '%';
+  if (num) num.textContent = Math.ceil(left) + 's';
+
+  var strip = document.getElementById('timer');
+  if (strip) {
+    strip.className = 'timer' +
+      (left <= 10 ? ' critical' : (left <= 20 ? ' low' : ''));
+  }
+
+  if (left <= 0) finish(true);
+}
+
+function answer(choice) {
+  if (!run || run.over) return;
+  run.answers[run.order[run.index]] = choice;
+  run.index++;
+
+  if (run.index >= QUESTIONS.length) {
+    finish(false);
+  } else {
+    renderQuestion();
+  }
+}
+
+function renderQuestion() {
+  var qi = run.order[run.index];
+  var q = QUESTIONS[qi];
+
+  var options = run.optionOrder[qi].map(function (i) {
+    return '<button class="quiz-option" onclick="answer(' + i + ')">' +
+      escapeHtml(q.options[i]) + '</button>';
+  }).join('');
+
+  document.getElementById('stage').innerHTML =
+    '<div class="quiz-count">Question ' + (run.index + 1) + ' of ' + QUESTIONS.length +
+      ' <span class="quiz-from">from ' + escapeHtml(q.from) + '</span></div>' +
+    '<div class="artifact a-msg quiz-card">' +
+      '<span class="artifact-tag">QUESTION</span>' +
+      '<div class="quiz-q">' + q.q + '</div>' +
+    '</div>' +
+    '<div class="quiz-options">' + options + '</div>';
+}
+
+function finish(timedOut) {
+  run.over = true;
+  if (ticker) { clearInterval(ticker); ticker = null; }
+
+  var score = 0;
+  QUESTIONS.forEach(function (q, i) {
+    if (run.answers[i] === q.correct) score++;
+  });
+
+  var passed = score >= PASS_MARK;
+  var penalised = !passed && !passedOnce;
+
+  // Results follow the order the questions were shown in this run.
+  var rows = run.order.map(function (qi, i) {
+    var q = QUESTIONS[qi];
+    var given = run.answers[qi];
+    var right = given === q.correct;
+    var state = given === undefined
+      ? '<span class="res-mark skipped">NOT REACHED</span>'
+      : (right ? '<span class="res-mark ok">CORRECT</span>'
+               : '<span class="res-mark bad">WRONG</span>');
+
+    return '<div class="res-row">' +
+        '<div class="res-top">' +
+          '<span class="res-n">Q' + (i + 1) + '</span>' + state +
+        '</div>' +
+        '<div class="res-q">' + q.q + '</div>' +
+        (right ? '' :
+          '<div class="res-answer">Answer: <b>' + escapeHtml(q.options[q.correct]) + '</b></div>' +
+          '<div class="note">' + escapeHtml(q.why) + '</div>') +
+      '</div>';
+  }).join('');
+
+  var headline = timedOut
+    ? 'Time. You answered ' + Object.keys(run.answers).length +
+      ' of ' + QUESTIONS.length + '.'
+    : 'All six answered with ' + Math.ceil(secondsLeft()) + 's to spare.';
+
+  document.getElementById('stage').innerHTML =
+    '<div class="score-card ' + (passed ? 'passed' : 'failed') + '">' +
+      '<div class="score-line">' + escapeHtml(headline) + '</div>' +
+      '<div class="score-big">' + score + ' / ' + QUESTIONS.length + '</div>' +
+      '<div class="score-sub">' +
+        (passed ? 'Pass mark is ' + PASS_MARK + '. Well inside it.'
+                : 'Pass mark is ' + PASS_MARK + '. Read the answers below, then run it again.') +
+      '</div>' +
+    '</div>' +
+    (passed
+      ? '<div class="banner show good">Pass code: <b class="mono">' + PASS_CODE + '</b></div>'
+      : '') +
+    '<button class="cta" onclick="startQuiz()">' +
+      (passed ? 'RUN IT AGAIN' : 'TRY AGAIN') + '</button>' +
+    '<div class="section-label">Every question</div>' +
+    rows +
+    (passedOnce || passed
+      ? '<div class="appui"><b>Practice runs</b>You have passed, so extra runs cost ' +
+        'nothing.</div>'
+      : '<div class="appui"><b>No hearts at stake</b>Each failed run takes <b>10 XP</b> ' +
+        'off this level\u2019s payout, which never drops below 100. Read the answers ' +
+        'before you go again.</div>');
+
+  // Freeze the clock so the results screen doesn't still read "time remaining".
+  var bar = document.getElementById('timer-fill');
+  if (bar && timedOut) bar.style.width = '0%';
+  var label = document.querySelector('.timer-label');
+  if (label) label.textContent = timedOut ? 'Time ran out' : 'Run finished';
+  if (timedOut) {
+    var num = document.getElementById('timer-num');
+    if (num) num.textContent = '0s';
+  }
+
+  if (penalised) Cyberity.clueFound('quiz_failed_run');
+
+  if (passed) {
+    passedOnce = true;
+    Cyberity.clueFound('quiz_passed');
+    Cyberity.flagDiscovered('pass_code');
+  }
+
+  window.scrollTo(0, 0);
+}
+
+/* ---------------------------------------------------------------------------
+ * Opening screen
+ * ------------------------------------------------------------------------ */
+function renderStart(mountId) {
+  document.getElementById(mountId).innerHTML =
+    '<div class="quiz-intro">' +
+      '<div class="quiz-big">6 questions</div>' +
+      '<div class="quiz-big accent">60 seconds</div>' +
+      '<div class="quiz-intro-note">One clock for the whole set — it does not reset ' +
+        'between questions. Five correct passes. Tapping an option moves you straight on, ' +
+        'so read before you tap.</div>' +
+    '</div>' +
+    '<button class="cta" onclick="startQuiz()">START</button>' +
+    '<div class="appui"><b>No hearts at stake</b>Restart as often as you like, but each ' +
+      'failed run before you pass takes <b>10 XP</b> off this level\u2019s payout (never ' +
+      'below 100).</div>';
+}

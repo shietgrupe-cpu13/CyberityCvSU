@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Outbreak map</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated case &middot; fictional files and machines &middot; nothing runs</div>
+
+  <div class="desk-head">
+    <h1>Outbreak map</h1>
+    <p>ORG-DRIVE (E:) &middot; CvSU Computer Science Society &middot; one week</p>
+  </div>
+  <div class="tabs"><a class="tab on" href="map.html">Map</a><a class="tab" href="macro.html">Macro</a><a class="tab" href="wizard.html">Installer</a><a class="tab" href="hash.html">Hash</a></div>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="legend"><span><i class="l-clean"></i>clean</span><span><i class="l-visited"></i>drive was here</span><span><i class="l-infected"></i>Word template infected</span></div>
+  </div>
+
+  <div id="timeline-box">
+    <div class="timeline">
+      <div class="tl-top"><span class="tl-when" id="tl-when"></span><span id="tl-count"></span></div>
+      <input class="tl-range" id="tl-range" type="range" min="0" max="7" step="1" value="0" oninput="setStep(parseInt(this.value, 10))" aria-label="Timeline">
+      <div class="tl-nav">
+        <button class="nav-btn" id="tl-prev" onclick="setStep(mapStep - 1)">&#8592; Earlier</button>
+        <button class="nav-btn primary" id="tl-next" onclick="setStep(mapStep + 1)">Later &#8594;</button>
+      </div>
+    </div>
+    <div class="event-card" id="event"></div>
+    <div class="pad"><button class="cta" onclick="startCleanup()">BUILD THE CLEANUP LIST</button></div>
+  </div>
+
+  <div id="cleanup-box" style="display:none" class="pad">
+    <div class="appui">
+      <b>Cleanup list</b>
+      Tap every computer that now has an infected Word template, on the map or below. Colours are hidden: decide from what happened at each one.
+      <div class="pick-list" id="pick-list"></div>
+    </div>
+    <button class="cta" onclick="submitCleanup()">SUBMIT CLEANUP LIST</button>
+    <button class="cta ghost" onclick="stopCleanup()">BACK TO THE TIMELINE</button>
+    <div class="banner" id="cleanup-banner"></div>
+  </div>
+
+  <div class="foot">Drag the slider or use the buttons. Tap a building to jump to what happened there.</div>
+
+  <script src="script.js"></script>
+  <script>renderMap();</script>
+</body>
+</html>

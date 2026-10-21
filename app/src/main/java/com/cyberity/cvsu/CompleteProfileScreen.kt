@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,14 +30,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ktx.userProfileChangeRequest
+import com.google.firebase.auth.userProfileChangeRequest
 
 // ===========================================================================
 // COMPLETE YOUR PROFILE
@@ -55,6 +55,7 @@ fun CompleteProfileScreen(
     val debugBuild = remember { context.isDebugBuild() }
 
     var studentId by rememberSaveable { mutableStateOf("") }
+    var yearLevel by rememberSaveable { mutableStateOf<Int?>(null) }
     // The username chosen at registration, if this account has one. When it
     // exists the name isn't asked again — it stays the same as registered.
     val registeredName = remember { user?.displayName?.takeIf { it.isNotBlank() } }
@@ -71,24 +72,25 @@ fun CompleteProfileScreen(
         val uid = user?.uid ?: return onSignOut()
         val idError = StudentIdRules.validateStudentId(studentId, debugBuild)
         val nameError = if (registeredName != null) null else StudentIdRules.validateDisplayName(displayName)
-        errorMessage = idError ?: nameError ?: ""
+        errorMessage = idError ?: nameError ?: if (!YearLevels.isValid(yearLevel)) "Please select your year level" else ""
         if (errorMessage.isNotEmpty()) return
 
         val normalizedId = StudentIdRules.normalize(studentId)
         val profile = UserProfile(
             studentId = normalizedId,
             displayName = displayName.trim(),
-            // DEV- IDs mark test accounts, so they can be hidden from the leaderboard.
-            isTester = StudentIdRules.isDevId(normalizedId)
+            // Tester access is assigned by an administrator in Firestore.
+            isTester = false,
+            yearLevel = yearLevel
         )
 
         isSaving = true
-        UserProfileRepository.save(uid, user?.email, profile) { result ->
+        UserProfileRepository.save(uid, user.email, profile) { result ->
             isSaving = false
             when (result) {
                 ProfileSaveResult.Saved -> {
                     if (registeredName == null) {
-                        user?.updateProfile(userProfileChangeRequest { this.displayName = profile.displayName })
+                        user.updateProfile(userProfileChangeRequest { this.displayName = profile.displayName })
                     }
                     ProfileCache.markComplete(context, uid)
                     onProfileSaved()
@@ -149,6 +151,9 @@ fun CompleteProfileScreen(
                     keyboardType = if (debugBuild) KeyboardType.Text else KeyboardType.Number
                 )
 
+                Spacer(modifier = Modifier.height(12.dp))
+                YearLevelField(yearLevel, { yearLevel = it }, enabled = !isSaving)
+
                 if (debugBuild) {
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
@@ -179,7 +184,7 @@ fun CompleteProfileScreen(
 
                 if (errorMessage.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(errorMessage, color = Color.Red, fontSize = 13.sp)
+                    Text(errorMessage, color = AppDanger, fontSize = 13.sp)
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -215,17 +220,46 @@ fun ProfileCheckScreen(
     failed: Boolean,
     errorDetail: String?,
     onRetry: () -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    slow: Boolean = false
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(AppNavy)
+            .systemBarsPadding()
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
         if (!failed) {
-            CircularProgressIndicator(color = AppCyan)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                AuthBrand()
+                Spacer(modifier = Modifier.height(24.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = AppCard),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(color = AppCyan)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(if (slow) "Still checking your student profile" else "Checking your student profile", color = AppWhite, fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            if (slow) "This is taking longer than usual. Check your internet connection. You can sign out while we wait."
+                            else "Your learning space will open when your profile is ready.",
+                            color = AppGray, fontSize = 14.sp
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(onClick = onSignOut) {
+                    Text("Sign out", color = AppGray)
+                }
+            }
         } else {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
@@ -243,7 +277,7 @@ fun ProfileCheckScreen(
                 // The real reason, shown only in debug builds to help development.
                 if (errorDetail != null && LocalContext.current.isDebugBuild()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    Text(errorDetail, color = Color.Red, fontSize = 12.sp)
+                    Text(errorDetail, color = AppDanger, fontSize = 12.sp)
                 }
                 Spacer(modifier = Modifier.height(20.dp))
                 Button(

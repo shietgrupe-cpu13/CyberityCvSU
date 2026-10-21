@@ -1,0 +1,690 @@
+/* Cyberity simulation palette: Terminal Teal.
+   Dark values below are the default. The app sets data-theme="light" on <html>
+   when Light Mode is on (see the first <script> in each page and LabBridge.theme()).
+   --on-blue / --on-accent: text on solid teal or accent fills. */
+/* Dark Mode (default) */
+:root {
+  --navy: #0A1016;
+  --card: #17222E;
+  --blue: #14B8A6;
+  --blue-dark: #0F2D2E;
+  --cyan: #5EEAD4;
+  --white: #E8EEF3;
+  --gray: #8FA0B2;
+  --red: #F2606C;
+  --green: #3FD68A;
+  --amber: #F2B84B;
+  --violet: #B49BF7;
+  --surface: #1C2A38;
+  --code-bg: #05090D;
+  --on-blue: #04211E;
+  --on-accent: #04211E;
+  --navy-rgb: 10, 16, 22;
+  --card-rgb: 23, 34, 46;
+  --blue-rgb: 20, 184, 166;
+  --blue-dark-rgb: 15, 45, 46;
+  --cyan-rgb: 94, 234, 212;
+  --white-rgb: 232, 238, 243;
+  --gray-rgb: 143, 160, 178;
+  --red-rgb: 242, 96, 108;
+  --green-rgb: 63, 214, 138;
+  --amber-rgb: 242, 184, 75;
+  --violet-rgb: 180, 155, 247;
+  --surface-rgb: 28, 42, 56;
+}
+/* Light Mode */
+:root[data-theme="light"] {
+  --navy: #AECDC7;
+  --card: #D4E8E3;
+  --blue: #085B56;
+  --blue-dark: #A4CFC4;
+  --cyan: #095B58;
+  --white: #0A1A1E;
+  --gray: #40555C;
+  --red: #A40F2C;
+  --green: #0A5F2A;
+  --amber: #6C4C00;
+  --violet: #5637BC;
+  --surface: #BFDCD5;
+  --code-bg: #BFCEDC;
+  --on-blue: #FFFFFF;
+  --on-accent: #FFFFFF;
+  --navy-rgb: 174, 205, 199;
+  --card-rgb: 212, 232, 227;
+  --blue-rgb: 8, 91, 86;
+  --blue-dark-rgb: 164, 207, 196;
+  --cyan-rgb: 9, 91, 88;
+  --white-rgb: 10, 26, 30;
+  --gray-rgb: 64, 85, 92;
+  --red-rgb: 164, 15, 44;
+  --green-rgb: 10, 95, 42;
+  --amber-rgb: 108, 76, 0;
+  --violet-rgb: 86, 55, 188;
+  --surface-rgb: 191, 220, 213;
+}
+
+/* Cyberity — Hardening Review (level 104). Same palette and base components
+   as the Registrar Incident Desk, plus permission and layer controls. */
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--navy);
+  color: var(--white);
+  font-family: -apple-system, "Roboto", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+body { padding-bottom: 28px; }
+
+.sim-ribbon {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--blue-dark);
+  color: var(--cyan);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.25);
+}
+
+.mono { font-family: "Roboto Mono", monospace; word-break: break-all; }
+
+/* ---------- desk header ---------- */
+
+.desk-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
+}
+
+.desk-head h1 { margin: 0; font-size: 18px; }
+.desk-head p { margin: 2px 0 0; font-size: 12px; color: var(--gray); }
+
+.section-label {
+  padding: 14px 16px 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+/* ---------- ticket rows ---------- */
+
+.tickets { margin: 0; padding: 0; }
+
+.ticket-row {
+  display: flex;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.12);
+  text-decoration: none;
+  color: inherit;
+}
+
+.ticket-row:active { background: var(--card); }
+
+.sev-bar { width: 4px; flex: 0 0 auto; }
+.sev-bar.high { background: var(--red); }
+.sev-bar.medium { background: var(--amber); }
+
+.ticket-body { flex: 1 1 auto; min-width: 0; padding: 12px 14px; }
+
+.ticket-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--gray);
+}
+
+.ticket-id { color: var(--cyan); font-weight: 700; letter-spacing: 0.04em; }
+
+.ticket-title { display: block; font-size: 14px; font-weight: 700; margin-top: 3px; }
+.ticket-from { display: block; font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+.seen-chip {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: rgba(var(--gray-rgb), 0.16);
+  color: var(--gray);
+}
+
+.seen-chip.new { background: rgba(var(--cyan-rgb), 0.16); color: var(--cyan); }
+
+/* ---------- tool tiles ---------- */
+
+.tools { display: flex; flex-direction: column; gap: 8px; padding: 0 12px; }
+
+.tool {
+  display: block;
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  padding: 11px 12px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.tool-name { font-size: 14px; font-weight: 700; }
+.tool-sub { font-size: 12px; color: var(--gray); margin-top: 2px; }
+
+/* ---------- shared detail pieces ---------- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.18);
+}
+
+.back-btn {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.25);
+  color: var(--white);
+  border-radius: 9px;
+  padding: 5px 11px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.topbar-title { font-size: 13px; color: var(--gray); }
+
+.detail { padding: 14px 16px; }
+.detail h2 { margin: 0 0 4px; font-size: 17px; line-height: 1.35; }
+.detail-sub { font-size: 12px; color: var(--gray); margin-bottom: 14px; }
+
+.report {
+  background: rgba(var(--card-rgb), 0.6);
+  border-left: 3px solid var(--cyan);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.evidence {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  margin-bottom: 9px;
+  overflow: hidden;
+}
+
+.evidence-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  cursor: pointer;
+}
+
+.evidence-name {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.evidence-sub { display: block; font-size: 12px; color: var(--gray); margin-top: 2px; }
+.evidence-caret { color: var(--gray); font-size: 13px; flex: 0 0 auto; }
+
+.evidence-body { display: none; padding: 0 12px 12px; }
+.evidence.open .evidence-body { display: block; }
+
+.rows {
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--gray);
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.rows .hot { color: var(--red); }
+.rows .ok { color: var(--green); }
+.rows .warn { color: var(--amber); }
+
+.note { font-size: 12px; color: var(--gray); margin-top: 8px; }
+
+.cta {
+  display: block;
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px;
+  margin: 12px 0 6px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.cta.danger {
+  background: transparent;
+  border: 1px solid rgba(var(--red-rgb), 0.55);
+  color: var(--red);
+}
+
+.banner {
+  display: none;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  margin-top: 10px;
+}
+
+.banner.show { display: block; }
+.banner.good { background: rgba(var(--green-rgb), 0.12); color: var(--green); }
+.banner.warn { background: rgba(var(--amber-rgb), 0.12); color: var(--amber); }
+.banner.bad { background: rgba(var(--red-rgb), 0.12); color: var(--red); }
+
+/* ---------- file sharing ---------- */
+
+.file-card {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.file-name { font-family: "Roboto Mono", monospace; font-size: 13px; word-break: break-all; }
+.file-meta { font-size: 12px; color: var(--gray); margin-top: 3px; }
+
+.access-now { margin-top: 8px; font-size: 12px; }
+.access-now b { color: var(--amber); }
+.access-now b.locked { color: var(--green); }
+
+.option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.option.selected { border-color: var(--cyan); background: rgba(var(--cyan-rgb), 0.10); }
+
+.radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--gray);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.option.selected .radio { border-color: var(--cyan); background: var(--cyan); box-shadow: inset 0 0 0 3px var(--card); }
+
+.option-title { font-size: 14px; font-weight: 700; }
+.option-sub { font-size: 12px; color: var(--gray); margin-top: 1px; }
+
+/* ---------- integrity checker ---------- */
+
+.hash-row {
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-bottom: 8px;
+}
+
+.hash-row.match { border-color: rgba(var(--green-rgb), 0.5); }
+.hash-row.mismatch { border-color: rgba(var(--red-rgb), 0.6); }
+
+.hash-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+
+.small-btn {
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 8px;
+  background: var(--cyan);
+  color: var(--on-accent);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.small-btn:disabled { opacity: 0.4; }
+
+.hash-lines {
+  font-family: "Roboto Mono", monospace;
+  font-size: 11px;
+  color: var(--gray);
+  margin-top: 8px;
+  line-height: 1.7;
+  word-break: break-all;
+}
+
+.hash-lines .ok { color: var(--green); }
+.hash-lines .hot { color: var(--red); }
+
+.verdict { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; margin-top: 4px; }
+.verdict.ok { color: var(--green); }
+.verdict.hot { color: var(--red); }
+
+/* ---------- service status ---------- */
+
+.svc-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+}
+
+.svc-dot.up { background: var(--green); }
+.svc-dot.degraded { background: var(--amber); }
+.svc-dot.down { background: var(--red); }
+
+.svc-state { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; }
+.svc-state.up { color: var(--green); }
+.svc-state.degraded { color: var(--amber); }
+.svc-state.down { color: var(--red); }
+
+.foot { padding: 14px 16px; font-size: 11px; color: var(--gray); }
+.foot a { color: var(--cyan); }
+
+/* ---------- permissions ---------- */
+
+.perm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 2px;
+  border-bottom: 1px solid rgba(var(--gray-rgb), 0.12);
+  cursor: pointer;
+}
+
+.perm:last-child { border-bottom: none; }
+
+.check {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid var(--gray);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.perm.on .check { background: var(--cyan); border-color: var(--cyan); }
+
+.perm-name { font-family: "Roboto Mono", monospace; font-size: 12px; }
+.perm-sub { font-size: 11px; color: var(--gray); }
+
+/* ---------- layer switches ---------- */
+
+.layer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--card);
+  border: 1px solid rgba(var(--gray-rgb), 0.22);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.layer-text { flex: 1 1 auto; min-width: 0; }
+.layer-tag { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); }
+.layer-name { font-size: 14px; font-weight: 700; }
+.layer-sub { font-size: 12px; color: var(--gray); }
+
+.switch {
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(var(--gray-rgb), 0.35);
+  position: relative;
+  flex: 0 0 auto;
+  transition: background 0.15s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: left 0.15s;
+}
+
+.layer.on .switch { background: var(--green); }
+.layer.on .switch::after { left: 21px; }
+
+.select {
+  width: 100%;
+  background: var(--card);
+  color: var(--white);
+  border: 1px solid rgba(var(--gray-rgb), 0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 13px;
+}
+
+/* ==========================================================================
+   SCENARIO CONTENT FRAMES — shared block, identical in every simulation.
+   Paste this unchanged into each styles.css; never edit one copy alone.
+
+   A frame means "judge this". Anything the app says ABOUT the simulation —
+   a tool, an instruction, a button — takes .appui instead and is never framed.
+
+   The rail colour says what KIND of thing it is, never whether it is safe.
+   Green, amber and red stay reserved for verdicts and severity, which the
+   student only sees after answering.
+   ========================================================================== */
+
+.artifact {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid rgba(var(--cyan-rgb), 0.30);
+  border-left: 4px solid var(--cyan);
+  border-radius: 3px 14px 14px 3px;
+  padding: 26px 14px 13px;
+  margin: 12px 0;
+}
+
+.artifact-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--cyan);
+  color: var(--on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  padding: 2px 11px 3px;
+  border-radius: 0 0 11px 0;
+}
+
+/* Message — email, SMS, chat, a forwarded report. */
+.artifact.a-msg { border-color: rgba(var(--cyan-rgb), 0.30); border-left-color: var(--cyan); }
+.artifact.a-msg > .artifact-tag { background: var(--cyan); }
+
+/* Web page — anything rendered as a site in the sandbox browser. */
+.artifact.a-web { border-color: rgba(var(--white-rgb), 0.28); border-left-color: var(--white); }
+.artifact.a-web > .artifact-tag { background: var(--white); }
+
+/* Person — what a human said: a report, an interview, a recorded call. */
+.artifact.a-per { border-color: rgba(var(--violet-rgb), 0.32); border-left-color: var(--violet); }
+.artifact.a-per > .artifact-tag { background: var(--violet); }
+
+/* System record — logs, headers, page code, badge swipes. Always monospaced. */
+.artifact.a-sys { border-color: rgba(var(--gray-rgb), 0.30); border-left-color: var(--gray); }
+.artifact.a-sys > .artifact-tag { background: var(--gray); }
+
+/* The simulation's own UI: a tool or an instruction, never evidence. */
+.appui {
+  border: 1px dashed rgba(var(--gray-rgb), 0.40);
+  border-radius: 12px;
+  background: rgba(var(--blue-dark-rgb), 0.40);
+  padding: 12px 14px;
+  margin: 12px 0;
+  color: var(--gray);
+  font-size: 13px;
+}
+
+.appui b {
+  display: block;
+  color: var(--white);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+/* Content sitting directly inside a frame shouldn't add an outer gap. */
+.artifact > h2 { margin-top: 0; }
+.artifact > *:last-child { margin-bottom: 0; }
+
+/* ==========================================================================
+   CHOICE CARDS — the list a simulation opens on, the items the student picks.
+   Shared block: keep it identical in every styles.css.
+
+   One outlined card per choice with a gap between them, instead of rows
+   divided by hairlines, so a list of five can be counted at a glance and
+   each item is obviously its own tappable thing.
+
+   The OUTLINE carries progress, not danger: bright while an item is still
+   waiting for the student, faint once it has been opened. The optional left
+   rail carries whatever that desk genuinely sorts by — severity on a SOC
+   queue, kind of contact on a review desk — and is left off where there is
+   nothing to sort by.
+   ========================================================================== */
+
+.choice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--card);
+  border: 1px solid rgba(var(--cyan-rgb), 0.18);
+  border-radius: 14px;
+  margin: 0 12px 10px;
+  padding: 12px 14px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* Still waiting for the student. */
+.choice.unread { border-color: rgba(var(--cyan-rgb), 0.50); }
+
+/* Dealt with: the card recedes so the remaining work stands out. */
+.choice.read { border-color: rgba(var(--gray-rgb), 0.20); }
+
+.choice:active { background: var(--blue-dark); }
+
+/* A rail sits flush against the card's left edge, so the card gives up its
+   own padding and lets the body carry it. */
+.choice.has-rail { align-items: stretch; padding: 0; gap: 0; }
+
+/* Long records wrap instead of running off a phone screen (matches the other
+   simulations; previously these needed a sideways scroll). */
+.rows { white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
+
+/* ==========================================================================
+   UNIT 1 LIGHT-MODE POLISH — light mode only, theme tokens only.
+   Separates the page header, section labels, the list the student works
+   through, and the desk's own tools. Never marks which item is dangerous:
+   every card in a list gets the same treatment.
+   ========================================================================== */
+
+:root[data-theme="light"] .desk-head,
+:root[data-theme="light"] .console-head,
+:root[data-theme="light"] .mail-head {
+  background: var(--card);
+  border-bottom: 1px solid rgba(var(--cyan-rgb), 0.28);
+  padding: 14px 16px 12px;
+}
+
+:root[data-theme="light"] .topbar {
+  background: var(--card);
+  border-bottom-color: rgba(var(--cyan-rgb), 0.28);
+}
+
+:root[data-theme="light"] .section-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  padding: 18px 16px 8px;
+}
+
+:root[data-theme="light"] .section-label::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: rgba(var(--cyan-rgb), 0.28);
+}
+
+/* Tools are the desk's own UI, not evidence: dashed like .appui, with an open cue. */
+:root[data-theme="light"] .tool {
+  position: relative;
+  background: rgba(var(--blue-dark-rgb), 0.55);
+  border: 1px dashed rgba(var(--cyan-rgb), 0.45);
+  padding-right: 38px;
+}
+
+:root[data-theme="light"] .tool::after {
+  content: "\203A";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-52%);
+  font-size: 24px;
+  line-height: 1;
+  color: var(--cyan);
+}
+
+:root[data-theme="light"] .tool-name { color: var(--cyan); }
+
+/* IDs read as reference codes. */
+:root[data-theme="light"] .ticket-id,
+:root[data-theme="light"] .alert-id {
+  font-family: "Roboto Mono", monospace;
+  background: rgba(var(--cyan-rgb), 0.12);
+  border-radius: 6px;
+  padding: 1px 7px;
+}
+
+/* "Still to do" pills are solid, so progress is visible at a glance. */
+:root[data-theme="light"] .seen-chip.new,
+:root[data-theme="light"] .alert-row.new .alert-badge,
+:root[data-theme="light"] .mail-item.unread .mail-badge {
+  background: var(--cyan);
+  color: var(--on-accent);
+  border-color: transparent;
+}
+
+:root[data-theme="light"] .sev-bar { width: 6px; }
+
+/* The job description box had a hard-coded dark navy background, unreadable in light mode. */
+:root[data-theme="light"] .evidence[id^="job-"] { background: var(--surface) !important; }

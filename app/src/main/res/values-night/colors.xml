@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- "System" splash when the phone is in dark mode. Only the System splash
+         theme reads these; the app's own Light / Dark choice is unaffected. -->
+    <color name="cyberity_background_system">@color/cyberity_background_dark</color>
+    <bool name="cyberity_light_system_bars">false</bool>
+</resources>

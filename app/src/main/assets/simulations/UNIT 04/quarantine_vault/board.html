@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Classification board</title>
+  <!-- Match the app's Light / Dark mode before the page draws. -->
+  <script>try{document.documentElement.setAttribute('data-theme',AndroidLab.theme())}catch(e){}</script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="sim-ribbon">Simulated vault &middot; fictional files &middot; nothing installs or runs</div>
+
+  <div class="topbar">
+    <button class="back-btn" onclick="location.href='vault.html'">&#8592; Vault</button>
+    <span class="topbar-title">Classification board</span>
+  </div>
+
+  <div class="desk-head">
+    <h1>Classify all five</h1>
+    <p>Pick one label for each file by its main behaviour, then submit.</p>
+  </div>
+
+  <div id="board"></div>
+
+  <div class="board-actions">
+    <button class="cta" onclick="submitBoard()">SUBMIT CLASSIFICATION</button>
+    <div class="banner" id="board-banner"></div>
+  </div>
+
+  <div class="foot">The board only tells you how many are right, not which ones. Go back to a file's reports if you are unsure.</div>
+
+  <script src="script.js"></script>
+  <script>renderBoard('board');</script>
+</body>
+</html>

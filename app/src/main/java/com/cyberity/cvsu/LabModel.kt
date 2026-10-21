@@ -47,6 +47,10 @@ sealed interface LabAnswer {
  * [requiredClues] are ids the simulation must have reported through the JS
  * bridge before the answer box unlocks — this is what stops the level being a
  * quiz: you cannot answer until you have actually investigated.
+ *
+ * [guide] and [steps] are the taught part of the task: why this matters, then
+ * what to actually do in the simulation. Both are optional — a task with
+ * neither just shows its objective.
  */
 @Immutable
 data class LabTask(
@@ -56,6 +60,10 @@ data class LabTask(
     val answer: LabAnswer,
     val successFeedback: String,
     val failureFeedback: String,
+    /** Teaching paragraphs shown above the objective. */
+    val guide: List<String> = emptyList(),
+    /** Numbered actions to carry out inside the simulation. */
+    val steps: List<String> = emptyList(),
     val requiredClues: List<String> = emptyList(),
     val lockedMessage: String = "Investigate the simulation before you can answer.",
     val hints: List<String> = emptyList(),
@@ -74,11 +82,41 @@ data class LabDefinition(
     val startPage: String,
     val tasks: List<LabTask>,
     /** Clue ids that are dangerous actions: each costs a heart, once per attempt. */
-    val dangerousClues: List<String> = emptyList()
+    val dangerousClues: List<String> = emptyList(),
+    /**
+     * Clue id the simulation reports each time a re-runnable challenge inside it
+     * is failed (the Level 350 quiz). Unlike other clues it is counted, not
+     * collected, and each report takes [RETRY_PENALTY] XP off the payout.
+     */
+    val failedRunClue: String? = null
 ) {
     val baseUrl: String get() = "$LAB_ASSET_ROOT$assetDir/"
 }
 
+
+// ===========================================================================
+// GUIDED TOUR — optional on-screen tips, used by the Level 0 tutorial
+// ===========================================================================
+
+/** Parts of the lab screen a tip can point at. */
+enum class CoachTarget {
+    HEARTS, XP, PROGRESS, GUIDE, OBJECTIVE, STEPS, OPEN_SIM, EVIDENCE, HINT, ANSWER,
+    XP_BREAKDOWN, FINISH
+}
+
+/** When a tour plays. Each one plays once per lab run. */
+enum class CoachMoment {
+    /** The first time the task screen is shown. */
+    INTRO,
+    /** The first task that asks for a flag. */
+    FLAG,
+    /** The result screen. */
+    RESULT
+}
+
+/** One tip: a spotlight on [target] with a title and a short explanation. */
+@Immutable
+data class CoachStep(val target: CoachTarget, val title: String, val text: String)
 
 /** Human-readable label for a clue id, shown in the evidence log. */
 @Immutable
@@ -97,10 +135,16 @@ object LabValidator {
     /**
      * Flags are normalised further: whitespace removed entirely, and the
      * CYBERITY{} wrapper added if the student typed only the inner token.
+     *
+     * A missing closing brace is forgiven too: selecting text in the simulation
+     * often stops one character short, so a copied flag arrives without its "}".
      */
     fun normalizeFlag(input: String): String {
         val bare = input.trim().lowercase(Locale.ROOT).replace(" ", "")
-        return if (bare.startsWith("cyberity{")) bare else "cyberity{$bare}"
+        return when {
+            bare.startsWith("cyberity{") -> if (bare.endsWith("}")) bare else "$bare}"
+            else -> "cyberity{$bare}"
+        }
     }
 
     fun sha256(text: String): String =

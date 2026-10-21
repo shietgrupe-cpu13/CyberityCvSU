@@ -4,6 +4,16 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
+import com.google.android.gms.tasks.Task
+import com.google.android.gms.tasks.Tasks
+import com.google.firebase.firestore.DocumentSnapshot
+
+data class SavedProgress(val completed: Set<Int>, val levelXp: Map<Int, Int>, val xpSpent: Int)
+
+data class HintPurchase(val attemptId: String, val levelId: Int, val taskId: String, val number: Int) {
+    val cost: Int get() = nextHintCost(number - 1)
+    val id: String get() = LabValidator.sha256("$attemptId:$levelId:$taskId:$number")
+}
 
 // ===========================================================================
 // PROGRESS PERSISTENCE
@@ -30,7 +40,94 @@ object ProgressRepository {
     private const val FIELD_HEARTS = "hearts"
     private const val FIELD_HEARTS_UPDATED_AT = "heartsUpdatedAt"
 
-    /** Reads back the set of completed level ids for [uid]. Empty on any failure or first run. */
+    private fun saved(document: DocumentSnapshot) = SavedProgress(
+        (document.get(FIELD_COMPLETED) as? List<*>)?.mapNotNull { (it as? Number)?.toInt() }?.toSet().orEmpty(),
+        ScorePolicy.levelXp(document.get(FIELD_LEVEL_XP) as? Map<*, *>),
+        (document.getLong(FIELD_XP_SPENT) ?: 0).toInt()
+    )
+
+    fun load(uid: String): Task<SavedProgress> = db.collection(COLLECTION).document(uid)
+        .get(Source.SERVER).continueWith { saved(it.result) }
+
+    /** Preserve the original award when acknowledgement is lost or devices race. */
+    fun completeLevel(uid: String, levelId: Int, xp: Int): Task<SavedProgress> {
+        require(levelId in ScorePolicy.levelIds && xp in 0..ScorePolicy.cap(levelId))
+        val ref = db.collection(COLLECTION).document(uid)
+        return ServerClock.syncTask(uid).continueWithTask { clock ->
+            clock.result // A completion must not calculate its streak using the phone date.
+            db.runTransaction { tx ->
+                val document = tx.get(ref)
+                val previous = saved(document)
+                val awards = if (levelId in previous.levelXp) previous.levelXp else previous.levelXp + (levelId to xp)
+                val result = previous.copy(completed = previous.completed + levelId, levelXp = awards)
+                val fields = mutableMapOf<String, Any>(FIELD_COMPLETED to result.completed.toList(),
+                    FIELD_LEVEL_XP to awards.mapKeys { it.key.toString() })
+                if (levelId != 200) {
+                    fields["streakDays"] = StreakPolicy.next(
+                        (document.getLong("streakDays") ?: 0).toInt(),
+                        document.getTimestamp("streakLastActivityAt")?.toDate()?.time, checkNotNull(ServerClock.trustedNow()))
+                    fields["streakLastActivityAt"] = FieldValue.serverTimestamp()
+                    fields["streakLevelId"] = levelId
+                }
+                tx.set(ref, fields, SetOptions.merge())
+                result
+            }
+        }.continueWithTask { completion ->
+            if (completion.isSuccessful) {
+                Tasks.forResult(completion.result)
+            } else {
+                val failure = completion.exception ?: IllegalStateException("Completion unavailable.")
+                android.util.Log.w("CyberityProgress", "Completion write failed for level $levelId; checking server", failure)
+                // A lost acknowledgement, or a failed streak update on a replay, must
+                // not strand a result that the server has already confirmed. Never
+                // use the local cache as proof of completion.
+                ref.get(Source.SERVER).continueWithTask { confirmation ->
+                    val snapshot = if (confirmation.isSuccessful) confirmation.result else null
+                    val stored = snapshot?.takeIf {
+                        !it.metadata.isFromCache && !it.metadata.hasPendingWrites()
+                    }?.let { saved(it) }
+                    if (stored != null && levelId in stored.completed && levelId in stored.levelXp) {
+                        Tasks.forResult(stored)
+                    } else {
+                        Tasks.forException(failure)
+                    }
+                }
+            }
+        }.addOnSuccessListener { LeaderboardRepository.publish(uid) }
+    }
+
+    /** Receipt and debit commit together; retrying this request cannot charge twice. */
+    fun purchaseHint(uid: String, purchase: HintPurchase): Task<SavedProgress> {
+        require(purchase.levelId in ScorePolicy.levelIds && purchase.number in 1..100)
+        require(purchase.taskId.length in 1..100 && purchase.attemptId.matches(Regex("^[a-f0-9-]{36}$")))
+        val progress = db.collection(COLLECTION).document(uid)
+        val receipt = progress.collection("hintPurchases").document(purchase.id)
+        return db.runTransaction { tx ->
+            val existing = tx.get(receipt)
+            val previous = saved(tx.get(progress))
+            if (existing.exists()) {
+                check(existing.getString("attemptId") == purchase.attemptId &&
+                    existing.getLong("levelId") == purchase.levelId.toLong() &&
+                    existing.getString("taskId") == purchase.taskId &&
+                    existing.getLong("hintNumber") == purchase.number.toLong()) { "Hint purchase does not match." }
+                previous
+            } else {
+                check(xpBalance(previous.levelXp.values.sum(), previous.xpSpent) >= purchase.cost) {
+                    "You don't have enough XP for this hint."
+                }
+                val result = previous.copy(xpSpent = previous.xpSpent + purchase.cost)
+                tx.set(progress, mapOf(FIELD_XP_SPENT to result.xpSpent,
+                    "lastHintPurchase" to purchase.id), SetOptions.merge())
+                tx.set(receipt, mapOf("attemptId" to purchase.attemptId, "levelId" to purchase.levelId,
+                    "taskId" to purchase.taskId, "hintNumber" to purchase.number, "cost" to purchase.cost,
+                    "spentBefore" to previous.xpSpent, "spentAfter" to result.xpSpent,
+                    "createdAt" to FieldValue.serverTimestamp()))
+                result
+            }
+        }.addOnSuccessListener { LeaderboardRepository.publish(uid) }
+    }
+
+    /** Reads back the set of completed level ids for [uid]. Empty on first run; failures retain cached state. */
     fun loadCompletedLevels(uid: String, onResult: (Set<Int>) -> Unit) {
         db.collection(COLLECTION).document(uid).get()
             .addOnSuccessListener { snapshot ->
@@ -40,17 +137,7 @@ object ProgressRepository {
                     ?: emptySet()
                 onResult(ids)
             }
-            .addOnFailureListener { onResult(emptySet()) }
-    }
-
-    /**
-     * Adds [levelId] to the completed set. arrayUnion is idempotent (no duplicate
-     * entries on retry) and merge() creates the document on a user's first ever
-     * completion, so there's no separate "create the doc" step.
-     */
-    fun markLevelCompleted(uid: String, levelId: Int) {
-        db.collection(COLLECTION).document(uid)
-            .set(mapOf(FIELD_COMPLETED to FieldValue.arrayUnion(levelId)), SetOptions.merge())
+            .addOnFailureListener { android.util.Log.w("CyberityProgress", "Progress unavailable; keeping cache", it) }
     }
 
     /**
@@ -63,20 +150,10 @@ object ProgressRepository {
             .addOnSuccessListener { snapshot ->
                 val raw = snapshot.get(FIELD_LEVEL_XP) as? Map<*, *>
                 onResult(
-                    raw?.entries?.mapNotNull { (key, value) ->
-                        val id = (key as? String)?.toIntOrNull() ?: return@mapNotNull null
-                        val xp = (value as? Number)?.toInt() ?: return@mapNotNull null
-                        id to xp
-                    }?.toMap() ?: emptyMap()
+                    ScorePolicy.levelXp(raw)
                 )
             }
-            .addOnFailureListener { onResult(emptyMap()) }
-    }
-
-    /** Records XP for one level. merge() leaves every other level's entry alone. */
-    fun saveLevelXp(uid: String, levelId: Int, xp: Int) {
-        db.collection(COLLECTION).document(uid)
-            .set(mapOf(FIELD_LEVEL_XP to mapOf(levelId.toString() to xp)), SetOptions.merge())
+            .addOnFailureListener { android.util.Log.w("CyberityProgress", "Awards unavailable; keeping cache", it) }
     }
 
     /**
@@ -88,16 +165,7 @@ object ProgressRepository {
             .addOnSuccessListener { snapshot ->
                 onResult(snapshot.getLong(FIELD_XP_SPENT)?.toInt() ?: 0)
             }
-            .addOnFailureListener { onResult(0) }
-    }
-
-    /**
-     * Charges [amount] for a hint. increment() is applied by the server, so two
-     * hints bought in quick succession can't overwrite each other's deduction.
-     */
-    fun addXpSpent(uid: String, amount: Int) {
-        db.collection(COLLECTION).document(uid)
-            .set(mapOf(FIELD_XP_SPENT to FieldValue.increment(amount.toLong())), SetOptions.merge())
+            .addOnFailureListener { android.util.Log.w("CyberityProgress", "Spending unavailable; keeping cache", it) }
     }
 
     /**

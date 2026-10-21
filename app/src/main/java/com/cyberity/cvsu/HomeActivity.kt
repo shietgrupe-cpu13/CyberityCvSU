@@ -1,7 +1,18 @@
 package com.cyberity.cvsu
 
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.LocalFireDepartment
+
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,14 +23,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -29,16 +42,14 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -49,9 +60,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,8 +73,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.graphics.vector.ImageVector
 
 
 // ---------------------------------------------------------------------------
@@ -117,6 +133,9 @@ fun HomeScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var levelRunning by remember { mutableStateOf(false) }
+    var tutorialRequest by remember { mutableIntStateOf(0) }
+    // Keeps each tab's saved state (like the Learn path's scroll position) while another tab is open.
+    val tabStates = rememberSaveableStateHolder()
 
     Scaffold(
         containerColor = AppNavy,
@@ -148,13 +167,26 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
-            when (selectedTab) {
-                0 -> LearnScreen(onLevelRunningChanged = { levelRunning = it })
-                1 -> LeaderboardTab()
-                2 -> ProfileTab(
-                    onLogout = onLogout
-                )
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            AnimatedContent(
+                targetState = selectedTab,
+                transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                label = "tab"
+            ) { tab ->
+                tabStates.SaveableStateProvider(tab) {
+                    when (tab) {
+                        0 -> LearnScreen(
+                            onLevelRunningChanged = { levelRunning = it },
+                            tutorialRequest = tutorialRequest,
+                            onTutorialRequestHandled = { tutorialRequest = 0 }
+                        )
+                        1 -> LeaderboardTab()
+                        2 -> ProfileTab(onLogout = onLogout, onReplayTutorial = {
+                            tutorialRequest++
+                            selectedTab = 0
+                        })
+                    }
+                }
             }
         }
     }
@@ -208,7 +240,7 @@ private fun ModuleHeaderRow(
             modifier = Modifier
                 .size(44.dp)
                 .background(
-                    color = if (module.completed) Color(0xFF00C853) else AppCyan,
+                    color = if (module.completed) AppSuccess else AppCyan,
                     shape = CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -318,50 +350,75 @@ private fun LessonCard(
 
 @Composable
 fun LeaderboardTab() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(AppNavy),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = null,
-                tint = AppCyan,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text("Leaderboard", color = AppWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            Text("Rankings coming soon", color = AppGray, fontSize = 14.sp)
-        }
-    }
+    LeaderboardScreen()
 }
 
 @Composable
 fun ProfileTab(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onReplayTutorial: () -> Unit
 ) {
-
     val auth = FirebaseAuth.getInstance()
-
-    var showLogoutDialog by remember {
-        mutableStateOf(false)
-    }
-
+    var showSettings by remember { mutableStateOf(false) }
     val user = auth.currentUser
-
     val email = user?.email ?: "No email"
 
-    // Registered username and student ID from users/{uid}; until they load,
-    // fall back to the name on the Firebase account, then the email.
-    var profile by remember { mutableStateOf<UserProfile?>(null) }
-    LaunchedEffect(user?.uid) {
-        val uid = user?.uid ?: return@LaunchedEffect
-        UserProfileRepository.load(uid, onResult = { profile = it }, onError = {})
+    val context = LocalContext.current
+    val uid = user?.uid
+
+    // Registered username and student ID from users/{uid}. Seeded from the
+    // on-device copy saved at sign-in, so they show on the first frame, then
+    // refreshed from Firestore. Without either, fall back to the name on the
+    // Firebase account, then the email. Saveable, so returning from another
+    // tab shows them straight away.
+    var profileName by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadName(context, it) }) }
+    var studentId by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadStudentId(context, it) }) }
+    var yearLevel by rememberSaveable(uid) { mutableStateOf(uid?.let { ProfileCache.loadYearLevel(context, it) }) }
+    DisposableEffect(uid) {
+        val listener = uid?.let { id ->
+            com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(id)
+                .addSnapshotListener { snapshot, _ ->
+                    if (snapshot != null) yearLevel = YearLevels.fromStored(snapshot.get("yearLevel"))
+                }
+        }
+        onDispose { listener?.remove() }
     }
 
-    val username = profile?.displayName
+    LaunchedEffect(uid) {
+        if (uid == null) return@LaunchedEffect
+        UserProfileRepository.load(uid, onResult = { profile ->
+            profileName = profile?.displayName
+            studentId = profile?.studentId
+            profile?.let { ProfileCache.saveDetails(context, uid, it.displayName, it.studentId, it.yearLevel) }
+        }, onError = {})
+    }
+
+    // Progress stats. Read from the on-device cache first (the same numbers the
+    // Learn header shows), then refreshed from Firestore.
+    var completedIds by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.load(context, it) } ?: emptySet())
+    }
+    var levelXp by remember(uid) {
+        mutableStateOf(uid?.let { ProgressCache.loadLevelXp(context, it) } ?: emptyMap())
+    }
+    var xpSpent by remember(uid) {
+        mutableIntStateOf(uid?.let { ProgressCache.loadXpSpent(context, it) } ?: 0)
+    }
+    LaunchedEffect(uid) {
+        if (uid == null) return@LaunchedEffect
+        ProgressRepository.loadCompletedLevels(uid) { completedIds = it }
+        ProgressRepository.loadLevelXp(uid) { levelXp = it }
+        ProgressRepository.loadXpSpent(uid) { xpSpent = it }
+    }
+    val totalXp = xpBalance(earned = levelXp.values.sum(), spent = xpSpent)
+    // Counted like the Learn path: current curriculum levels only, no REWARD
+    // nodes, and saved ids for levels that no longer exist are ignored.
+    val levelsCompleted = remember(completedIds) {
+        sampleLearningUnits().withLevelsCompleted(completedIds).sumOf { it.completedCount }
+    }
+    val learningStreak = rememberLearningStreak(uid)
+
+    val username = profileName
         ?: user?.displayName?.takeIf { it.isNotBlank() }
         ?: email.substringBefore("@")
 
@@ -371,33 +428,53 @@ fun ProfileTab(
         modifier = Modifier
             .fillMaxSize()
             .background(AppNavy)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
-
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Profile Dashboard",
+                color = AppWhite,
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+            )
 
-        Text(
-            text = "Profile",
-            color = AppWhite,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(AppCard, RoundedCornerShape(12.dp))
+                    .clickable { showSettings = true },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings",
+                    tint = AppCyan,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
         Box(
             modifier = Modifier
                 .size(110.dp)
+                .background(AppBlue.copy(alpha = 0.2f), CircleShape)
+                .padding(8.dp)
                 .background(AppBlue, CircleShape),
-
             contentAlignment = Alignment.Center
         ) {
-
             Text(
                 text = initial,
-                color = AppWhite,
+                color = AppOnBlue,
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -408,125 +485,115 @@ fun ProfileTab(
         Text(
             text = username,
             color = AppWhite,
-            fontSize = 22.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
 
-        profile?.studentId?.let { id ->
-            Text(
-                text = "Student ID: $id",
-                color = AppCyan,
-                fontSize = 14.sp
-            )
-        }
-
         Text(
-            text = email,
+            text = "CvSU Student",
             color = AppGray,
             fontSize = 14.sp
         )
 
-        Spacer(modifier = Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
+        // Progress stats
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            ProfileStatCard(XpBolt, totalXp.toString(), "Total XP", AppXp, Modifier.weight(1f))
+            ProfileStatCard(Icons.Filled.LocalFireDepartment, learningStreak.days.toString(), "Day streak",
+                if (learningStreak.activeToday) AppStreak else AppGray, Modifier.weight(1f))
+            ProfileStatCard(Icons.Filled.Check, levelsCompleted.toString(), "Levels", AppSuccess, Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Personal Information Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = AppCard
-            ),
-            shape = RoundedCornerShape(18.dp)
+            colors = CardDefaults.cardColors(containerColor = AppCard),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                ProfileInfoRow(icon = Icons.Filled.Email, label = "CvSU Email", value = email)
 
-            Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-
-                    Icon(
-                        imageVector = Icons.Filled.Email,
-                        contentDescription = null,
-                        tint = AppCyan
+                studentId?.let { id ->
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 16.dp),
+                        thickness = 1.dp,
+                        color = AppNavy.copy(alpha = 0.5f)
                     )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-
-                        Text(
-                            "CvSU Email",
-                            color = AppWhite,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            email,
-                            color = AppGray,
-                            fontSize = 13.sp
-                        )
-                    }
+                    ProfileInfoRow(icon = Icons.Filled.Badge, label = "Student ID", value = id)
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Button(
-                    onClick = {
-                        showLogoutDialog = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red
-                    )
-                ) {
-                    Text("Sign Out")
-                }
-
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = AppNavy.copy(alpha = 0.5f))
+                ProfileInfoRow(icon = Icons.Filled.School, label = "Year level", value = YearLevels.label(yearLevel))
             }
-
         }
     }
-    if (showLogoutDialog) {
 
-        AlertDialog(
-            onDismissRequest = {
-                showLogoutDialog = false
+    if (showSettings) {
+        SettingsDialog(
+            onDismiss = { showSettings = false },
+            xp = totalXp,
+            onReplayTutorial = {
+                showSettings = false
+                onReplayTutorial()
             },
-
-            title = {
-                Text("Sign Out")
-            },
-
-            text = {
-                Text("Are you sure you want to sign out?")
-            },
-
-            confirmButton = {
-
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                        auth.signOut()
-                        onLogout()
-                    }
-                ) {
-                    Text(
-                        "Sign Out",
-                        color = Color.Red
-                    )
-                }
-            },
-
-            dismissButton = {
-
-                TextButton(
-                    onClick = {
-                        showLogoutDialog = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
+            onSignOut = {
+                showSettings = false
+                AccountSessions.end(context)
+                auth.signOut()
+                onLogout()
             }
         )
+    }
+}
+
+@Composable
+private fun ProfileStatCard(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        color = AppCard,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, AppBorder)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(value, color = AppWhite, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(label, color = AppGray, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+fun ProfileInfoRow(icon: ImageVector, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = AppCyan,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(label, color = AppGray, fontSize = 12.sp)
+            Text(value, color = AppWhite, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        }
     }
 }
