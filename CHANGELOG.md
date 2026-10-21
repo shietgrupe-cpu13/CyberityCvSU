@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.4 — 21 October 2026
+
+- Added Check for updates in Settings > Help & About, using the latest published GitHub release.
+- Newer versions offer Download and Cancel. Canceling does not prevent checking again; current versions show “You’re up to date.” Connection failures offer a retry through the same button.
+- Added unique username changes in Settings > Student information, with a 30-day wait after each successful change.
+- Enforced the cooldown using server timestamps in Firestore rules; users cannot reset it by editing their phone clock or deleting the timestamp.
+- Required duplicate-name repairs remain possible during a cooldown and start a fresh 30-day wait after repair.
+- Renames preserve full names and learning progress, refresh the leaderboard, and release the old username.
+- Version 1.0.4, build 5. Updated Firestore rules and the existing username migration still require live deployment.
+
+
 ## 1.0.3 — 20 October 2026
 
 - Split student names into required first and last names plus an optional middle name in registration, profile completion, and settings.

@@ -6,10 +6,12 @@ Cyberity is an Android cybersecurity e-learning capstone application built with 
 
 [Download latest APK](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk) · [Latest release notes](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest) · [Changelog](CHANGELOG.md) · [SHA-256 checksum](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk.sha256)
 
-**Version 1.0.3 · Android 7.0 or later.** The distributed APK is a debug build signed with the current Android debug key. Android may ask you to allow installation from your browser or file manager. Install it over your existing copy to keep app data; Android requires matching signing keys for an update.
+**Version 1.0.4 · Android 7.0 or later.** The distributed APK is a debug build signed with the current Android debug key. Android may ask you to allow installation from your browser or file manager. Install it over your existing copy to keep app data; Android requires matching signing keys for an update.
 
-## What's new in 1.0.3
+## What's new in 1.0.4
 
+- **Settings > Help & About > Check for updates** checks GitHub and offers Download or Cancel. You can check again anytime; current versions show “You’re up to date.”
+- **Settings > Student information** allows username changes, with a 30-day cooldown after each successful change. Server rules enforce the wait.
 - Registration collects required first and last names and an optional middle name. Leave the middle name blank if you do not have one. Existing students can update these fields in **Settings > Student information**.
 - Certificates use the full name and require it before download.
 - Username claims prevent case-insensitive duplicates. The migration reserves existing names for the earliest registered account and prompts later duplicates to choose another name.

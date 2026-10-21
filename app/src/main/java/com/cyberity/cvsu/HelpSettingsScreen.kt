@@ -61,6 +61,8 @@ internal fun HelpSettingsScreen() {
         }
     }
 
+    CheckForUpdates()
+
     SettingsLabel("Help topics")
     helpTopics.forEach { (title, answer) ->
         Surface(onClick = { expanded = if (expanded == title) null else title },

@@ -74,6 +74,8 @@ fun StudentInformationScreen(onBusyChanged: (Boolean) -> Unit = {}) {
             Text("Student ID", color = AppGray)
             Text(student.studentId, color = AppWhite, fontWeight = FontWeight.SemiBold)
         }
+        if (uid != null) UsernameSettings(uid, student.displayName, !saving && !loading,
+            onBusy = { saving = it; onBusyChanged(it) }, onSaved = { request++ })
         if (student.firstName.isBlank() && student.fullName.isNotBlank())
             Text("Saved full name: "+student.fullName+". Enter your first and last names below to update it; middle name is optional.", color = AppGray)
         StudentNameFields(firstName, { firstName = it; message = null },

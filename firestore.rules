@@ -209,10 +209,18 @@ service cloud.firestore {
           middle is string && middle.size() <= 50 &&
           data.get('fullName', '') == first + (middle == '' ? ' ' : ' ' + middle + ' ') + last);
     }
+    function validUsernameTiming(data, previous) {
+      let renamed = 'displayName' in previous && data.get('displayName', '') != previous.displayName;
+      return renamed ?
+        (data.get('usernameChangedAt', null) == request.time &&
+          (previous.get('usernameChangeRequired', false) || !('usernameChangedAt' in previous) ||
+            (previous.usernameChangedAt is timestamp && request.time >= previous.usernameChangedAt + duration.value(30, 'd')))) :
+        data.get('usernameChangedAt', null) == previous.get('usernameChangedAt', null);
+    }
     function validProfile(data, previous) {
       let tester = data.get('isTester', false);
       let studentId = data.get('studentId', '');
-      return tester is bool && studentId is string && validNameParts(data) &&
+      return tester is bool && studentId is string && validNameParts(data) && validUsernameTiming(data, previous) &&
         data.get('usernameChangeRequired', false) is bool &&
         (!data.get('usernameChangeRequired', false) || previous.get('usernameChangeRequired', false)) &&
         (!previous.get('usernameChangeRequired', false) || data.get('usernameChangeRequired', false) || validUsernameClaim(request.auth.uid, data)) &&

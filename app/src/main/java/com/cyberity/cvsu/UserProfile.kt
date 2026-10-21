@@ -258,6 +258,38 @@ object UserProfileRepository {
             }
     }
 
+    fun changeUsername(uid: String, input: String): com.google.android.gms.tasks.Task<String> {
+        val name = input.trim()
+        StudentIdRules.validateDisplayName(name)?.let { throw IllegalArgumentException(it) }
+        val user = db.collection(USERS).document(uid)
+        val key = StudentIdRules.usernameKey(name)
+        val claim = db.collection("usernames").document(key)
+        return db.runTransaction { tx ->
+            val profile = tx.get(user)
+            val existingClaim = tx.get(claim)
+            val oldKey = profile.getString("usernameKey")
+            val oldClaim = oldKey?.takeIf { it != key }?.let { db.collection("usernames").document(it) }
+            val oldOwner = oldClaim?.let { tx.get(it).getString("uid") }
+            check(profile.exists()) { "Your profile is unavailable." }
+            check(name != profile.getString("displayName")) { "Choose a different username." }
+            val changedAt = profile.getTimestamp("usernameChangedAt")
+            if (profile.getBoolean("usernameChangeRequired") != true && changedAt != null) {
+                val next = changedAt.toDate().time + 30L * 24 * 60 * 60 * 1000
+                check(System.currentTimeMillis() >= next) { "You can change your username again on " +
+                    java.text.SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH).format(java.util.Date(next)) + "." }
+            }
+            check(existingClaim.getString("uid") == null || existingClaim.getString("uid") == uid) { "This username is already taken. Choose another." }
+            tx.set(claim, mapOf("uid" to uid))
+            tx.update(user, mapOf("displayName" to name, "usernameKey" to key,
+                "usernameChangeRequired" to false, "usernameChangedAt" to FieldValue.serverTimestamp(),
+                FIELD_UPDATED_AT to FieldValue.serverTimestamp()))
+            if (oldClaim != null && oldOwner == uid) tx.delete(oldClaim)
+            // Never leave a public row showing the previous name.
+            tx.delete(db.collection("leaderboard").document(uid))
+            name
+        }
+    }
+
     fun updateStudentInformation(uid: String, firstName: String, middleName: String, lastName: String, year: Int): com.google.android.gms.tasks.Task<Void> {
         require(StudentIdRules.validateNameParts(firstName, middleName, lastName) == null)
         require(YearLevels.isValid(year))
@@ -311,6 +343,9 @@ object UserProfileRepository {
             }
             val previousProfile = tx.get(userDoc)
             val previousUsername = previousProfile.getString("usernameKey")
+            if (previousProfile.exists() && previousProfile.getString(FIELD_DISPLAY_NAME) != profile.displayName) {
+                tx.update(userDoc, mapOf("usernameChangedAt" to FieldValue.serverTimestamp()))
+            }
             // All reads precede writes; the claim and profile commit together.
             if (previousUsername != null && previousUsername != usernameKey) {
                 tx.delete(db.collection("usernames").document(previousUsername))

@@ -33,6 +33,14 @@ test('Username claims are atomic, case insensitive, private to owned queries, an
   await assertFails(setDoc(doc(later,'leaderboard/later-duplicate'),{displayName:'Student Name',xp:50,isTester:false,updatedAt:require('firebase/firestore').serverTimestamp()}));
   await assertSucceeds(saveProfile(laterRef,{displayName:'A Fresh Username',usernameChangeRequired:false}));
   require('node:assert/strict').equal((await getDoc(laterRef)).get('fullName'),'Later Full Name');
+  // Renaming starts a server-enforced cooldown, even with a fresh claim.
+  await assertFails(saveProfile(ref,{displayName:'Too Soon'}));
+  await assertFails(updateDoc(ref,{usernameChangedAt:require('firebase/firestore').deleteField()}));
+  await assertFails(updateDoc(ref,{usernameChangedAt:require('firebase/firestore').Timestamp.fromMillis(0)}));
+  await env.withSecurityRulesDisabled(async admin=>{
+   await updateDoc(doc(admin.firestore(),ref.path),{usernameChangedAt:require('firebase/firestore').Timestamp.fromMillis(Date.now()-31*86400000)});
+  });
+  await assertSucceeds(saveProfile(ref,{displayName:'After Thirty Days'}));
   // Two independent clients compete for a previously unused name.
   const claim = (db,uid) => runTransaction(db,async tx=>{
    const key=doc(db,'usernames/race name');
