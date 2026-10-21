@@ -8,7 +8,7 @@
 - Enforced the cooldown using server timestamps in Firestore rules; users cannot reset it by editing their phone clock or deleting the timestamp.
 - Required duplicate-name repairs remain possible during a cooldown and start a fresh 30-day wait after repair.
 - Renames preserve full names and learning progress, refresh the leaderboard, and release the old username.
-- Version 1.0.4, build 5. Updated Firestore rules and the existing username migration still require live deployment.
+- Version 1.0.4, build 5. Firestore rules compiled and deployed successfully to cyberitycvsu on 21 October 2026. The existing-account username migration remains pending Admin SDK credentials.
 
 
 ## 1.0.3 — 20 October 2026
