@@ -25,3 +25,7 @@ CLAUDE.local.md
 *-debug.log
 /tmp-score-test.log
 /output/pdf/
+
+# Private local username migration records
+output/username-migration-backup*.json
+output/live-username-*.log

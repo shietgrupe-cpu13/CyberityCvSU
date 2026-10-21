@@ -17,7 +17,7 @@ Cyberity is an Android cybersecurity e-learning capstone application built with 
 - Username claims prevent case-insensitive duplicates. The migration reserves existing names for the earliest registered account and prompts later duplicates to choose another name.
 - Username repair preserves saved student details, onboarding, and learning progress.
 
-**Backend status:** the updated Firestore rules, including the 30-day username cooldown, were deployed on 21 October 2026. The existing-account username migration remains pending because Application Default Credentials are not configured for the Admin SDK. Legacy usernames still need to be reserved before uniqueness is guaranteed across all old accounts. See [rollout instructions](docs/student-information-and-certificates.md).
+**Backend status:** updated Firestore rules and the existing-account username migration were deployed on 21 October 2026. Three usernames are reserved for four active accounts; the one later duplicate must choose another username. Other profile fields were verified against a pre-migration backup. Two profiles with deleted sign-in accounts were left unchanged. See [rollout details](docs/student-information-and-certificates.md).
 
 Validation: Android compilation and certificate unit tests, all 12 Firestore emulator checks, and 2 migration ordering tests passed. Device installation testing remains separate.
 

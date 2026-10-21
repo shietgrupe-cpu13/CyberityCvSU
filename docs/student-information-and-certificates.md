@@ -74,3 +74,13 @@ The downloadable APK uses the current Android debug signing key. The original v1
 ## 1.0
 
 Initial published release with six cybersecurity learning units, lessons, quizzes, interactive simulations, progress and EXP, leaderboards, student profiles, learning streaks, and PDF completion certificates. Earlier v1.0 download updates included completion-save recovery improvements.
+
+## Migration completed — 21 October 2026
+
+The migration reused the operator’s authorized Firebase CLI OAuth session in memory. No service-account key or credential file was created. Profile/username writes were briefly paused with temporary rules, then normal production rules were restored after applying the migration. A local pre-migration backup is retained outside source control.
+
+Audit: six profiles, four active Authentication accounts, two profiles whose Authentication accounts were deleted, and one duplicate-name group. Result: three username claims reserved for the earliest registered owners, one later duplicate marked usernameChangeRequired and removed from the leaderboard until repair. The two orphaned profiles were excluded without deleting their data. Read-only verification confirmed claim ownership, the repair marker, absence of the stale duplicate leaderboard row, and preservation of all other profile fields. Learning progress was not written by this migration.
+
+Operators may run migrate-usernames.cjs with --firebase-cli-path <installed-firebase-tools-directory> to reuse the existing CLI session; the default still uses Application Default Credentials. --apply now requires --backup <new-local-file>. The helper never prints or writes credentials. verify-username-migration.cjs accepts the same authentication option plus --backup for post-migration checks. Run future migrations with client profile writes paused, restore normal rules even on failure, and keep personal-data backups out of Git.
+
+Emulator validation also passed all three update/name UI tests and installation of the published v1.0.4 APK over an older app without clearing data. Physical-phone sign-in, registration and username-change testing still requires a connected authorized device. No production test student account was created.

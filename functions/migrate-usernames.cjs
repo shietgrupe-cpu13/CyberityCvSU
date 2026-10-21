@@ -1,17 +1,26 @@
 // Audit by default. Pause registration/profile writes during --apply.
-const { initializeApp, applicationDefault } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { FieldValue } = require('firebase-admin/firestore');
 const { getAuth } = require('firebase-admin/auth');
 const { planUsernames } = require('./username-migration-policy.cjs');
-initializeApp({ credential: applicationDefault(), projectId: 'cyberitycvsu' });
-const db = getFirestore();
+const db = require('./username-migration-connection.cjs').connect();
 (async () => {
- const users = await db.collection('users').get(), registered = new Map();
+ const users = await db.collection('users').get(), registered = new Map(), missingAuth = new Set();
  for (let i=0;i<users.docs.length;i+=100) {
   const result = await getAuth().getUsers(users.docs.slice(i,i+100).map(d=>({uid:d.id})));
+  for (const missing of result.notFound) if (missing.uid) missingAuth.add(missing.uid);
   for (const user of result.users) registered.set(user.uid, Date.parse(user.metadata.creationTime));
  }
- const plan = planUsernames(users.docs.map(d=>({uid:d.id, displayName:d.get('displayName'), registeredAt:registered.get(d.id)})));
+ const backupIndex = process.argv.indexOf('--backup');
+ if (process.argv.includes('--apply') && backupIndex < 0) throw Error('Use --backup <local-file> before applying.');
+ if (backupIndex >= 0) {
+  const fs = require('node:fs');
+  const claimDocs = await db.collection('usernames').get();
+  const boardDocs = await db.collection('leaderboard').get();
+  const records = [...users.docs,...claimDocs.docs,...boardDocs.docs].map(d=>({path:d.ref.path,data:d.data()}));
+  fs.writeFileSync(process.argv[backupIndex+1],JSON.stringify({project:'cyberitycvsu',createdAt:new Date().toISOString(),records},null,2),{flag:'wx'});
+ }
+ console.log(JSON.stringify({profileCount:users.size,deletedAuthProfilesSkipped:[...missingAuth]}));
+ const plan = planUsernames(users.docs.filter(d=>!missingAuth.has(d.id)).map(d=>({uid:d.id, displayName:d.get('displayName'), registeredAt:registered.get(d.id)})));
  console.log(JSON.stringify(plan.map(p=>({username:p.key,keepsUsername:p.winner.uid,mustChange:p.losers.map(p=>p.uid)})),null,2));
  if (!process.argv.includes('--apply')) { console.log('Audit only. --apply reserves the earliest registered owner and flags later accounts for a username change.'); return; }
  for (const group of plan) {

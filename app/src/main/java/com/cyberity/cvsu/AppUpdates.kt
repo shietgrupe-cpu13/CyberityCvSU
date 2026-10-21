@@ -75,14 +75,19 @@ fun CheckForUpdates() {
     }
     message?.let { Text(it, color = AppCyan) }
     available?.let { update ->
-        AlertDialog(onDismissRequest = { available = null },
-            title = { Text("Update available") },
-            text = { Text("Cyberity "+update.version+" is available. Would you like to download it? Your browser will open the APK download.") },
-            confirmButton = { TextButton(onClick = {
-                available = null
-                try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(update.downloadUrl))) }
-                catch (_: Exception) { message = "Couldn't open the download. Try again after enabling a browser." }
-            }) { Text("Download") } },
-            dismissButton = { TextButton(onClick = { available = null }) { Text("Cancel") } })
+        UpdatePrompt(update.version, onCancel = { available = null }, onDownload = {
+            available = null
+            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(update.downloadUrl))) }
+            catch (_: Exception) { message = "Couldn't open the download. Try again after enabling a browser." }
+        })
     }
+}
+
+@Composable
+internal fun UpdatePrompt(version: String, onDownload: () -> Unit, onCancel: () -> Unit) {
+    AlertDialog(onDismissRequest = onCancel,
+        title = { Text("Update available") },
+        text = { Text("Cyberity "+version+" is available. Would you like to download it? Your browser will open the APK download.") },
+        confirmButton = { TextButton(onClick = onDownload) { Text("Download") } },
+        dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } })
 }
