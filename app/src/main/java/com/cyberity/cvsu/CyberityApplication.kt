@@ -8,5 +8,6 @@ class CyberityApplication : Application() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
         AppCheckSetup.install()
+        UpdateNotifications.schedule(this)
     }
 }

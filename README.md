@@ -6,12 +6,13 @@ Cyberity is an Android cybersecurity e-learning capstone application built with 
 
 [Download latest APK](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk) · [Latest release notes](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest) · [Changelog](CHANGELOG.md) · [SHA-256 checksum](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk.sha256)
 
-**Version 1.0.5 · Android 7.0 or later.** The distributed APK is a debug build signed with the current Android debug key. Android may ask you to allow installation from your browser or file manager. Install it over your existing copy to keep app data; Android requires matching signing keys for an update.
+**Version 1.0.7 · Android 7.0 or later.** The distributed APK is a debug build signed with the current Android debug key. Android may ask you to allow installation from Cyberity, your browser, or your file manager. Install it over your existing copy to keep app data; Android requires matching signing keys for an update.
 
-## What's new in 1.0.5
+## What's new in 1.0.7
 
 - Registration shows username collisions under the username field and requires at least 8 characters with uppercase, lowercase, a number, and a symbol. Incorrect sign-in details use a generic email/password error.
-- **Settings > Help & About > Check for updates** checks GitHub and offers Download or Cancel. You can check again anytime; current versions show “You’re up to date.”
+- Updates can download inside Cyberity with progress and cancellation, or through your browser. In-app downloads are checked for the expected checksum, app identity, newer version, and matching signing certificate before Android asks you to install.
+- **Settings > Help & About** includes update notifications and manual checks. Automatic checks run when you open the app and approximately daily in the background; phone restrictions can delay them. Install this version once through the existing browser/manual flow to use the new features for future releases.
 - **Settings > Student information** allows username changes, with a 30-day cooldown after each successful change. Server rules enforce the wait.
 - Registration collects required first and last names and an optional middle name. Leave the middle name blank if you do not have one. Existing students can update these fields in **Settings > Student information**.
 - Certificates use the full name and require it before download.

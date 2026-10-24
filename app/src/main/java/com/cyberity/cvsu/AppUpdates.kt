@@ -1,18 +1,28 @@
 package com.cyberity.cvsu
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import kotlinx.coroutines.Dispatchers
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
-import org.json.JSONObject
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 object AppVersion {
     fun parts(value: String): List<Int>? {
@@ -31,55 +41,129 @@ object AppVersion {
     }
 }
 
-private data class AvailableUpdate(val version: String, val downloadUrl: String)
-
 @Composable
 fun CheckForUpdates() {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var checking by remember { mutableStateOf(false) }
-    var available by remember { mutableStateOf<AvailableUpdate?>(null) }
-    var message by remember { mutableStateOf<String?>(null) }
-    Button(onClick = {
-        checking = true; message = null; available = null
-        scope.launch {
-            try {
-                val installed = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: error("Version unavailable")
-                val update = withContext(Dispatchers.IO) {
-                    val connection = URL("https://api.github.com/repos/shietgrupe-cpu13/CyberityCvSU/releases/latest").openConnection() as HttpURLConnection
-                    try {
-                        connection.connectTimeout = 10000; connection.readTimeout = 10000
-                        connection.setRequestProperty("Accept", "application/vnd.github+json")
-                        connection.setRequestProperty("User-Agent", "Cyberity-Android")
-                        connection.useCaches = false
-                        check(connection.responseCode == 200) { "Release unavailable" }
-                        val release = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
-                        check(!release.optBoolean("draft") && !release.optBoolean("prerelease"))
-                        val version = release.getString("tag_name")
-                        val assets = release.getJSONArray("assets")
-                        val asset = (0 until assets.length()).map { assets.getJSONObject(it) }
-                            .first { it.getString("name") == "CyberityCvSU.apk" }
-                        val url = asset.getString("browser_download_url")
-                        check(url.startsWith("https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/download/"))
-                        AvailableUpdate(version, url)
-                    } finally { connection.disconnect() }
-                }
-                if (AppVersion.isNewer(update.version, installed)) available = update
-                else message = "You’re up to date."
-            } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-            catch (_: Exception) { message = "Couldn't check for updates. Check your connection and try again." }
-            finally { checking = false }
-        }
-    }, enabled = !checking, modifier = Modifier.fillMaxWidth()) {
-        Text(if (checking) "Checking for updates…" else "Check for updates")
+    val state by UpdateController.state.collectAsState()
+    var enabled by remember { mutableStateOf(UpdateNotifications.enabled(context)) }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) UpdateController.check(context)
+        else UpdateController.message("Notifications are off on this phone. You can still check for updates here.")
     }
-    message?.let { Text(it, color = AppCyan) }
-    available?.let { update ->
-        UpdatePrompt(update.version, onCancel = { available = null }, onDownload = {
-            available = null
-            try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(update.downloadUrl))) }
-            catch (_: Exception) { message = "Couldn't open the download. Try again after enabling a browser." }
-        })
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = { UpdateController.check(context) }, enabled = !state.checking && !state.downloading,
+            modifier = Modifier.fillMaxWidth()) {
+            Text(if (state.checking) "Checking for updates…" else "Check for updates")
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("Update notifications", color = AppWhite, modifier = Modifier.weight(1f))
+            Switch(checked = enabled, onCheckedChange = { value ->
+                enabled = value
+                UpdateNotifications.configure(context, value)
+                if (value && Build.VERSION.SDK_INT >= 33 && !LearningReminders.permissionGranted(context))
+                    permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                else if (value) UpdateController.check(context)
+            })
+        }
+        Text("Checks when you open the app and periodically in the background. Downloads start only when you choose.",
+            color = AppGray, style = MaterialTheme.typography.bodySmall)
+        if (enabled && !androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+            TextButton(onClick = {
+                runCatching {
+                    val settings = if (Build.VERSION.SDK_INT >= 26) Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    else Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + context.packageName))
+                    context.startActivity(settings)
+                }
+            }) { Text("Allow notifications in phone settings") }
+        }
+        state.message?.let { Text(it, color = AppCyan) }
+    }
+}
+
+@Composable
+internal fun AppUpdateHost(openFromNotification: Boolean = false) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val state by UpdateController.state.collectAsState()
+    var installing by remember { mutableStateOf(false) }
+    var askPermission by rememberSaveable { mutableStateOf(false) }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    val owner = LocalLifecycleOwner.current
+    DisposableEffect(owner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) UpdateController.check(context, manual = false)
+        }
+        owner.lifecycle.addObserver(observer)
+        onDispose { owner.lifecycle.removeObserver(observer) }
+    }
+
+    fun install() {
+        if (installing) return
+        installing = true
+        scope.launch {
+            try { context.startActivity(UpdateController.verifiedInstaller(context)) }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { UpdateController.message("Couldn't open the installer. Download the update again or use the browser download.") }
+            finally { installing = false }
+        }
+    }
+    val allowInstall = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (Build.VERSION.SDK_INT < 26 || context.packageManager.canRequestPackageInstalls()) install()
+        else UpdateController.message("Installation permission wasn't granted. Tap Install to try again, or use the browser download.")
+    }
+    LaunchedEffect(Unit) {
+        UpdateController.check(context, manual = openFromNotification)
+        val prefs = UpdateNotifications.prefs(context)
+        if (UpdateNotifications.enabled(context) && Build.VERSION.SDK_INT >= 33 &&
+            !LearningReminders.permissionGranted(context) && !prefs.getBoolean("permissionAsked", false)) askPermission = true
+    }
+    if (askPermission) AlertDialog(onDismissRequest = {
+        askPermission = false
+        UpdateNotifications.prefs(context).edit().putBoolean("permissionAsked", true).apply()
+    }, title = { Text("Get update notifications?") },
+        text = { Text("Cyberity can let you know when a new version is ready. You choose when to download and install it.") },
+        confirmButton = { TextButton(onClick = {
+            askPermission = false
+            UpdateNotifications.prefs(context).edit().putBoolean("permissionAsked", true).apply()
+            if (Build.VERSION.SDK_INT >= 33) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }) { Text("Allow") } },
+        dismissButton = { TextButton(onClick = {
+            askPermission = false
+            UpdateNotifications.prefs(context).edit().putBoolean("permissionAsked", true).apply()
+        }) { Text("Later") } })
+
+    val update = state.update
+    if (state.visible && update != null && !askPermission) {
+        AlertDialog(onDismissRequest = { if (!state.downloading && !installing) UpdateController.dismiss(context) },
+            title = { Text(if (state.file != null) "Update ready" else "Update available") },
+            text = {
+                Column {
+                    Text("Cyberity ${update.version}")
+                    Text("Download inside Cyberity, then approve installation on your phone. Your account and progress are kept.")
+                    if (state.downloading) {
+                        LinearProgressIndicator(progress = { state.progress }, modifier = Modifier.fillMaxWidth())
+                        Text("Downloading and verifying… ${(state.progress * 100).toInt()}%")
+                    }
+                    state.message?.let { Text(it) }
+                    if (!state.downloading && !installing) TextButton(onClick = {
+                        try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(update.downloadUrl))) }
+                        catch (_: Exception) { UpdateController.message("Couldn't open a browser on this phone.") }
+                    }) { Text("Download with browser instead") }
+                }
+            },
+            confirmButton = {
+                if (!state.downloading) TextButton(enabled = !installing, onClick = {
+                    if (state.file == null) UpdateController.download(context)
+                    else if (Build.VERSION.SDK_INT >= 26 && !context.packageManager.canRequestPackageInstalls()) {
+                        try { allowInstall.launch(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + context.packageName))) }
+                        catch (_: Exception) { UpdateController.message("Open your phone settings to allow Cyberity to install updates, or use the browser download.") }
+                    } else install()
+                }) { Text(if (installing) "Verifying…" else if (state.file == null) "Download in app" else "Install") }
+            },
+            dismissButton = { TextButton(enabled = !installing, onClick = {
+                if (state.downloading) UpdateController.cancel() else UpdateController.dismiss(context)
+            }) { Text(if (state.downloading) "Cancel download" else "Later") } })
     }
 }
 
@@ -87,7 +171,7 @@ fun CheckForUpdates() {
 internal fun UpdatePrompt(version: String, onDownload: () -> Unit, onCancel: () -> Unit) {
     AlertDialog(onDismissRequest = onCancel,
         title = { Text("Update available") },
-        text = { Text("Cyberity "+version+" is available. Would you like to download it? Your browser will open the APK download.") },
+        text = { Text("Cyberity $version is available. Download and verify the update inside the app, then approve installation on your phone.") },
         confirmButton = { TextButton(onClick = onDownload) { Text("Download") } },
         dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } })
 }

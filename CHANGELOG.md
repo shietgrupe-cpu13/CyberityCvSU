@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.7 — 24 October 2026
+
+- Download updates inside Cyberity with progress, cancellation, and a browser-download alternative.
+- Verify release source, download size, SHA-256 checksum, package identity, newer version code, and matching APK signing certificates before offering installation.
+- Keep update files in private app cache and share only the selected APK with Android's installer.
+- Add automatic update checks on app open and approximately daily in the background, with optional notifications once per new version.
+- Android still requests notification permission and approval to install updates. Existing accounts and progress are retained when updating in place.
+- Version 1.0.7, build 8.
+
 ## 1.0.6 — 24 October 2026
 
 - Allow the five administrator-created evaluator email addresses at login. Existing CvSU sign-in and registration requirements remain unchanged.

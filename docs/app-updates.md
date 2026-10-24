@@ -1,8 +1,24 @@
-# Manual update checks
+# App updates
 
-Settings > Help & About > Check for updates fetches the latest published release from the existing public GitHub repository. Versions are compared numerically. A newer version offers Download and Cancel. Download opens the exact CyberityCvSU.apk release asset in the browser; the user completes installation through Android. Cancel and dialog dismissal have no persistent suppression, so checks can be repeated. Equal or older releases show “You’re up to date.” Network/API failures show a retry message rather than reporting that the app is current. No GitHub token or account identity is sent. Draft/prerelease results and untrusted asset URLs are rejected.
+Settings > Help & About > Check for updates fetches the latest published release from the existing public GitHub repository. A newer release offers Download in app, Download with browser instead, and Later. In-app downloads show progress and can be canceled. After verification, Install opens Android's installer. Android 8+ requires allowing Cyberity as an installation source; declining keeps the update available for retry. Manual checks can always reopen a dismissed update. Equal or older releases show “You’re up to date.” Network/API failures show a retry message. No GitHub token or account identity is sent.
+
+Automatic checks run on app launch/resume at most once per six hours, plus an Android JobScheduler check approximately daily when a network is available. Android may defer background jobs because of battery restrictions, force-stop, or connectivity; notifications are not immediate push alerts. Help & About contains an Update notifications switch. Android 13+ asks for notification permission. A release is notified only once; tapping opens the app and fetches the release again. Automatic prompts dismissed with Later stay dismissed for that version, while manual checks and notification taps can reopen them. Background checks never download or install an APK.
+
+## In-app download protection — 1.0.7
+
+Release metadata must come from the fixed HTTPS GitHub latest-release endpoint, have a numeric stable version, a single CyberityCvSU.apk asset at the exact repository/tag URL, a SHA-256 digest, and a bounded asset size (150 MiB maximum). Downloads enforce HTTPS and allow redirects only within the repository's release path or GitHub's release-asset hosts. Metadata and download sizes are bounded; truncated, oversized, or changed downloads fail closed.
+
+The APK is held in private cache, never in shared Downloads. Before offering installation, Cyberity verifies the downloaded bytes against GitHub's SHA-256 digest, the package name, the expected release version, a version code greater than the installed app, and identical current APK signer certificates. It verifies again immediately before handing the file to Android. FileProvider is unexported and grants access only to the selected cache APK. Android performs final package signature verification and asks the user to approve installation. The browser alternative uses the normal Android download/install path instead of Cyberity's in-app verification.
+
+Interrupted downloads restart when retried; they do not resume after the app process is killed. A download may finish while the app is briefly in the background, but no background download service is used. Install this version once through the existing browser/manual update flow to receive these features for future updates.
 
 The existing download APK uses the Android debug key; future builds must preserve signing identity for installation over the current app. Android unit tests cover numeric version ordering and malformed versions. Real-device browser and installation testing remains separate.
+
+## Verification — 24 October 2026
+
+Version 1.0.7 builds successfully and the Android unit suite passes, including exact release URLs, untrusted/HTTP redirect rejection, altered or missing checksums, wrong packages/signers, and downgrade prevention. Seven focused Android tests passed on a temporary read-only Pixel 8 Pro emulator: real APK checksum/current-version rejection, FileProvider directory restrictions, persisted notification scheduling and opt-out, live GitHub metadata validation, update-dialog cancellation/reopening, repeated manual release checks, and the existing optional-middle-name screen check. The final APK installed over the emulator's existing app without clearing data. APK signature verification passed. Android test packages were run directly because the offline Gradle connected-test runner dependency was unavailable.
+
+Actual future-version in-app download and installer approval, notification delivery while the app is closed, permission denial/retry on a physical phone, and Android 7 compatibility remain device acceptance checks. Unit policies and Android runtime checks do not substitute for those end-to-end checks.
 
 ## Emulator verification — 21 October 2026
 

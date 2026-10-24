@@ -180,6 +180,7 @@ class MainActivity : ComponentActivity() {
                     AppNavigator()
                     // Drawn last, so it sits above every screen while offline.
                     NoInternetCover()
+                    AppUpdateHost(openFromNotification = intent.getBooleanExtra("check_app_update", false))
                 }
             }
         }
