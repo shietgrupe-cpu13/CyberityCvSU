@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.6 — 24 October 2026
+
+- Allow the five administrator-created evaluator email addresses at login. Existing CvSU sign-in and registration requirements remain unchanged.
+- Evaluator access uses the existing server-controlled isTester flag.
+- Version 1.0.6, build 7.
+
 ## 1.0.5 — 21 October 2026
 
 - Show “This username is already taken.” directly beneath the registration username field after a server-confirmed collision; editing the username clears the field error.
