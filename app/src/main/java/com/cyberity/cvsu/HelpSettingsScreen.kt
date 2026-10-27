@@ -63,7 +63,7 @@ internal fun HelpSettingsScreen() {
 
     CheckForUpdates()
 
-    SettingsLabel("Help topics")
+    SettingsLabel("Help Topics")
     helpTopics.forEach { (title, answer) ->
         Surface(onClick = { expanded = if (expanded == title) null else title },
             modifier = Modifier.fillMaxWidth(), color = AppCard, shape = RoundedCornerShape(14.dp)) {
@@ -78,7 +78,7 @@ internal fun HelpSettingsScreen() {
         }
     }
 
-    SettingsLabel("Report a problem")
+    SettingsLabel("Report a Problem")
     OutlinedTextField(value = details, onValueChange = { details = it.take(4000); message = null },
         label = { Text("What happened?") },
         placeholder = { Text("Don't include passwords or codes.") },
@@ -92,7 +92,7 @@ internal fun HelpSettingsScreen() {
             val mailto = "mailto:${SupportConfig.EMAIL}" +
                 "?subject=${Uri.encode("Cyberity CvSU problem report")}" +
                 "&body=${Uri.encode(report)}"
-            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SENDTO, Uri.parse(mailto)), "Email support"))
+            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SENDTO, Uri.parse(mailto)), "Email Support"))
             "Check the email in your email app, then press Send."
         }.getOrElse {
             // No email app: copy the report so it can be pasted anywhere.
@@ -102,7 +102,7 @@ internal fun HelpSettingsScreen() {
                 "No email app found. Your report was copied; paste it into a message to ${SupportConfig.EMAIL}."
             }.getOrElse { "No email app found. Email your report to ${SupportConfig.EMAIL}." }
         }
-    }) { Text("Email support") }
+    }) { Text("Email Support") }
     message?.let { Text(it, color = AppCyan) }
     Text(SupportConfig.EMAIL, color = AppGray, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 }
@@ -110,6 +110,6 @@ internal fun HelpSettingsScreen() {
 private val helpTopics = listOf(
     "Lessons, quizzes and labs" to "Open Learn to continue your course. Each level starts with a short lesson, then a quiz or lab. If your progress doesn't update, check your connection and reopen Learn.",
     "Passwords and authenticator" to "Change your password in Settings → Security. Forgot it? Use Forgot password on the sign-in screen. An authenticator app adds a code after your password; add a backup on another device before removing one. If you lose every code, contact your project administrator. Never share your codes.",
-    "Signed-in devices" to "Settings → Security lists the phones and tablets signed in to your account. Sign out all devices signs out every device, including this one. Offline devices are signed out when they reconnect.",
-    "Learning reminders" to "Turn on reminders in Settings → Notifications, pick a time and days, and allow notifications on your phone. Battery saving can delay reminders."
+    "Signed-in Devices" to "Settings → Security lists the phones and tablets signed in to your account. Sign out all devices signs out every device, including this one. Offline devices are signed out when they reconnect.",
+    "Learning Reminders" to "Turn on reminders in Settings → Notifications, pick a time and days, and allow notifications on your phone. Battery saving can delay reminders."
 )

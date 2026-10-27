@@ -107,9 +107,9 @@ fun CompletionCertificateScreen() {
         if (downloadKind == CertificatePolicy.DownloadKind.PREVIEW)
             Text("Developer access: you can download a sample marked PREVIEW. It does not certify course completion.", color = AppCyan)
         else if (profile != null && StudentIdRules.validateFullName(profile!!.certificateName) != null)
-            Text("Add your full name in Settings > Student information before downloading.", color = AppCyan)
+            Text("Add your full name in Settings > Student Information before downloading.", color = AppCyan)
         else if (profile != null && !YearLevels.isValid(profile?.yearLevel))
-            Text("Add your year level in Settings > Student information before downloading.", color = AppCyan)
+            Text("Add your year level in Settings > Student Information before downloading.", color = AppCyan)
         else Text(if (eligible) "Your certificate is ready." else "Preview your certificate below. Download unlocks when the course is complete.", color = AppGray)
     }
     details?.let { current ->
@@ -127,12 +127,12 @@ fun CompletionCertificateScreen() {
             download.launch("Cyberity-${if (current.previewOnly) "PREVIEW-" else ""}${current.number}.pdf")
         }, enabled = downloadKind != CertificatePolicy.DownloadKind.LOCKED && !exporting && pending == null,
             modifier = Modifier.fillMaxWidth()) {
-            Text(if (exporting) "Saving..." else if (downloadKind == CertificatePolicy.DownloadKind.PREVIEW) "Download sample PDF" else "Download certificate")
+            Text(if (exporting) "Saving..." else if (downloadKind == CertificatePolicy.DownloadKind.PREVIEW) "Download Sample PDF" else "Download Certificate")
         }
     }
     error?.let { Text(it, color = AppDanger) }
     message?.let { Text(it, color = AppCyan) }
-    TextButton(onClick = { refresh++ }, enabled = !loading && !exporting) { Text("Refresh certificate details") }
+    TextButton(onClick = { refresh++ }, enabled = !loading && !exporting) { Text("Refresh Certificate Details") }
 }
 
 private fun drawCertificate(canvas: Canvas, details: CertificateDetails) {

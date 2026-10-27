@@ -108,6 +108,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -698,6 +699,81 @@ fun LearnScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
+    var identityLaunch by remember(uid) { mutableStateOf<Pair<LearningLevel, Boolean>?>(null) }
+    var identityName by remember(uid) { mutableStateOf<String?>(null) }
+    var identityBusy by remember(uid) { mutableStateOf(false) }
+    var identityError by remember(uid) { mutableStateOf<String?>(null) }
+
+    fun enterLevel(level: LearningLevel, readLesson: Boolean) {
+        val current = latestShownUnits.flatMap { it.levels }.firstOrNull { it.id == level.id }
+        if (current != null && current.status != LevelStatus.LOCKED) {
+            showingLesson = readLesson || (current.status == LevelStatus.CURRENT && current.id !in lessonsRead &&
+                !TutorialManager.isTutorialActive && lessonFor(current.id) != null)
+            setRunningLevel(current)
+            if (!readLesson) onStartLevel(current)
+        }
+        identityLaunch = null
+        identityName = null
+        identityError = null
+    }
+
+    fun requestLevelEntry(level: LearningLevel, readLesson: Boolean) {
+        if (identityBusy) return
+        identityBusy = true
+        scope.launch {
+            try { sheetState.hide() }
+            catch (cancelled: kotlinx.coroutines.CancellationException) { identityBusy = false; throw cancelled }
+            selected = null
+            if (level.id != StudentNameLock.FIRST_LEVEL) {
+                identityBusy = false
+                enterLevel(level, readLesson)
+            }
+            else {
+                val account = uid
+                if (account == null) { identityBusy = false; return@launch }
+                identityLaunch = level to readLesson
+                identityName = null
+                identityError = null
+                identityBusy = true
+                StudentNameLock.load(account).addOnSuccessListener { identity ->
+                    if (!scope.isActive) return@addOnSuccessListener
+                    identityBusy = false
+                    if (FirebaseAuth.getInstance().currentUser?.uid != account) { identityLaunch = null; return@addOnSuccessListener }
+                    if (identity.locked) enterLevel(level, readLesson)
+                    else if (StudentIdRules.validateFullName(identity.fullName) != null)
+                        identityError = "Add your full name in Settings > Student Information before starting Unit 1, Level 1."
+                    else identityName = identity.fullName
+                }.addOnFailureListener {
+                    if (!scope.isActive) return@addOnFailureListener
+                    identityBusy = false
+                    identityError = "Couldn't verify your full name. Reconnect and try opening the level again."
+                }
+            }
+        }
+    }
+
+    identityLaunch?.let { (level, readLesson) ->
+        if (identityName != null) ConfirmStudentNameDialog(identityName!!, identityBusy, identityError,
+            onStart = {
+                val account = uid ?: return@ConfirmStudentNameDialog
+                identityBusy = true
+                identityError = null
+                StudentNameLock.confirmStart(account, identityName!!).addOnSuccessListener {
+                    if (!scope.isActive) return@addOnSuccessListener
+                    identityBusy = false
+                    if (FirebaseAuth.getInstance().currentUser?.uid == account) enterLevel(level, readLesson)
+                }.addOnFailureListener {
+                    if (!scope.isActive) return@addOnFailureListener
+                    identityBusy = false
+                    identityError = "Couldn't start. Check your connection and review your saved name before trying again."
+                }
+            }, onCancel = { identityLaunch = null; identityName = null; identityError = null })
+        else AlertDialog(onDismissRequest = { if (!identityBusy) identityLaunch = null },
+            title = { Text(if (identityBusy) "Checking your full name…" else "Check Student Information") },
+            text = { Text(identityError ?: "Please wait while we verify your saved name.") },
+            confirmButton = { if (!identityBusy) TextButton(onClick = { identityLaunch = null }) { Text("OK") } })
+    }
+
     val pathListState = rememberLazyListState()
 
     // Opening a level or lesson pushes it in from the right over the path;
@@ -941,47 +1017,9 @@ fun LearnScreen(
                         heartRefillIn = heartRefillIn,
                         sheetState = sheetState,
                         onDismiss = { selected = null },
-                        onReadLesson = if (lessonFor(level.id) == null) null else {
-                            {
-                                scope.launch {
-                                    try {
-                                        sheetState.hide()
-                                    } finally {
-                                        selected = null
-                                        val current = latestShownUnits.flatMap { it.levels }.firstOrNull { it.id == level.id }
-                                        if (current != null && current.status != LevelStatus.LOCKED) {
-                                            showingLesson = true
-                                            setRunningLevel(current)
-                                        }
-                                    }
-                                }
-                            }
-                        },
+                        onReadLesson = if (lessonFor(level.id) == null) null else ({ requestLevelEntry(level, true) }),
                         onStart = {
-                            // The sheet is its own window. Closing that window and
-                            // swapping the whole screen underneath it in one frame is
-                            // the hitch you see on START LEVEL — so let the sheet
-                            // animate away first, then bring the level up.
-                            scope.launch {
-                                // finally, so an interrupted hide still starts the level
-                                // rather than leaving the tap doing nothing.
-                                try {
-                                    sheetState.hide()
-                                } finally {
-                                    selected = null
-                                    // A first attempt opens with the lesson until it has
-                                    // been read once; READ LESSON stays available after.
-                                    val current = latestShownUnits.flatMap { it.levels }.firstOrNull { it.id == level.id }
-                                    if (current != null && current.status != LevelStatus.LOCKED) {
-                                    showingLesson = current.status == LevelStatus.CURRENT &&
-                                            level.id !in lessonsRead &&
-                                            !TutorialManager.isTutorialActive &&
-                                            lessonFor(level.id) != null
-                                    setRunningLevel(current)
-                                    onStartLevel(current)
-                                    }
-                                }
-                            }
+                            requestLevelEntry(level, false)
                         }
                     )
                 }

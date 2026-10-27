@@ -19,18 +19,18 @@ class UpdateAndNameScreenTest {
         compose.setContent {
             var open by remember { mutableStateOf(false) }
             MyFirstTryTheme {
-                Button(onClick = { open = true }) { Text("Check for updates") }
+                Button(onClick = { open = true }) { Text("Check for Updates") }
                 if (open) UpdatePrompt("v9.0.0", { downloads++; open = false }, { cancels++; open = false })
             }
         }
         repeat(2) {
-            compose.onNodeWithText("Check for updates").performClick()
-            compose.onNodeWithText("Update available").assertIsDisplayed()
+            compose.onNodeWithText("Check for Updates").performClick()
+            compose.onNodeWithText("Update Available").assertIsDisplayed()
             compose.onNodeWithText("Cancel").performClick()
-            compose.onNodeWithText("Update available").assertDoesNotExist()
+            compose.onNodeWithText("Update Available").assertDoesNotExist()
         }
         compose.runOnIdle { assertEquals(0, downloads); assertEquals(2, cancels) }
-        compose.onNodeWithText("Check for updates").performClick()
+        compose.onNodeWithText("Check for Updates").performClick()
         compose.onNodeWithText("Download").performClick()
         compose.runOnIdle { assertEquals(1, downloads) }
     }
@@ -38,7 +38,7 @@ class UpdateAndNameScreenTest {
     @Test fun currentReleaseCanBeCheckedRepeatedly() {
         compose.setContent { MyFirstTryTheme { CheckForUpdates() } }
         repeat(2) {
-            compose.onNodeWithText("Check for updates").performClick()
+            compose.onNodeWithText("Check for Updates").performClick()
             compose.waitUntil(timeoutMillis = 35000) {
                 compose.onAllNodesWithText("You’re up to date.").fetchSemanticsNodes().isNotEmpty()
             }
@@ -52,8 +52,8 @@ class UpdateAndNameScreenTest {
             var f by remember { mutableStateOf("") }; var m by remember { mutableStateOf("") }; var l by remember { mutableStateOf("") }
             MyFirstTryTheme { StudentNameFields(f, { f = it; first = it }, m, { m = it; middle = it }, l, { l = it; last = it }) }
         }
-        compose.onNodeWithText("First name").performTextInput("Ana")
-        compose.onNodeWithText("Last name").performTextInput("Cruz")
+        compose.onNodeWithText("First Name").performTextInput("Ana")
+        compose.onNodeWithText("Last Name").performTextInput("Cruz")
         compose.runOnIdle {
             assertNull(StudentIdRules.validateNameParts(first, middle, last))
             assertEquals("Ana Cruz", StudentIdRules.composeFullName(first, middle, last))

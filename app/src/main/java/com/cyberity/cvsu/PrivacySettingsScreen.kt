@@ -98,7 +98,7 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
                     })
             }
         }
-        SettingsActionCard(Icons.Default.Download, "Download your data", "Profile, progress and devices as a JSON file",
+        SettingsActionCard(Icons.Default.Download, "Download Your Data", "Profile, progress and devices as a JSON file",
             enabled = !busy && preferences != null) {
             if (uid != null) scope.launch {
                 busy = true; message = "Preparing your data…"
@@ -112,18 +112,18 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
             }
         }
         SettingsCard {
-            Text("What we store", color = AppWhite, fontWeight = FontWeight.SemiBold)
+            Text("What We Store", color = AppWhite, fontWeight = FontWeight.SemiBold)
             Text("Email, student ID, display name, year level, progress, XP and hearts, and the model of devices you sign in on. No location. Passwords are never exported.",
                 color = AppGray, fontSize = 13.sp)
         }
     }
     if (busy) CircularProgressIndicator(color = AppCyan)
     message?.let { Text(it, color = AppCyan) }
-    if (preferences == null && !busy) TextButton(onClick = { refresh() }) { Text("Try again") }
+    if (preferences == null && !busy) TextButton(onClick = { refresh() }) { Text("Try Again") }
 
     Surface(color = AppCard, shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, AppDanger)) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(if (unfinishedDeletion) "Finish deleting your account" else "Delete account",
+            Text(if (unfinishedDeletion) "Finish Deleting Your Account" else "Delete Account",
                 color = AppDanger, fontWeight = FontWeight.SemiBold)
             Text(if (unfinishedDeletion) "Deletion didn't finish and some data may already be gone. Verify again to finish. Learning is paused until then."
                 else "Permanently removes your profile, progress, leaderboard entry and sign-in. This can't be undone.",
@@ -131,14 +131,14 @@ internal fun PrivacySettingsScreen(onSignOut: () -> Unit, onBusyChanged: (Boolea
             OutlinedButton(enabled = !busy && uid != null && preferences != null, modifier = Modifier.fillMaxWidth(),
                 border = BorderStroke(1.dp, AppDanger),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = AppDanger), onClick = { verifying = true }) {
-                Text(if (unfinishedDeletion) "Finish account deletion" else "Delete account")
+                Text(if (unfinishedDeletion) "Finish Account Deletion" else "Delete Account")
             }
         }
     }
 
-    if (verifying) AccountVerificationDialog("Verify account deletion", "Enter your current password and authenticator code if requested.",
+    if (verifying) AccountVerificationDialog("Verify Account Deletion", "Enter your current password and authenticator code if requested.",
         onVerified = { verifying = false; confirmation = true }, onCancel = { verifying = false }, onBusyChanged = {})
-    if (confirmation) AlertDialog(onDismissRequest = { confirmation = false }, title = { Text("Permanently delete account?") },
+    if (confirmation) AlertDialog(onDismissRequest = { confirmation = false }, title = { Text("Permanently Delete Account?") },
         text = { Text("This cannot be undone. Your learning progress and student profile will be removed, and you will be signed out. Export your data first if you need a copy. If interrupted, sign in and return to Privacy to finish deletion.") },
         confirmButton = { TextButton(onClick = {
             confirmation = false

@@ -928,7 +928,7 @@ fun LoginScreen(
                         text = when {
                             isResetLoading -> "Sending reset email..."
                             resetRetrySeconds > 0 -> "Reset available in ${resetRetrySeconds}s"
-                            else -> "Forgot password?"
+                            else -> "Forgot Password?"
                         },
                         color = AppCyan,
                         fontSize = 14.sp,
@@ -964,7 +964,7 @@ fun LoginScreen(
                     CircularProgressIndicator(color = AppCyan)
                 }
             } else {
-                AuthPrimaryButton("Log in", enabled = !isResetLoading && retrySeconds == 0L) {
+                AuthPrimaryButton("Log In", enabled = !isResetLoading && retrySeconds == 0L) {
                     val loginEmail = email.trim().lowercase()
 
                     if (!android.util.Patterns.EMAIL_ADDRESS.matcher(loginEmail).matches() ||
@@ -1007,7 +1007,7 @@ fun LoginScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            AuthFooterLink("New to Cyberity?", "Create an account") {
+            AuthFooterLink("New to Cyberity?", "Create an Account") {
                 if (!isLoading && !isResetLoading) onRegisterClick()
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -1140,7 +1140,7 @@ fun RegisterScreen(
             AuthTextField(
                 confirmPassword,
                 { confirmPassword = it },
-                "Confirm password",
+                "Confirm Password",
                 Icons.Filled.Lock,
                 isPassword = true,
                 filled = true
@@ -1234,7 +1234,7 @@ fun RegisterScreen(
                                             }
 
                                         // Couldn't save the profile (e.g. offline). The account
-                                        // still works; "Complete your profile" asks again at login.
+                                        // still works; "Complete Your Profile" asks again at login.
                                         is ProfileSaveResult.Failed -> finish()
                                     }
                                 }
@@ -1256,7 +1256,7 @@ fun RegisterScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            AuthFooterLink("Already have an account?", "Log in", onLoginClick)
+            AuthFooterLink("Already have an account?", "Log In", onLoginClick)
             Spacer(modifier = Modifier.height(16.dp))
         }
     )
@@ -1282,7 +1282,7 @@ fun CheckEmailScreen(onBackToLogin: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Verify your email",
+                text = "Verify Your Email",
                 color = AppWhite,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold

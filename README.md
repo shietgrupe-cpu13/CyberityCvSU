@@ -6,9 +6,9 @@ Cyberity is an Android cybersecurity e-learning capstone application built with 
 
 [Download latest APK](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk) · [Latest release notes](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest) · [Changelog](CHANGELOG.md) · [SHA-256 checksum](https://github.com/shietgrupe-cpu13/CyberityCvSU/releases/latest/download/CyberityCvSU.apk.sha256)
 
-**Version 1.0.7 · Android 7.0 or later.** The distributed APK is a debug build signed with the current Android debug key. Android may ask you to allow installation from Cyberity, your browser, or your file manager. Install it over your existing copy to keep app data; Android requires matching signing keys for an update.
+**Version 1.0.8 · Android 7.0 or later.** The distributed APK is a debug build signed with the current Android debug key. Android may ask you to allow installation from Cyberity, your browser, or your file manager. Install it over your existing copy to keep app data; Android requires matching signing keys for an update.
 
-## What's new in 1.0.7
+## What's new in 1.0.8
 
 - Registration shows username collisions under the username field and requires at least 8 characters with uppercase, lowercase, a number, and a symbol. Incorrect sign-in details use a generic email/password error.
 - Updates can download inside Cyberity with progress and cancellation, or through your browser. In-app downloads are checked for the expected checksum, app identity, newer version, and matching signing certificate before Android asks you to install.

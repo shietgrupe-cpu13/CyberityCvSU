@@ -53,10 +53,10 @@ fun CheckForUpdates() {
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(onClick = { UpdateController.check(context) }, enabled = !state.checking && !state.downloading,
             modifier = Modifier.fillMaxWidth()) {
-            Text(if (state.checking) "Checking for updates…" else "Check for updates")
+            Text(if (state.checking) "Checking for updates…" else "Check for Updates")
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Update notifications", color = AppWhite, modifier = Modifier.weight(1f))
+            Text("Update Notifications", color = AppWhite, modifier = Modifier.weight(1f))
             Switch(checked = enabled, onCheckedChange = { value ->
                 enabled = value
                 UpdateNotifications.configure(context, value)
@@ -136,7 +136,7 @@ internal fun AppUpdateHost(openFromNotification: Boolean = false) {
     val update = state.update
     if (state.visible && update != null && !askPermission) {
         AlertDialog(onDismissRequest = { if (!state.downloading && !installing) UpdateController.dismiss(context) },
-            title = { Text(if (state.file != null) "Update ready" else "Update available") },
+            title = { Text(if (state.file != null) "Update Ready" else "Update Available") },
             text = {
                 Column {
                     Text("Cyberity ${update.version}")
@@ -159,7 +159,7 @@ internal fun AppUpdateHost(openFromNotification: Boolean = false) {
                         try { allowInstall.launch(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + context.packageName))) }
                         catch (_: Exception) { UpdateController.message("Open your phone settings to allow Cyberity to install updates, or use the browser download.") }
                     } else install()
-                }) { Text(if (installing) "Verifying…" else if (state.file == null) "Download in app" else "Install") }
+                }) { Text(if (installing) "Verifying…" else if (state.file == null) "Download in App" else "Install") }
             },
             dismissButton = { TextButton(enabled = !installing, onClick = {
                 if (state.downloading) UpdateController.cancel() else UpdateController.dismiss(context)
@@ -170,7 +170,7 @@ internal fun AppUpdateHost(openFromNotification: Boolean = false) {
 @Composable
 internal fun UpdatePrompt(version: String, onDownload: () -> Unit, onCancel: () -> Unit) {
     AlertDialog(onDismissRequest = onCancel,
-        title = { Text("Update available") },
+        title = { Text("Update Available") },
         text = { Text("Cyberity $version is available. Download and verify the update inside the app, then approve installation on your phone.") },
         confirmButton = { TextButton(onClick = onDownload) { Text("Download") } },
         dismissButton = { TextButton(onClick = onCancel) { Text("Cancel") } })

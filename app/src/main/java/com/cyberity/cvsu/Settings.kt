@@ -43,8 +43,8 @@ import java.util.Calendar
 import kotlinx.coroutines.CancellationException
 
 private enum class SettingsSection(val title: String, val icon: ImageVector) {
-    STUDENT("Student information", Icons.Default.Badge),
-    CERTIFICATE("Completion certificate", Icons.Default.WorkspacePremium),
+    STUDENT("Student Information", Icons.Default.Badge),
+    CERTIFICATE("Completion Certificate", Icons.Default.WorkspacePremium),
     APPEARANCE("Appearance", Icons.Default.Palette),
     LEARNING("Learning", Icons.Default.School),
     NOTIFICATIONS("Notifications", Icons.Default.Notifications),
@@ -106,8 +106,8 @@ fun SettingsDialog(onDismiss: () -> Unit, onSignOut: () -> Unit = {}, onReplayTu
     }
     }
     if (confirmSignOut) AlertDialog(onDismissRequest = { confirmSignOut = false }, containerColor = AppCard,
-        title = { Text("Sign out?", color = AppWhite) }, text = { Text("Sign out of Cyberity on this device?", color = AppGray) },
-        confirmButton = { TextButton(onClick = { confirmSignOut = false; onDismiss(); onSignOut() }) { Text("Sign out", color = AppDanger) } },
+        title = { Text("Sign Out?", color = AppWhite) }, text = { Text("Sign out of Cyberity on this device?", color = AppGray) },
+        confirmButton = { TextButton(onClick = { confirmSignOut = false; onDismiss(); onSignOut() }) { Text("Sign Out", color = AppDanger) } },
         dismissButton = { TextButton(onClick = { confirmSignOut = false }) { Text("Cancel") } })
 }
 
@@ -130,8 +130,8 @@ private fun ColumnScope.SettingsHome(xp: Int?, onOpen: (SettingsSection) -> Unit
             .count { it.factorId == TotpMultiFactorGenerator.FACTOR_ID }
         val version = runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
         mapOf(
-            SettingsSection.STUDENT to "Profile and year level",
-            SettingsSection.CERTIFICATE to "Preview and download",
+            SettingsSection.STUDENT to "Profile and Year Level",
+            SettingsSection.CERTIFICATE to "Preview and Download",
             SettingsSection.APPEARANCE to when (CyberityThemeState.mode) {
                 CyberityThemeState.DARK -> "Dark"; CyberityThemeState.LIGHT -> "Light"; else -> "System"
             },
@@ -161,7 +161,7 @@ private fun ColumnScope.SettingsHome(xp: Int?, onOpen: (SettingsSection) -> Unit
         }
     }
     OutlinedButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth(), border = BorderStroke(1.dp, AppBorder),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppDanger)) { Text("Sign out") }
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = AppDanger)) { Text("Sign Out") }
 }
 
 @Composable
@@ -181,9 +181,10 @@ private fun ProfileCard(xp: Int?) {
                 Text(name, color = AppWhite, fontWeight = FontWeight.Bold, fontSize = 17.sp,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (email.isNotBlank()) Text(email, color = AppGray, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (user?.isEmailVerified == true) ProfilePill("Email verified", AppSuccess)
-                    else ProfilePill("Email not verified", AppDanger)
+                FlowRow(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (user?.isEmailVerified == true) ProfilePill("Email Verified", AppSuccess)
+                    else ProfilePill("Email Not Verified", AppDanger)
                     xp?.let { ProfilePill("$it XP", AppXp) }
                 }
             }
@@ -198,13 +199,15 @@ private fun ProfilePill(text: String, color: Color) {
 }
 
 @Composable
-private fun SectionRow(icon: ImageVector, title: String, value: String, onClick: () -> Unit) {
+internal fun SectionRow(icon: ImageVector, title: String, value: String, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
         SettingsIconTile(icon)
-        Text(title, color = AppWhite, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-        if (value.isNotBlank()) Text(value, color = AppGray, fontSize = 13.sp, maxLines = 1)
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = AppGray)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Text(title, color = AppWhite, fontWeight = FontWeight.Medium)
+            if (value.isNotBlank()) Text(value, color = AppGray, fontSize = 13.sp)
+        }
+        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = AppGray, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -288,7 +291,7 @@ private fun LearningSettings(onReplay: () -> Unit) {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("app_settings", Context.MODE_PRIVATE) }
     var font by remember { mutableStateOf(prefs.getString("font_size", "medium")?.lowercase()?.let { if (it == "normal") "medium" else it } ?: "medium") }
-    SettingsLabel("Text size")
+    SettingsLabel("Text Size")
     SettingsChoices(listOf("small" to "Small", "medium" to "Medium", "large" to "Large"), font) { choice ->
         font = choice; prefs.edit().putString("font_size", choice).apply()
     }
@@ -299,7 +302,7 @@ private fun LearningSettings(onReplay: () -> Unit) {
     }
     SettingsNote("Applies to lessons, labs and quizzes.")
     SettingsLabel("Tutorial")
-    SettingsActionCard(Icons.Default.Replay, "Replay guided tutorial", "Walk through how levels work again", onClick = onReplay)
+    SettingsActionCard(Icons.Default.Replay, "Replay Guided Tutorial", "Walk through how levels work again", onClick = onReplay)
 }
 
 @Composable

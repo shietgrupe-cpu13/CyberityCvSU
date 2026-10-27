@@ -14,12 +14,12 @@ fun StudentNameFields(
     enabled: Boolean = true
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        OutlinedTextField(firstName, onFirstName, label = { Text("First name") },
+        OutlinedTextField(firstName, onFirstName, label = { Text("First Name") },
             singleLine = true, enabled = enabled, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(middleName, onMiddleName, label = { Text("Middle name (optional)") },
+        OutlinedTextField(middleName, onMiddleName, label = { Text("Middle Name (Optional)") },
             supportingText = { Text("Leave blank if you do not have a middle name.") },
             singleLine = true, enabled = enabled, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(lastName, onLastName, label = { Text("Last name") },
+        OutlinedTextField(lastName, onLastName, label = { Text("Last Name") },
             singleLine = true, enabled = enabled, modifier = Modifier.fillMaxWidth())
         val error = StudentIdRules.validateNameParts(firstName, middleName, lastName)
         if (error != null && (firstName.isNotEmpty() || middleName.isNotEmpty() || lastName.isNotEmpty()))

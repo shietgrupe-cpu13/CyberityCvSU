@@ -217,10 +217,21 @@ service cloud.firestore {
             (previous.usernameChangedAt is timestamp && request.time >= previous.usernameChangedAt + duration.value(30, 'd')))) :
         data.get('usernameChangedAt', null) == previous.get('usernameChangedAt', null);
     }
+    // Private users/{uid}.fullNameLockedAt: optional server timestamp, immutable once set.
+    // Legacy completion of level 101 also locks all certificate-name components.
+    function validStudentNameLock(data, previous) {
+      let before = previous.get('fullNameLockedAt', null);
+      let after = data.get('fullNameLockedAt', null);
+      let unchanged = !data.diff(previous).affectedKeys().hasAny(['fullName', 'firstName', 'middleName', 'lastName']);
+      let progressPath = /databases/$(database)/documents/userProgress/$(request.auth.uid);
+      return (before == null ? (!('fullNameLockedAt' in data) || (after is timestamp && after == request.time)) : after == before) &&
+        (unchanged || (before == null && after == null &&
+          (!existsAfter(progressPath) || !getAfter(progressPath).data.get('completedLevels', []).hasAny([101]))));
+    }
     function validProfile(data, previous) {
       let tester = data.get('isTester', false);
       let studentId = data.get('studentId', '');
-      return tester is bool && studentId is string && validNameParts(data) && validUsernameTiming(data, previous) &&
+      return tester is bool && studentId is string && validNameParts(data) && validUsernameTiming(data, previous) && validStudentNameLock(data, previous) &&
         data.get('usernameChangeRequired', false) is bool &&
         (!data.get('usernameChangeRequired', false) || previous.get('usernameChangeRequired', false)) &&
         (!previous.get('usernameChangeRequired', false) || data.get('usernameChangeRequired', false) || validUsernameClaim(request.auth.uid, data)) &&

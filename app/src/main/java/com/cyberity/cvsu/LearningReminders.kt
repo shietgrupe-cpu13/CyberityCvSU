@@ -44,7 +44,7 @@ internal object LearningReminders {
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= 26) {
             context.getSystemService(NotificationManager::class.java).createNotificationChannel(
-                NotificationChannel(CHANNEL, "Learning reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                NotificationChannel(CHANNEL, "Learning Reminders", NotificationManager.IMPORTANCE_DEFAULT).apply {
                     description = "Reminders to continue your Cyberity lessons"
                 })
         }

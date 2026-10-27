@@ -47,7 +47,7 @@ internal fun AccountVerificationDialog(title: String, description: String, onVer
         text = { Column {
             Text(description)
             OutlinedTextField(value = password, onValueChange = { password = it; error = null },
-                enabled = !busy, label = { Text("Current password") }, singleLine = true,
+                enabled = !busy, label = { Text("Current Password") }, singleLine = true,
                 visualTransformation = PasswordVisualTransformation())
             error?.let { Text(it, color = AppDanger) }
             if (retry > 0) Text("Try again in ${retry}s.")
@@ -66,7 +66,7 @@ internal fun AccountVerificationDialog(title: String, description: String, onVer
                     else { busy = false; error = guard.handleFailure(it) }
                 }
             }
-        }) { Text("Verify and continue") } },
+        }) { Text("Verify and Continue") } },
         dismissButton = { TextButton(enabled = !busy, onClick = { password = ""; onCancel() }) { Text("Cancel") } }
     )
     resolver?.let { challenge ->

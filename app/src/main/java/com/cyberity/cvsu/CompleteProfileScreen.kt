@@ -147,7 +147,7 @@ fun CompleteProfileScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    "Complete your profile",
+                    "Complete Your Profile",
                     color = AppWhite,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
@@ -285,7 +285,7 @@ fun ProfileCheckScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 TextButton(onClick = onSignOut) {
-                    Text("Sign out", color = AppGray)
+                    Text("Sign Out", color = AppGray)
                 }
             }
         } else {
@@ -312,10 +312,10 @@ fun ProfileCheckScreen(
                     onClick = onRetry,
                     colors = ButtonDefaults.buttonColors(containerColor = AppBlue)
                 ) {
-                    Text("Try again")
+                    Text("Try Again")
                 }
                 TextButton(onClick = onSignOut) {
-                    Text("Sign out", color = AppGray)
+                    Text("Sign Out", color = AppGray)
                 }
             }
         }

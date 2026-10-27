@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.8 — 27 October 2026
+
+- Confirm the student's saved full name before starting Unit 1, Level 1 (including its lesson); starting records a persistent name lock enforced by Firestore rules.
+- Preserve year-level and username editing while locking first, middle, last and combined certificate names. Existing completion of Level 101 also locks names.
+- Stack Settings descriptions beneath titles, and wrap profile badges, to avoid cramped text on narrow screens and larger text sizes.
+- Use consistent Title Case for app headings, navigation labels and form labels.
+- Prevent repeated Start taps during the level-preview transition, cancel stale student-information loads, and offer a retry after failed profile saves.
+- Version 1.0.8, build 9.
+
 ## 1.0.7 — 24 October 2026
 
 - Download updates inside Cyberity with progress, cancellation, and a browser-download alternative.

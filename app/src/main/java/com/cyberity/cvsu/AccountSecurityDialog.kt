@@ -94,14 +94,14 @@ internal fun AccountSecurityDialog(onDismiss: () -> Unit, onSignOut: () -> Unit,
         SettingsCard {
             val verified = auth.currentUser?.isEmailVerified == true
             SecurityStatus(if (verified) Icons.Default.Verified else Icons.Default.ErrorOutline,
-                if (verified) "Email verified" else "Email not verified", ok = verified)
+                if (verified) "Email Verified" else "Email Not Verified", ok = verified)
             SecurityStatus(if (totpFactors.isEmpty()) Icons.Default.GppMaybe else Icons.Default.VerifiedUser,
                 if (totpFactors.isEmpty()) "Authenticator off" else "Authenticator on · ${totpFactors.size} " +
                     if (totpFactors.size == 1) "app" else "apps", ok = totpFactors.isNotEmpty())
         }
 
         SettingsLabel("Password")
-        SettingsActionCard(Icons.Default.Key, "Change password", "You'll sign in again afterwards",
+        SettingsActionCard(Icons.Default.Key, "Change Password", "You'll sign in again afterwards",
             enabled = signedIn && !busy) { start(SecurityAction.CHANGE_PASSWORD) }
 
         SettingsLabel("Authenticator")
@@ -121,18 +121,18 @@ internal fun AccountSecurityDialog(onDismiss: () -> Unit, onSignOut: () -> Unit,
                 }
             }
             OutlinedButton(enabled = signedIn && !busy && factors.size < 5, onClick = { start(SecurityAction.ADD_AUTHENTICATOR) },
-                modifier = Modifier.fillMaxWidth()) { Text(if (totpFactors.isEmpty()) "Set up authenticator" else "Add backup authenticator") }
+                modifier = Modifier.fillMaxWidth()) { Text(if (totpFactors.isEmpty()) "Set Up Authenticator" else "Add Backup Authenticator") }
             if (factors.size >= 5) Text("You've reached the limit. Remove one before adding another.", color = AppGray, fontSize = 13.sp)
         }
         SettingsNote("Keep a backup authenticator. If you lose every code, ask your project administrator.")
 
-        SettingsLabel("Signed-in devices")
+        SettingsLabel("Signed-in Devices")
         SettingsCard {
             if (loading) CircularProgressIndicator(color = AppCyan)
             if (slow && loading) Text("Still loading. Check your connection.", color = AppGray, fontSize = 13.sp)
             devicesError?.let {
                 Text(it, color = AppDanger, fontSize = 13.sp)
-                TextButton(enabled = !busy, onClick = { refresh++ }) { Text("Try again") }
+                TextButton(enabled = !busy, onClick = { refresh++ }) { Text("Try Again") }
             }
             sessions.forEachIndexed { index, session ->
                 if (index > 0) HorizontalDivider(color = AppBorder)
@@ -150,17 +150,17 @@ internal fun AccountSecurityDialog(onDismiss: () -> Unit, onSignOut: () -> Unit,
         }
         // Global cutoff protects old, unlisted devices too; do not gate this on list availability.
         Button(enabled = signedIn && !busy, onClick = { start(SecurityAction.LOGOUT_ALL) }, modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = AppDanger, contentColor = AppOnBlue)) { Text("Sign out all devices") }
+            colors = ButtonDefaults.buttonColors(containerColor = AppDanger, contentColor = AppOnBlue)) { Text("Sign Out All Devices") }
         SettingsNote("Includes this device. Offline devices are signed out when they reconnect.")
         message?.let { Text(it, color = AppCyan) }
     }
 
     action?.let { pending ->
         val title = when (pending) {
-            SecurityAction.CHANGE_PASSWORD -> "Change password"
-            SecurityAction.ADD_AUTHENTICATOR -> "Add authenticator"
-            SecurityAction.REMOVE_AUTHENTICATOR -> "Remove authenticator?"
-            SecurityAction.LOGOUT_ALL -> "Sign out all devices?"
+            SecurityAction.CHANGE_PASSWORD -> "Change Password"
+            SecurityAction.ADD_AUTHENTICATOR -> "Add Authenticator"
+            SecurityAction.REMOVE_AUTHENTICATOR -> "Remove Authenticator?"
+            SecurityAction.LOGOUT_ALL -> "Sign Out All Devices?"
         }
         val description = when (pending) {
             SecurityAction.REMOVE_AUTHENTICATOR -> "Confirm your password and authenticator code to remove ${removeFactor?.displayName ?: "this authenticator"}. ${if (totpFactors.size == 1) "This turns off authenticator protection." else "Keep access to another enrolled authenticator."} You may need to sign in again afterward."
@@ -229,12 +229,12 @@ private fun NewPasswordDialog(expectedUid: String?, onCancel: () -> Unit, onChan
     DisposableEffect(Unit) { onDispose { onBusyChanged(false) } }
     AlertDialog(onDismissRequest = { if (!busy) onCancel() },
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
-        title = { Text("Choose a new password") }, text = { Column {
+        title = { Text("Choose a New Password") }, text = { Column {
             Text("Use a unique password with at least 12 characters. You'll sign in again after changing it.")
             OutlinedTextField(value = password, onValueChange = { password = it; error = null }, singleLine = true,
-                enabled = !busy, label = { Text("New password") }, visualTransformation = PasswordVisualTransformation())
+                enabled = !busy, label = { Text("New Password") }, visualTransformation = PasswordVisualTransformation())
             OutlinedTextField(value = confirmation, onValueChange = { confirmation = it; error = null }, singleLine = true,
-                enabled = !busy, label = { Text("Confirm new password") }, visualTransformation = PasswordVisualTransformation())
+                enabled = !busy, label = { Text("Confirm New Password") }, visualTransformation = PasswordVisualTransformation())
             error?.let { Text(it, color = AppDanger) }
             if (busy) CircularProgressIndicator()
         } }, confirmButton = { TextButton(enabled = !busy && password.length >= 12 && password.isNotBlank() && password == confirmation, onClick = {
@@ -249,6 +249,6 @@ private fun NewPasswordDialog(expectedUid: String?, onCancel: () -> Unit, onChan
                     else "Couldn't change your password. Cancel, verify your account again, and retry."
                 }
             }
-        }) { Text("Change password") } },
+        }) { Text("Change Password") } },
         dismissButton = { TextButton(enabled = !busy, onClick = onCancel) { Text("Cancel") } })
 }

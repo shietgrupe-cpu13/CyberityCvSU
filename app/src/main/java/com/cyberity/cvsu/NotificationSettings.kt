@@ -62,7 +62,7 @@ internal fun NotificationSettings() {
     SettingsCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Learning reminders", color = AppWhite, fontWeight = FontWeight.SemiBold)
+                Text("Learning Reminders", color = AppWhite, fontWeight = FontWeight.SemiBold)
                 Text(when {
                     prefs.enabled && !allowed -> "Paused by phone permissions"
                     prefs.enabled && next != null -> "On · next: " + java.text.DateFormat.getDateTimeInstance(

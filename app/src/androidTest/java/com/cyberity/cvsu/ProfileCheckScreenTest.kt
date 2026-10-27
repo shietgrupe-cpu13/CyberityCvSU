@@ -20,7 +20,7 @@ class ProfileCheckScreenTest {
             }
         }
         compose.onNodeWithText("Checking your student profile").assertIsDisplayed()
-        compose.onNodeWithText("Sign out").performClick()
+        compose.onNodeWithText("Sign Out").performClick()
         compose.runOnIdle { assertEquals(1, signOuts) }
     }
 
@@ -32,7 +32,7 @@ class ProfileCheckScreenTest {
             }
         }
         compose.onNodeWithText("Couldn't load your profile").assertIsDisplayed()
-        compose.onNodeWithText("Try again").performClick()
+        compose.onNodeWithText("Try Again").performClick()
         compose.runOnIdle { assertEquals(1, retries) }
     }
 
@@ -45,7 +45,7 @@ class ProfileCheckScreenTest {
         }
         compose.onNodeWithText("Still checking your student profile").assertIsDisplayed()
         compose.onNodeWithText("This is taking longer than usual.", substring = true).assertIsDisplayed()
-        compose.onNodeWithText("Sign out").performClick()
+        compose.onNodeWithText("Sign Out").performClick()
         compose.runOnIdle { assertEquals(1, signOuts) }
     }
 }

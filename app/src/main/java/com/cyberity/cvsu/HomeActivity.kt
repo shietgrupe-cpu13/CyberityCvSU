@@ -529,7 +529,7 @@ fun ProfileTab(
                     ProfileInfoRow(icon = Icons.Filled.Badge, label = "Student ID", value = id)
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = AppNavy.copy(alpha = 0.5f))
-                ProfileInfoRow(icon = Icons.Filled.School, label = "Year level", value = YearLevels.label(yearLevel))
+                ProfileInfoRow(icon = Icons.Filled.School, label = "Year Level", value = YearLevels.label(yearLevel))
             }
         }
     }

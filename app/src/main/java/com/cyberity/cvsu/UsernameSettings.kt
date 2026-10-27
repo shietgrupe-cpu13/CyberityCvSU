@@ -37,6 +37,6 @@ fun UsernameSettings(uid: String, currentName: String, enabled: Boolean, onBusy:
                     message = if (detail.startsWith("You can change") || detail.startsWith("This username") || detail.startsWith("Choose a different")) detail
                         else "Couldn't change your username. Check your connection and make sure 30 days have passed since your last change."
                 }
-        }) { Text(if (saving) "Saving…" else "Change username") }
+        }) { Text(if (saving) "Saving…" else "Change Username") }
     message?.let { Text(it, color = AppCyan) }
 }

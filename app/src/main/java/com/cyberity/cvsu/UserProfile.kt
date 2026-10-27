@@ -46,8 +46,8 @@ object StudentIdRules {
         listOf(firstName.trim(), middleName.trim(), lastName.trim()).filter { it.isNotEmpty() }.joinToString(" ")
 
     fun validateNameParts(firstName: String, middleName: String, lastName: String): String? {
-        for ((label, value) in listOf("First name" to firstName, "Last name" to lastName, "Middle name" to middleName)) {
-            if (label != "Middle name" && value.isBlank()) return "$label is required"
+        for ((label, value) in listOf("First Name" to firstName, "Last Name" to lastName, "Middle Name" to middleName)) {
+            if (label != "Middle Name" && value.isBlank()) return "$label is required"
             if (value.trim().length > 50) return "$label must be at most 50 characters"
             if (value.any { it.isISOControl() }) return "$label cannot contain control characters"
         }
@@ -293,10 +293,18 @@ object UserProfileRepository {
     fun updateStudentInformation(uid: String, firstName: String, middleName: String, lastName: String, year: Int): com.google.android.gms.tasks.Task<Void> {
         require(StudentIdRules.validateNameParts(firstName, middleName, lastName) == null)
         require(YearLevels.isValid(year))
-        return db.collection(USERS).document(uid).update(mapOf(
-            "firstName" to firstName.trim(), "middleName" to middleName.trim(), "lastName" to lastName.trim(),
-            "fullName" to StudentIdRules.composeFullName(firstName, middleName, lastName), FIELD_YEAR_LEVEL to year,
-            FIELD_UPDATED_AT to FieldValue.serverTimestamp()))
+        val user = db.collection(USERS).document(uid)
+        return db.runTransaction { tx ->
+            val previous = tx.get(user)
+            val identity = StudentNameLock.identity(previous, tx.get(db.collection("userProgress").document(uid)))
+            val names = mapOf("firstName" to firstName.trim(), "middleName" to middleName.trim(),
+                "lastName" to lastName.trim(), "fullName" to StudentIdRules.composeFullName(firstName, middleName, lastName))
+            check(!identity.locked || names.all { (key, value) -> previous.getString(key).orEmpty() == value }) {
+                "Your full name is locked because Unit 1, Level 1 has already started."
+            }
+            tx.update(user, names + mapOf(FIELD_YEAR_LEVEL to year, FIELD_UPDATED_AT to FieldValue.serverTimestamp()))
+            null
+        }
     }
 
     /** Updates only the year field so older accounts keep their identity and progress. */
